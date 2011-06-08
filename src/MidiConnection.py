@@ -34,6 +34,15 @@ class MidiConnection:
     __module__ = __name__
     __doc__ = 'MIDI connection handler'
 
+    NOTE_OFF_EVENT = 0x80
+    NOTE_ON_EVENT = 0x90
+    POLYPHONIC_KEY_PRESSURE = 0xA0
+    CONTROL_CHANGE = 0xB0
+    PROGRAM_CHANGE = 0xC0
+    CHANNEL_PRESSURE = 0xD0
+    PITCH_WHEEL_CHANGE = 0xE0
+    SYSTEM_MESSAGE = 0xF0
+
 
     def __init__(self, callback, midi_input=None, midi_output=None):
         pygame.midi.init()
@@ -45,11 +54,13 @@ class MidiConnection:
 
 
     def disconnect(self):
-        self._log('Closing MIDI input...')
-	self._midi_input.close()
+        if self._midi_input:
+            self._log('Closing MIDI input...')
+            self._midi_input.close()
 
-	self._log('Closing MIDI output...')
-	self._midi_output.close()
+        if self._midi_output:
+            self._log('Closing MIDI output...')
+            self._midi_output.close()
 
 
     def _log(self, message):
@@ -93,52 +104,56 @@ class MidiConnection:
     def process_input_buffer(self, use_callback=True):
         if not self._midi_output:
             self._log('MIDI output not connected.')
-	    return
+            return
 
         while self._midi_input.poll():
-            (message_status, message) = self._receive_message()
+            (status, message) = self._receive_message()
 
             if use_callback:
-                self._callback(message_status, message)
+                self._callback(status, message)
 
 
     def _receive_message(self):
         message = self._midi_input.read(1)[0][0]
-	message_status = 'None'
-	command_byte = message[0] & 0xF0
+        status_byte = message[0] & 0xF0
 
         if message[0] == 0xF0:
             while 0xF7 not in message:
                 message.extend(self._midi_input.read(1)[0][0])
             while message[-1] != 0xF7:
                 del message[-1]
-        else:
+
+        if status_byte == self.NOTE_OFF_EVENT:
+            status = self.NOTE_OFF_EVENT
             del message[3]
+        elif status_byte == self.NOTE_ON_EVENT:
+            status = self.NOTE_ON_EVENT
+            del message[3]
+        elif status_byte == self.POLYPHONIC_KEY_PRESSURE:
+            status = self.POLYPHONIC_KEY_PRESSURE
+            del message[3]
+        elif status_byte == self.CONTROL_CHANGE:
+            status = self.CONTROL_CHANGE
+            del message[3]
+        elif status_byte == self.PROGRAM_CHANGE:
+            status = self.PROGRAM_CHANGE
+            del message[2:3]
+        elif status_byte == self.CHANNEL_PRESSURE:
+            status = self.CHANNEL_PRESSURE
+            del message[2:3]
+        elif status_byte == self.PITCH_WHEEL_CHANGE:
+            status = self.PITCH_WHEEL_CHANGE
+            del message[3]
+        elif status_byte == self.SYSTEM_MESSAGE:
+            status = self.SYSTEM_MESSAGE
 
-        if command_byte == 0x80:
-            message_status = 'Note Off'
-        elif command_byte == 0x90:
-            message_status = 'Note On'
-        elif command_byte == 0xA0:
-            message_status = 'Aftertouch'
-        elif command_byte == 0xB0:
-            message_status = 'Control Change'
-        elif command_byte == 0xC0:
-            message_status = 'Program Change'
-        elif command_byte == 0xD0:
-            message_status = 'Channel Pressure'
-        elif command_byte == 0xE0:
-            message_status = 'Pitch Wheel Change'
-        elif command_byte == 0xF0:
-            message_status = 'System Message'
-
-        return (message_status, message)
+        return (status, message)
 
 
     def send(self, status, data_1, data_2):
         if not self._midi_output:
             self._log('MIDI output not connected.')
-	    return
+            return
 
         self._midi_output.write_short(status, data_1, data_2)
 
@@ -146,7 +161,7 @@ class MidiConnection:
     def send_cc(self, channel, cc_number, cc_value):
         if not self._midi_output:
             self._log('MIDI output not connected.')
-	    return
+            return
 
         self._midi_output.write_short(0xB0 + channel, cc_number, cc_value)
 
@@ -154,7 +169,7 @@ class MidiConnection:
     def send_sysex(self, header, data):
         if not self._midi_output:
             self._log('MIDI output not connected.')
-	    return
+            return
 
         assert(type(header) == types.ListType)
         assert(type(data) == types.ListType)
@@ -168,11 +183,11 @@ class MidiConnection:
 
 
 if __name__ == "__main__":
-    def callback_midi_in(message_status, message):
-        print '%19s ' % (message_status + ':'),
-	for byte in message:
-	    print '%02X' % byte,
-	print
+    def callback_midi_in(status_byte, message):
+        print 'status %02X: ' % status_byte,
+        for byte in message:
+            print '%02X' % byte,
+        print
 
     midi_input = 'In From MIDI Yoke:  2'
     midi_output = 'Out To MIDI Yoke:  1'

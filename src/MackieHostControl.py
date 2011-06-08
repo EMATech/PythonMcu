@@ -63,36 +63,67 @@ class MackieHostControl:
     def disconnect(self):
         self._log('Disconnecting...')
 
-	self._midi.disconnect()
+        self._midi.disconnect()
 
         self._log('Disconnected.')
 
 
-    def receive_midi(self, message_status, message):
-        if message_status == 'System Message':
+    def receive_midi(self, status, message):
+        if status == MidiConnection.SYSTEM_MESSAGE:
             if message[0:6] == [0xF0, 0x00, 0x00, 0x66, 0x14, 0x12]:
-                if message[6] == 56:
-                    position = 3
-                else:
-                    position = 1
+                if self._controller.has_display():
+                    if message[6] == 56:
+                        position = 3
+                    else:
+                        position = 1
 
-                temp_codes = message[7:-1]
-                hex_codes = [0x20]
+                    temp_codes = message[7:-1]
+                    hex_codes = [0x20]
 
-                for i in range(len(temp_codes)):
-                    hex_codes.append(temp_codes[i])
-                    if (i%7) == 6:
-                        hex_codes.append(0x20)
-                        hex_codes.append(0x20)
+                    for i in range(len(temp_codes)):
+                        hex_codes.append(temp_codes[i])
+                        if (i%7) == 6:
+                            hex_codes.append(0x20)
+                            hex_codes.append(0x20)
 
-                hex_codes.append(0x20)
+                    hex_codes.append(0x20)
 
-                self._controller.update_lcd_raw(position, hex_codes)
-
-        print '%19s ' % (message_status + ':'),
-	for byte in message:
-	    print '%02X' % byte,
-	print
+                    self._controller.update_lcd_raw(position, hex_codes)
+        elif status == MidiConnection.PITCH_WHEEL_CHANGE:
+            fader_id = message[0] & 0x0F
+            fader_position = (message[1] + (message[2] << 7)) >> 4
+            self._controller.fader_moved(fader_id, fader_position)
+        elif status == MidiConnection.NOTE_ON_EVENT:
+            led_id = message[1]
+            led_status = 0  # off
+            if message[2] == 0x7F:
+                led_status = 1  # on
+            elif message[2] == 0x01:
+                led_status = 2  # flashing
+            self._controller.set_led(led_id, led_status)
+        elif (status == MidiConnection.CONTROL_CHANGE) and \
+                ((message[1] & 0xF0) == 0x30):
+            vpot_id = message[1] & 0x0F
+            vpot_center_led = (message[2] & 0x40) >> 7
+            vpot_mode = (message[2] & 0x30) >> 4
+            vpot_position = message[2] & 0x0F
+            self._controller.set_vpot_led(vpot_center_led, vpot_mode, vpot_position)
+        elif (status == MidiConnection.CONTROL_CHANGE) and \
+                ((message[1] & 0xF0) == 0x40):
+            if self._controller.has_seg7():
+                seg7_position = message[1] & 0x0F
+                seg7_character = message[2]
+                self._controller.set_seg7(seg7_position, seg7_character)
+        elif status == MidiConnection.CHANNEL_PRESSURE:
+            if self._controller.has_meter_bridge():
+                meter_id = (message[1] & 0x70) >> 4
+                meter_level = message[1] & 0x0F
+                self._controller.set_peak_level(meter_id, meter_level)
+        else:
+            print 'status %02X: ' % status,
+            for byte in message:
+                print '%02X' % byte,
+            print
 
 
     def poll(self):
@@ -112,13 +143,13 @@ class MackieHostControl:
         self._midi.send_cc(0, switch_id, 0x00)
 
 
-    def fader_moved(self, fader_id, fader_value):
+    def move_fader(self, fader_id, fader_value):
         fader_value_low = fader_value & 0x7F
         fader_value_high = fader_value >> 7
         self._midi.send(0xE0 + fader_id, fader_value_low, fader_value_high)
 
 
-    def fader_moved_7bit(self, fader_id, fader_value):
+    def move_fader_7bit(self, fader_id, fader_value):
         self._midi.send(0xE0 + fader_id, fader_value, fader_value)
 
 
@@ -146,6 +177,6 @@ if __name__ == "__main__":
     host_control = MackieHostControl(midi_input, midi_output, controller)
     host_control.connect()
 
-    host_control.fader_moved_7bit(0, 80)
+    host_control.move_fader_7bit(0, 80)
 
     host_control.disconnect()

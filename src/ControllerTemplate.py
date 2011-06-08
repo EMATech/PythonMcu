@@ -29,11 +29,15 @@ from MidiConnection import MidiConnection
 
 class ControllerTemplate(object):
     def __init__(self, midi_input, midi_output):
-        pass
+        self.display_available = True
+        self.seg7_available = True
+        self.meter_bridge_available = True
+
+        self.seg7_characters = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
 
 
     def connect(self):
-        pass	
+        pass
 
 
     def disconnect(self):
@@ -44,8 +48,20 @@ class ControllerTemplate(object):
         print '[Controller Template]  ' + message
 
 
-    def receive_midi(self, message_status, message):
-	pass
+    def has_seg7(self):
+        return self.seg7_available
+
+
+    def has_display(self):
+        return self.display_available
+
+
+    def has_meter_bridge(self):
+        return self.meter_bridge_available
+
+
+    def receive_midi(self, status, message):
+        pass
 
 
     def send_midi_cc(self, channel, cc_number, cc_value):
@@ -54,7 +70,52 @@ class ControllerTemplate(object):
 
     def send_midi_sysex(self, data):
         assert(type(data) == types.ListType)
+        pass
 
+
+    def fader_moved(self, fader_id, fader_position):
+        self._log('Fader #%d moved to position %04d.' % (fader_id, fader_position))
+
+
+    def set_led(self, led_id, led_status):
+        status = 'is off'
+        if led_status == 1:
+            status = 'is on'
+        elif led_status == 2:
+            status = 'flashes'
+
+        self._log('LED #%03d %s.' % (led_id, status))
+
+
+    def set_peak_level(self, meter_id, meter_level):
+        if meter_level == 0x0F:
+            self._log('Meter #%d overload cleared.' % meter_id)
+        elif meter_level == 0x0F:
+            self._log('Meter #%d overload.' % meter_id)
+        else:
+            self._log('Meter #%d set to %03d%%.' % (meter_id, meter_level * 10))
+
+
+    def set_seg7(self, seg7_position, seg7_character):
+        position = 19 - (seg7_position * 2)
+
+        if seg7_character >= 0x40:
+            seg7_character = seg7_character - 0x40
+            self.seg7_characters[position] = '.'
+        else:
+            self.seg7_characters[position] = ' '
+
+        if seg7_character < 0x20:
+            self.seg7_characters[position - 1] = chr(seg7_character + 0x40)
+        else:
+            self.seg7_characters[position - 1] = chr(seg7_character)
+
+        if seg7_position >= 9:
+            seg7_string = ''.join(self.seg7_characters)
+            self._log('7 segment display set to "%s".' % seg7_string)
+
+
+    def set_vpot_led(self, vpot_center_led, vpot_mode, vpot_position):
         pass
 
 
@@ -71,7 +132,7 @@ class ControllerTemplate(object):
         position 3: bottom row (left controller block)
         position 4: bottom row (right controller block)
         """
-	pass
+        pass
 
 
     def update_lcd(self, position, strings, preserve_space, shorten):
@@ -83,4 +144,4 @@ class ControllerTemplate(object):
         position 3: bottom row (left controller block)
         position 4: bottom row (right controller block)
         """
-	pass
+        pass

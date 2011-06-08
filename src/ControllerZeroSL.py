@@ -35,13 +35,17 @@ class ControllerZeroSL(ControllerTemplate):
     def __init__(self, midi_input, midi_output):
         ControllerTemplate.__init__(self, midi_input, midi_output)
 
+        self.display_available = True
+        self.seg7_available = False
+        self.meter_bridge_available = False
+
         self._log('Opening MIDI ports...')
         self._midi = MidiConnection(self.receive_midi, midi_input, midi_output)
 
 
 
     def connect(self):
-	self._log('Starting "Ableton" mode...')
+        self._log('Starting "Ableton" mode...')
 
 #         self._encoder_positions = []
 #         for i in range(CHANNEL_STRIPS):
@@ -67,7 +71,7 @@ class ControllerZeroSL(ControllerTemplate):
 
     def disconnect(self):
         self._log('Disconnecting...')
-	
+
         self._log('Stopping "Ableton" mode...')
 
         self.send_midi_cc(MIDI_DEVICE_CHANNEL, MIDI_CC_CLEAR_ALL_LEDS, 0x00)
@@ -75,7 +79,7 @@ class ControllerZeroSL(ControllerTemplate):
         self.send_midi_sysex([0x02, 0x02, 0x05])
         self.send_midi_sysex([0x01, 0x00])
 
-	self._midi.disconnect()
+        self._midi.disconnect()
 
         self._log('Disconnected.')
 
@@ -84,11 +88,11 @@ class ControllerZeroSL(ControllerTemplate):
         print '[Novation ZeRO SL MkII]  ' + message
 
 
-    def receive_midi(self, message_status, message):
-        print '%19s ' % (message_status + ':'),
-	for byte in message:
-	    print '%02X' % byte,
-	print
+    def receive_midi(self, status, message):
+        print 'status %02X: ' % status,
+        for byte in message:
+            print '%02X' % byte,
+        print
 
 
     def send_midi_cc(self, channel, cc_number, cc_value):
