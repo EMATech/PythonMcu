@@ -31,8 +31,8 @@ MIDI_IN_SEQUENCER = 'In From MIDI Yoke:  5'
 MIDI_OUT_SEQUENCER = 'Out To MIDI Yoke:  6'
 
 
-from ControllerZeroSL import ControllerZeroSL
-from MackieHostControl import MackieHostControl
+from PythonMcu.Hardware.Novation import *
+from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 
 import threading
 import sys
@@ -44,7 +44,7 @@ print 'Starting application...'
 print
 
 try:
-    controller = ControllerZeroSL(MIDI_IN_CONTROL, MIDI_OUT_CONTROL)
+    controller = ZeroSlMk2.ZeroSlMk2(MIDI_IN_CONTROL, MIDI_OUT_CONTROL)
     controller.connect()
 
     host_control = MackieHostControl(MIDI_IN_SEQUENCER, MIDI_OUT_SEQUENCER, controller)

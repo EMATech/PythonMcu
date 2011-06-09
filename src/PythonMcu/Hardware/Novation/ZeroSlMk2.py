@@ -26,14 +26,14 @@ Thank you for using free software!
 
 import types
 
-from ConstantsZeroSL import *
-from ControllerTemplate import ControllerTemplate
-from MidiConnection import MidiConnection
+from PythonMcu.Midi.MidiConnection import MidiConnection
+from PythonMcu.Hardware.MidiControllerTemplate import MidiControllerTemplate
+from PythonMcu.Hardware.Novation.ZeroSlMk2_Constants import *
 
 
-class ControllerZeroSL(ControllerTemplate):
+class ZeroSlMk2(MidiControllerTemplate):
     def __init__(self, midi_input, midi_output):
-        ControllerTemplate.__init__(self, midi_input, midi_output)
+        MidiControllerTemplate.__init__(self, midi_input, midi_output)
 
         self.display_available = True
         self.seg7_available = False
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     port_midi_input = 'ZeRO MkII: Port 1'
     port_midi_output = 'ZeRO MkII: Port 1'
 
-    controller = ControllerZeroSL(port_midi_input, port_midi_output)
+    controller = ZeroSlMk2(port_midi_input, port_midi_output)
     controller.connect()
 
     import time

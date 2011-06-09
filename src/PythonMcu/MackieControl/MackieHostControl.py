@@ -27,8 +27,8 @@ Thank you for using free software!
 import time
 import types
 
-import math
-from MidiConnection import MidiConnection
+from PythonMcu.Midi.MidiConnection import MidiConnection
+
 
 class MackieHostControl:
     __module__ = __name__

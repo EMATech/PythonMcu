@@ -25,10 +25,8 @@ Thank you for using free software!
 """
 
 import pygame.midi
-import time
 import types
 
-import math
 
 class MidiConnection:
     __module__ = __name__
@@ -183,6 +181,8 @@ class MidiConnection:
 
 
 if __name__ == "__main__":
+    import time
+
     def callback_midi_in(status_byte, message):
         print 'status %02X: ' % status_byte,
         for byte in message:

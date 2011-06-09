@@ -24,10 +24,10 @@ Thank you for using free software!
 
 """
 
-from MidiConnection import MidiConnection
+from PythonMcu.Midi.MidiConnection import MidiConnection
 
 
-class ControllerTemplate(object):
+class MidiControllerTemplate(object):
     def __init__(self, midi_input, midi_output):
         self.display_available = True
         self.seg7_available = True
