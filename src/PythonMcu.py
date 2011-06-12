@@ -47,13 +47,16 @@ try:
     controller = ZeroSlMk2.ZeroSlMk2(MIDI_IN_CONTROL, MIDI_OUT_CONTROL)
     controller.connect()
 
-    host_control = MackieHostControl(MIDI_IN_SEQUENCER, MIDI_OUT_SEQUENCER, controller)
+    host_control = MackieHostControl(MIDI_IN_SEQUENCER, MIDI_OUT_SEQUENCER)
     host_control.connect()
 
-    host_control.switch_pressed_and_released(0x2A)
-    host_control.switch_pressed(0x46)
-    host_control.switch_pressed_and_released(0x33)
-    host_control.switch_released(0x46)
+    host_control.set_hardware_controller(controller)
+    controller.set_mackie_control_host(host_control)
+
+    host_control.keypress_assignment_pan_surround(MackieHostControl.SWITCH_PRESSED_RELEASED)
+    host_control.keypress_shift(MackieHostControl.SWITCH_PRESSED)
+    host_control.keypress_global_view(MackieHostControl.SWITCH_PRESSED_RELEASED)
+    host_control.keypress_shift(MackieHostControl.SWITCH_RELEASED)
     print
 
     while True:

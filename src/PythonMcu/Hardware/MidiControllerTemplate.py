@@ -24,11 +24,25 @@ Thank you for using free software!
 
 """
 
+import sys
+import types
+
+if __name__ == "__main__":
+    # allow "PythonMcu" package imports when executing this module
+    sys.path.append('../../../')
+
 from PythonMcu.Midi.MidiConnection import MidiConnection
 
 
 class MidiControllerTemplate(object):
+
+    MIDI_MANUFACTURER_ID = None
+    MIDI_DEVICE_ID = None
+
     def __init__(self, midi_input, midi_output):
+        self.midi = MidiConnection(self.receive_midi, midi_input, midi_output)
+        self.unset_mackie_control_host()
+
         self.display_available = True
         self.seg7_available = True
         self.meter_bridge_available = True
@@ -36,12 +50,21 @@ class MidiControllerTemplate(object):
         self.seg7_characters = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
 
 
+    def set_mackie_control_host(self, host):
+        self.mackie_control_host = host
+
+
+    def unset_mackie_control_host(self):
+        self.mackie_control_host = None
+
+
     def connect(self):
-        pass
+        self._log('Opening MIDI ports...')
 
 
     def disconnect(self):
-        pass
+        self.midi.disconnect()
+        self._log('Disconnected.')
 
 
     def _log(self, message):
@@ -61,16 +84,24 @@ class MidiControllerTemplate(object):
 
 
     def receive_midi(self, status, message):
-        pass
+        print 'status %02X: ' % status,
+        for byte in message:
+            print '%02X' % byte,
+        print
 
 
     def send_midi_cc(self, channel, cc_number, cc_value):
-        pass
+        self.midi.send_cc(channel, cc_number, cc_value)
 
 
     def send_midi_sysex(self, data):
         assert(type(data) == types.ListType)
-        pass
+
+        header = []
+        header.extend(self.MIDI_MANUFACTURER_ID)
+        header.extend(self.MIDI_DEVICE_ID)
+
+        self.midi.send_sysex(header, data)
 
 
     def fader_moved(self, fader_id, fader_position):
@@ -137,34 +168,24 @@ class MidiControllerTemplate(object):
         pass
 
 
-#     def set_led(self, led_id, led_status):
-#         status = 'is off'
-#         if led_status == 1:
-#             status = 'is on'
-#         elif led_status == 2:
-#             status = 'flashes'
-
-#         self._log('LED #%03d %s.' % (led_id, status))
-
-
-    def update_led_record_ready(self, channel, status):
+    def update_led_channel_record_ready(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_RECORD_READY_%d" not found.' % channel)
+        self._log('LED "CHANNEL_RECORD_READY_%d" not found.' % (channel + 1))
 
 
-    def update_led_solo(self, channel, status):
+    def update_led_channel_solo(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_SOLO_%d" not found.' % channel)
+        self._log('LED "CHANNEL_SOLO_%d" not found.' % (channel + 1))
 
 
-    def update_led_mute(self, channel, status):
+    def update_led_channel_mute(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_MUTE_%d" not found.' % channel)
+        self._log('LED "CHANNEL_MUTE_%d" not found.' % (channel + 1))
 
 
-    def update_led_select(self, channel, status):
+    def update_led_channel_select(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_SELECT_%d" not found.' % channel)
+        self._log('LED "CHANNEL_SELECT_%d" not found.' % (channel + 1))
 
 
     def update_led_assignment_track(self, status):
@@ -285,3 +306,19 @@ class MidiControllerTemplate(object):
 
     def update_led_scrub(self, status):
         self._log('LED "SCRUB" not found.')
+
+
+    def update_led_smpte(self, status):
+        self._log('LED "SMPTE" not found.')
+
+
+    def update_led_beats(self, status):
+        self._log('LED "BEATS" not found.')
+
+
+    def update_led_rude(self, status):
+        self._log('LED "RUDE_SOLO" not found.')
+
+
+    def update_led_relay(self, status):
+        self._log('LED "RELAY_CLICK" not found.')
