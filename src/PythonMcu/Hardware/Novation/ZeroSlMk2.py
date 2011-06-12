@@ -25,6 +25,11 @@ Thank you for using free software!
 """
 
 import types
+import sys
+
+if __name__ == "__main__":
+    # allow "PythonMcu" package imports when executing this module
+    sys.path.append('../../../')
 
 from PythonMcu.Midi.MidiConnection import MidiConnection
 from PythonMcu.Hardware.MidiControllerTemplate import MidiControllerTemplate

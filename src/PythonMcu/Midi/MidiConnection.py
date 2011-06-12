@@ -156,12 +156,31 @@ class MidiConnection:
         self._midi_output.write_short(status, data_1, data_2)
 
 
+    def send_note_on(self, key, velocity):
+        if not self._midi_output:
+            self._log('MIDI output not connected.')
+            return
+
+        #self._log('%02X %02X %02X' % (self.NOTE_ON_EVENT, key, velocity))
+        self._midi_output.write_short(self.NOTE_ON_EVENT, key, velocity)
+
+
+    def send_note_off(self, key, velocity):
+        if not self._midi_output:
+            self._log('MIDI output not connected.')
+            return
+
+        #self._log('%02X %02X %02X' % (self.NOTE_OFF_EVENT, key, velocity))
+        self._midi_output.write_short(self.NOTE_OFF_EVENT, key, velocity)
+
+
     def send_cc(self, channel, cc_number, cc_value):
         if not self._midi_output:
             self._log('MIDI output not connected.')
             return
 
-        self._midi_output.write_short(0xB0 + channel, cc_number, cc_value)
+        #self._log('%02X %02X %02X' % (self.CONTROL_CHANGE + channel, cc_number, cc_value))
+        self._midi_output.write_short(self.CONTROL_CHANGE + channel, cc_number, cc_value)
 
 
     def send_sysex(self, header, data):
@@ -189,8 +208,8 @@ if __name__ == "__main__":
             print '%02X' % byte,
         print
 
-    midi_input = 'In From MIDI Yoke:  2'
-    midi_output = 'Out To MIDI Yoke:  1'
+    midi_input = 'In From MIDI Yoke:  4'
+    midi_output = 'Out To MIDI Yoke:  3'
 
     midi_connection = MidiConnection(callback_midi_in, midi_input, midi_output)
 

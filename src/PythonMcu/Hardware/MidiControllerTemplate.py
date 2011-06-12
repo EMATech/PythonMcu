@@ -77,16 +77,6 @@ class MidiControllerTemplate(object):
         self._log('Fader #%d moved to position %04d.' % (fader_id, fader_position))
 
 
-    def set_led(self, led_id, led_status):
-        status = 'is off'
-        if led_status == 1:
-            status = 'is on'
-        elif led_status == 2:
-            status = 'flashes'
-
-        self._log('LED #%03d %s.' % (led_id, status))
-
-
     def set_peak_level(self, meter_id, meter_level):
         if meter_level == 0x0F:
             self._log('Meter #%d overload cleared.' % meter_id)
@@ -145,3 +135,153 @@ class MidiControllerTemplate(object):
         position 4: bottom row (right controller block)
         """
         pass
+
+
+#     def set_led(self, led_id, led_status):
+#         status = 'is off'
+#         if led_status == 1:
+#             status = 'is on'
+#         elif led_status == 2:
+#             status = 'flashes'
+
+#         self._log('LED #%03d %s.' % (led_id, status))
+
+
+    def update_led_record_ready(self, channel, status):
+        # channel: 0 - 7
+        self._log('LED "CHANNEL_RECORD_READY_%d" not found.' % channel)
+
+
+    def update_led_solo(self, channel, status):
+        # channel: 0 - 7
+        self._log('LED "CHANNEL_SOLO_%d" not found.' % channel)
+
+
+    def update_led_mute(self, channel, status):
+        # channel: 0 - 7
+        self._log('LED "CHANNEL_MUTE_%d" not found.' % channel)
+
+
+    def update_led_select(self, channel, status):
+        # channel: 0 - 7
+        self._log('LED "CHANNEL_SELECT_%d" not found.' % channel)
+
+
+    def update_led_assignment_track(self, status):
+        self._log('LED "ASSIGNMENT_TRACK" not found.')
+
+
+    def update_led_assignment_send(self, status):
+        self._log('LED "ASSIGNMENT_SEND" not found.')
+
+
+    def update_led_assignment_pan_surround(self, status):
+        self._log('LED "ASSIGNMENT_PAN_SURROUND" not found.')
+
+
+    def update_led_assignment_plug_in(self, status):
+        self._log('LED "ASSIGNMENT_PLUG_IN" not found.')
+
+
+    def update_led_assignment_eq(self, status):
+        self._log('LED "ASSIGNMENT_EQ" not found.')
+
+
+    def update_led_assignment_instrument(self, status):
+        self._log('LED "ASSIGNMENT_INSTRUMENT" not found.')
+
+
+    def update_led_flip(self, status):
+        self._log('LED "FLIP" not found.')
+
+
+    def update_led_global_view(self, status):
+        self._log('LED "GLOBAL_VIEW" not found.')
+
+
+    def update_led_automation_read_off(self, status):
+        self._log('LED "AUTOMATION_READ_OFF" not found.')
+
+
+    def update_led_automation_write(self, status):
+        self._log('LED "AUTOMATION_WRITE" not found.')
+
+
+    def update_led_automation_trim(self, status):
+        self._log('LED "AUTOMATION_TRIM" not found.')
+
+
+    def update_led_automation_touch(self, status):
+        self._log('LED "AUTOMATION_TOUCH" not found.')
+
+
+    def update_led_automation_latch(self, status):
+        self._log('LED "AUTOMATION_LATCH" not found.')
+
+
+    def update_led_group(self, status):
+        self._log('LED "GROUP" not found.')
+
+
+    def update_led_utilities_save(self, status):
+        self._log('LED "UTILITIES_SAVE" not found.')
+
+
+    def update_led_utilities_undo(self, status):
+        self._log('LED "UTILITIES_UNDO" not found.')
+
+
+    def update_led_marker(self, status):
+        self._log('LED "MARKER" not found.')
+
+
+    def update_led_nudge(self, status):
+        self._log('LED "NUDGE" not found.')
+
+
+    def update_led_cycle(self, status):
+        self._log('LED "CYCLE" not found.')
+
+
+    def update_led_drop(self, status):
+        self._log('LED "DROP" not found.')
+
+
+    def update_led_replace(self, status):
+        self._log('LED "REPLACE" not found.')
+
+
+    def update_led_click(self, status):
+        self._log('LED "CLICK" not found.')
+
+
+    def update_led_solo(self, status):
+        self._log('LED "SOLO" not found.')
+
+
+    def update_led_rewind(self, status):
+        self._log('LED "REWIND" not found.')
+
+
+    def update_led_fast_forward(self, status):
+        self._log('LED "FAST_FORWARD" not found.')
+
+
+    def update_led_stop(self, status):
+        self._log('LED "STOP" not found.')
+
+
+    def update_led_play(self, status):
+        self._log('LED "PLAY" not found.')
+
+
+    def update_led_record(self, status):
+        self._log('LED "RECORD" not found.')
+
+
+    def update_led_zoom(self, status):
+        self._log('LED "ZOOM" not found.')
+
+
+    def update_led_scrub(self, status):
+        self._log('LED "SCRUB" not found.')
