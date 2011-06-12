@@ -24,8 +24,8 @@ Thank you for using free software!
 
 """
 
-MIDI_IN_CONTROL = 'ZeRO MkII: Port 1'
-MIDI_OUT_CONTROL = MIDI_IN_CONTROL
+MIDI_IN_CONTROL = 'ZeRO MkII: Port 2'
+MIDI_OUT_CONTROL = 'ZeRO MkII: Port 2'
 
 MIDI_IN_SEQUENCER = 'In From MIDI Yoke:  4'
 MIDI_OUT_SEQUENCER = 'Out To MIDI Yoke:  3'
@@ -53,14 +53,10 @@ try:
     host_control.set_hardware_controller(controller)
     controller.set_mackie_control_host(host_control)
 
-    host_control.keypress_assignment_pan_surround(MackieHostControl.SWITCH_PRESSED_RELEASED)
-    host_control.keypress_shift(MackieHostControl.SWITCH_PRESSED)
-    host_control.keypress_global_view(MackieHostControl.SWITCH_PRESSED_RELEASED)
-    host_control.keypress_shift(MackieHostControl.SWITCH_RELEASED)
     print
-
     while True:
-        host_control.poll()
+        controller.process_midi_input()
+        host_control.process_midi_input()
 
         time.sleep(0.01)
 except KeyboardInterrupt:

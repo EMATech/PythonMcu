@@ -31,7 +31,7 @@ if __name__ == "__main__":
     sys.path.append('../../../')
 
 from PythonMcu.Hardware.MidiControllerTemplate import MidiControllerTemplate
-from PythonMcu.Hardware.Novation.ZeroSlMk2_Constants import *
+from PythonMcu.Midi.MidiConnection import MidiConnection
 
 
 class ZeroSlMk2(MidiControllerTemplate):
@@ -53,10 +53,29 @@ class ZeroSlMk2(MidiControllerTemplate):
     # number of available LCD characters per channel strip
     _LCD_FIELD_LENGTH = 9
 
+    _MIDI_CC_CLEAR_ALL_LEDS = 0x4E
+    _MIDI_CC_ENCODER_LIGHTS = 0x70
+    _MIDI_CC_CONTROLLER_ROW_LIGHTS_LEFT = (0x51, 0x53, 0x54, 0x50, 0x52)
+    _MIDI_CC_CONTROLLER_ROW_LIGHTS_RIGHT = (0x55, 0x56, 0x57)
+
+    _MIDI_CC_BUTTONS_LEFT_TOP = 0x18
+    _MIDI_CC_BUTTONS_LEFT_BOTTOM = 0x20
+    _MIDI_CC_BUTTONS_RIGHT_TOP = 0x28
+    _MIDI_CC_BUTTONS_RIGHT_BOTTOM = 0x30
+
+    _MIDI_CC_FADERS = 0x10
+    _MIDI_CC_ENCODERS = 0x38
+    _MIDI_CC_KNOBS = 0x08
+
+    _MIDI_CC_BUTTON_BANK_UP = 0x58
+    _MIDI_CC_BUTTON_BANK_DOWN = 0x59
+
+
     def __init__(self, midi_input, midi_output):
         MidiControllerTemplate.__init__(self, midi_input, midi_output)
 
         self.display_available = True
+        self.automated_faders_available = False
         self.seg7_available = False
         self.meter_bridge_available = False
 
@@ -66,20 +85,14 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         self._log('Starting "Ableton" mode...')
 
-        self._lcd_strings = []
-        for page in range(self._LCD_PAGES):
-            self._lcd_strings.append([])
-            for channel in range(self._CHANNEL_STRIPS):
-                self._lcd_strings[page].append('')
+        self._lcd_strings = ['', '']
 
-        self.update_lcd(1, ['Initialis', 'ing'], False, False)
-        self.update_lcd(2, ['Initialis', 'ing'], False, False)
-        self.update_lcd(3, ['controlle', 'r'], False, False)
-        self.update_lcd(4, ['controlle', 'r'], False, False)
+        self.update_lcd(1, 'Initialising Novation Zero SL MkII hardware controller.')
+        self.update_lcd(2, 'Please wait...')
 
         self.send_midi_sysex([0x01, 0x01])
 
-        self.send_midi_cc(MIDI_CC_CLEAR_ALL_LEDS, 0x00)
+        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
 
         self._log('Connected.')
 
@@ -89,7 +102,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         self._log('Stopping "Ableton" mode...')
 
-        self.send_midi_cc(MIDI_CC_CLEAR_ALL_LEDS, 0x00)
+        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
 
         self.send_midi_sysex([0x02, 0x02, 0x05])
         self.send_midi_sysex([0x01, 0x00])
@@ -101,9 +114,128 @@ class ZeroSlMk2(MidiControllerTemplate):
         print '[Novation ZeRO SL MkII]  ' + message
 
 
-    def send_midi_cc(self, cc_number, cc_value):
-        MidiControllerTemplate.send_midi_cc( \
+    def send_midi_control_change(self, cc_number, cc_value):
+        MidiControllerTemplate.send_midi_control_change( \
             self, self._MIDI_DEVICE_CHANNEL, cc_number, cc_value)
+
+
+    def receive_midi(self, status, message):
+        cc_selector = {
+            self._MIDI_CC_FADERS: \
+                'self.mackie_control_host.move_fader_7bit(0, %d)',
+            self._MIDI_CC_FADERS + 1: \
+                'self.mackie_control_host.move_fader_7bit(1, %d)',
+            self._MIDI_CC_FADERS + 2: \
+                'self.mackie_control_host.move_fader_7bit(2, %d)',
+            self._MIDI_CC_FADERS + 3: \
+                'self.mackie_control_host.move_fader_7bit(3, %d)',
+            self._MIDI_CC_FADERS + 4: \
+                'self.mackie_control_host.move_fader_7bit(4, %d)',
+            self._MIDI_CC_FADERS + 5: \
+                'self.mackie_control_host.move_fader_7bit(5, %d)',
+            self._MIDI_CC_FADERS + 6: \
+                'self.mackie_control_host.move_fader_7bit(6, %d)',
+            self._MIDI_CC_FADERS + 7: \
+                'self.mackie_control_host.move_fader_7bit(7, %d)',
+            self._MIDI_CC_ENCODERS:
+                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 0, %d)',
+            self._MIDI_CC_ENCODERS + 1:
+                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 1, %d)',
+            self._MIDI_CC_ENCODERS + 2:
+                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 2, %d)',
+            self._MIDI_CC_ENCODERS + 3:
+                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 3, %d)',
+            self._MIDI_CC_ENCODERS + 4:
+                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 4, %d)',
+            self._MIDI_CC_ENCODERS + 5:
+                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 5, %d)',
+            self._MIDI_CC_ENCODERS + 6:
+                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 6, %d)',
+            self._MIDI_CC_ENCODERS + 7:
+                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 7, %d)',
+            self._MIDI_CC_BUTTONS_LEFT_TOP:
+                'self.mackie_control_host.keypress_channel_record_ready(0, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_TOP + 1:
+                'self.mackie_control_host.keypress_channel_record_ready(1, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_TOP + 2:
+                'self.mackie_control_host.keypress_channel_record_ready(2, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_TOP + 3:
+                'self.mackie_control_host.keypress_channel_record_ready(3, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_TOP + 4:
+                'self.mackie_control_host.keypress_channel_record_ready(4, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_TOP + 5:
+                'self.mackie_control_host.keypress_channel_record_ready(5, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_TOP + 6:
+                'self.mackie_control_host.keypress_channel_record_ready(6, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_TOP + 7:
+                'self.mackie_control_host.keypress_channel_record_ready(7, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_BOTTOM:
+                'self.mackie_control_host.keypress_channel_select(0, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1:
+                'self.mackie_control_host.keypress_channel_select(1, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2:
+                'self.mackie_control_host.keypress_channel_select(2, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3:
+                'self.mackie_control_host.keypress_channel_select(3, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4:
+                'self.mackie_control_host.keypress_channel_select(4, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5:
+                'self.mackie_control_host.keypress_channel_select(5, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6:
+                'self.mackie_control_host.keypress_channel_select(6, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7:
+                'self.mackie_control_host.keypress_channel_select(7, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_TOP:
+                'self.mackie_control_host.keypress_channel_mute(0, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_TOP + 1:
+                'self.mackie_control_host.keypress_channel_mute(1, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_TOP + 2:
+                'self.mackie_control_host.keypress_channel_mute(2, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_TOP + 3:
+                'self.mackie_control_host.keypress_channel_mute(3, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_TOP + 4:
+                'self.mackie_control_host.keypress_channel_mute(4, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_TOP + 5:
+                'self.mackie_control_host.keypress_channel_mute(5, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_TOP + 6:
+                'self.mackie_control_host.keypress_channel_mute(6, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_TOP + 7:
+                'self.mackie_control_host.keypress_channel_mute(7, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM:
+                'self.mackie_control_host.keypress_channel_solo(0, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1:
+                'self.mackie_control_host.keypress_channel_solo(1, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2:
+                'self.mackie_control_host.keypress_channel_solo(2, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3:
+                'self.mackie_control_host.keypress_channel_solo(3, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4:
+                'self.mackie_control_host.keypress_channel_solo(4, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5:
+                'self.mackie_control_host.keypress_channel_solo(5, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6:
+                'self.mackie_control_host.keypress_channel_solo(6, %d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7:
+                'self.mackie_control_host.keypress_channel_solo(7, %d & 0x01)',
+            }
+
+        if status == (MidiConnection.CONTROL_CHANGE + \
+                          self._MIDI_DEVICE_CHANNEL):
+            cc_number = message[1]
+            cc_value = message[2]
+
+            if cc_number in cc_selector:
+                eval(cc_selector[cc_number] % cc_value)
+            else:
+                message_string = ['status %02X: ' % status]
+                for byte in message:
+                    message_string.append('%02X' % byte)
+                self._log(' '.join(message_string))
+        else:
+            message_string = ['status %02X: ' % status]
+            for byte in message:
+                message_string.append('%02X' % byte)
+            self._log(' '.join(message_string))
 
 
     def update_encoder_light(self, position, value):
@@ -112,17 +244,15 @@ class ZeroSlMk2(MidiControllerTemplate):
         else:
             self._encoder_positions[position] = value
 
-            self.send_midi_cc(MIDI_CC_ENCODER_LIGHTS + position, value)
+            self.send_midi_control_change(self._MIDI_CC_ENCODER_LIGHTS + position, value)
 
 
     def update_lcd_raw(self, position, hex_codes):
         """
         send hex codes of maximum 72 bytes to controller LCD
 
-        position 1: top row (left controller block)
-        position 2: top row (right controller block)
-        position 3: bottom row (left controller block)
-        position 4: bottom row (right controller block)
+        position 1: top row
+        position 2: bottom row
         """
         sysex_data = [0x02, 0x01, 0x00, position, 0x04]
 
@@ -135,47 +265,71 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         self.send_midi_sysex(sysex_data)
 
+        # update second display page as well:
+        # * position 1  -->  top row (left controller block)
+        # * position 2  -->  top row (right controller block)
+        # * position 3  -->  bottom row (left controller block)
+        # * position 4  -->  bottom row (right controller block)
+        sysex_data[3] += 1
 
-    def update_lcd(self, position, strings, preserve_space, shorten):
+        self.send_midi_sysex(sysex_data)
+
+
+    def update_lcd(self, position, new_string):
         """
         send string of maximum 72 bytes to controller LCD
 
-        position 1: top row (left controller block)
-        position 2: top row (right controller block)
-        position 3: bottom row (left controller block)
-        position 4: bottom row (right controller block)
+        position 1: top row
+        position 2: bottom row
         """
-        assert(len(strings) <= self._CHANNEL_STRIPS)
         has_changed = False
-        output = ''
 
-        for channel in range(self._CHANNEL_STRIPS):
-            if len(strings) <= channel:
-                strings.append('')
-
-            if self._lcd_strings[position - 1][channel] != strings[channel]:
-                self._lcd_strings[position - 1][channel] = strings[channel]
-                has_changed = True
+        if self._lcd_strings[position - 1] != new_string:
+            self._lcd_strings[position - 1] = new_string
+            has_changed = True
 
         if not has_changed:
             return
-        else:
-            if preserve_space:
-                field_length = self._LCD_FIELD_LENGTH - 1
-            else:
-                field_length = self._LCD_FIELD_LENGTH
-
-        for channel in range(self._CHANNEL_STRIPS):
-            output += strings[channel].ljust(field_length)[0:field_length]
-            if preserve_space:
-                output += ' '
 
         # convert string
         hex_codes = []
-        for character in output:
+        for character in new_string:
             hex_codes.append(ord(character))
 
         self.update_lcd_raw(position, hex_codes)
+
+
+    def update_led(self, id, status, inverted=False):
+        # channel: 0 - 7
+        if inverted:
+            if status == 1:
+                status = 0
+            elif status == 0:
+                status = 1
+
+        MidiControllerTemplate.send_midi_control_change( \
+            self, self._MIDI_DEVICE_CHANNEL, id, status)
+
+
+    def update_led_channel_record_ready(self, channel, status):
+        # channel: 0 - 7
+        self.update_led(self._MIDI_CC_BUTTONS_LEFT_TOP + channel, status)
+
+
+    def update_led_channel_select(self, channel, status):
+        # channel: 0 - 7
+        self.update_led(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, status)
+
+
+    def update_led_channel_mute(self, channel, status):
+        # channel: 0 - 7
+        self.update_led( \
+            self._MIDI_CC_BUTTONS_RIGHT_TOP + channel, status)
+
+
+    def update_led_channel_solo(self, channel, status):
+        # channel: 0 - 7
+        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + channel, status)
 
 
 if __name__ == "__main__":

@@ -174,13 +174,39 @@ class MidiConnection:
         self._midi_output.write_short(self.NOTE_OFF_EVENT, key, velocity)
 
 
-    def send_cc(self, channel, cc_number, cc_value):
+    def send_control_change(self, channel, cc_number, cc_value):
         if not self._midi_output:
             self._log('MIDI output not connected.')
             return
 
-        #self._log('%02X %02X %02X' % (self.CONTROL_CHANGE + channel, cc_number, cc_value))
-        self._midi_output.write_short(self.CONTROL_CHANGE + channel, cc_number, cc_value)
+#         self._log('%02X %02X %02X' % \
+#             (self.CONTROL_CHANGE + channel, cc_number, cc_value))
+        self._midi_output.write_short( \
+            self.CONTROL_CHANGE + channel, cc_number, cc_value)
+
+
+    def send_pitch_wheel_change(self, channel, pitch):
+        if not self._midi_output:
+            self._log('MIDI output not connected.')
+            return
+
+        pitch_high = pitch >> 7
+        pitch_low = pitch & 0x7F
+#         self._log('%02X %02X %02X' % \
+#             (self.PITCH_WHEEL_CHANGE + channel, pitch_low, pitch_high))
+        self._midi_output.write_short( \
+            self.PITCH_WHEEL_CHANGE + channel, pitch_low, pitch_high)
+
+
+    def send_pitch_wheel_change_7bit(self, channel, pitch):
+        if not self._midi_output:
+            self._log('MIDI output not connected.')
+            return
+
+#         self._log('%02X %02X %02X' % \
+#             (self.PITCH_WHEEL_CHANGE + channel, pitch, pitch))
+        self._midi_output.write_short( \
+            self.PITCH_WHEEL_CHANGE + channel, pitch, pitch)
 
 
     def send_sysex(self, header, data):
@@ -213,7 +239,7 @@ if __name__ == "__main__":
 
     midi_connection = MidiConnection(callback_midi_in, midi_input, midi_output)
 
-    midi_connection.send_cc(0, 0x07, 0x80)
+    midi_connection.send_control_change(0, 0x07, 0x80)
     midi_connection.send_sysex([0x01, 0x02], [0x11, 0x12, 0x13])
 
     try:

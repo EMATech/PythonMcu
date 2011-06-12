@@ -43,6 +43,9 @@ class MackieHostControl:
     SWITCH_PRESSED = 1
     SWITCH_PRESSED_RELEASED = 2
 
+    VPOT_CLOCKWISE = 0
+    VPOT_COUNTER_CLOCKWISE = 1
+
     _LED_SWITCH_CHANNEL_RECORD_READY = 0x00
     _LED_SWITCH_CHANNEL_SOLO = 0x08
 
@@ -181,9 +184,10 @@ class MackieHostControl:
 
                     self._hardware_controller.update_lcd_raw(position, hex_codes)
         elif status == MidiConnection.PITCH_WHEEL_CHANGE:
-            fader_id = message[0] & 0x0F
-            fader_position = (message[1] + (message[2] << 7)) >> 4
-            self._hardware_controller.fader_moved(fader_id, fader_position)
+            if self._hardware_controller.has_automated_faders():
+                fader_id = message[0] & 0x0F
+                fader_position = (message[1] + (message[2] << 7)) >> 4
+                self._hardware_controller.fader_moved(fader_id, fader_position)
         elif status == MidiConnection.NOTE_ON_EVENT:
             led_id = message[1]
             led_status = 0  # off
@@ -217,26 +221,38 @@ class MackieHostControl:
             print
 
 
-    def poll(self):
+    def process_midi_input(self):
         self._midi.process_input_buffer()
 
 
+    def move_vpot(self, midi_channel, vpot_id, direction, number_of_ticks):
+        vpot_movement = number_of_ticks
+        if direction == self.VPOT_COUNTER_CLOCKWISE:
+            vpot_movement = vpot_movement + 0x40
+
+        self._midi.send_control_change( \
+            midi_channel, 0x10 + vpot_id, vpot_movement)
+
+
+    def move_vpot_raw(self, midi_channel, vpot_id, vpot_movement):
+        self._midi.send_control_change( \
+            midi_channel, 0x10 + vpot_id, vpot_movement)
+
+
     def move_fader(self, fader_id, fader_value):
-        fader_value_low = fader_value & 0x7F
-        fader_value_high = fader_value >> 7
-        self._midi.send(0xE0 + fader_id, fader_value_low, fader_value_high)
+        self._midi.send_pitch_wheel_change(fader_id, fader_value)
 
 
     def move_fader_7bit(self, fader_id, fader_value):
-        self._midi.send(0xE0 + fader_id, fader_value, fader_value)
+        self._midi.send_pitch_wheel_change_7bit(fader_id, fader_value)
 
 
     def _log(self, message):
         print '[Mackie Host Control  ]  ' + message
 
 
-    def send_midi_cc(self, channel, cc_number, cc_value):
-        self._midi.send_cc(channel, cc_number, cc_value)
+    def send_midi_control_change(self, midi_channel, cc_number, cc_value):
+        self._midi.send_control_change(midi_channel, cc_number, cc_value)
 
 
     def send_midi_sysex(self, data):
@@ -399,13 +415,14 @@ class MackieHostControl:
         if status == self.SWITCH_RELEASED:
             self._midi.send_note_on(switch_id, 0x00)
         elif status == self.SWITCH_PRESSED:
-            self._midi.send_note_on(switch_id, 0x7f)
+            self._midi.send_note_on(switch_id, 0x7F)
         elif status == self.SWITCH_PRESSED_RELEASED:
-            self._midi.send_note_on(switch_id, 0x7f)
+            self._midi.send_note_on(switch_id, 0x7F)
             self._midi.send_note_on(switch_id, 0x00)
         else:
-            self._log('Illegal key press status detected!')
-            assert(False)
+            self._log('Illegal key press status 0x%02X on switch 0x%02X detected!' % \
+                          (status, switch_id))
+
 
 
     def keypress_channel_record_ready(self, channel, status):
