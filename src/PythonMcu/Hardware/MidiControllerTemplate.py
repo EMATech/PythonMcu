@@ -39,6 +39,11 @@ class MidiControllerTemplate(object):
     MIDI_MANUFACTURER_ID = None
     MIDI_DEVICE_ID = None
 
+    VPOT_MODE_SINGLE_DOT = 0x00
+    VPOT_MODE_BOOST_CUT = 0x01
+    VPOT_MODE_WRAP = 0x02
+    VPOT_MODE_SPREAD = 0x03
+
     _LED_STATUS = {
         0x00: 'off',
         0x01: 'flashes',
@@ -120,17 +125,17 @@ class MidiControllerTemplate(object):
 
 
     def fader_moved(self, fader_id, fader_position):
-        self._log('Hardware fader #%d moved to position %04d.' % \
+        self._log('Hardware fader #%d NOT moved to position %04d.' % \
                       (fader_id, fader_position))
 
 
     def set_peak_level(self, meter_id, meter_level):
         if meter_level == 0x0F:
-            self._log('Meter #%d overload cleared.' % meter_id)
+            self._log('Meter #%d overload NOT cleared.' % meter_id)
         elif meter_level == 0x0F:
-            self._log('Meter #%d overload.' % meter_id)
+            self._log('Meter #%d NOT set to overload.' % meter_id)
         else:
-            self._log('Meter #%d set to %03d%%.' % (meter_id, meter_level * 10))
+            self._log('Meter #%d NOT set to %03d%%.' % (meter_id, meter_level * 10))
 
 
     def set_seg7(self, seg7_position, seg7_character):
@@ -152,8 +157,9 @@ class MidiControllerTemplate(object):
             self._log('7 segment display set to "%s".' % seg7_string)
 
 
-    def set_vpot_led(self, vpot_center_led, vpot_mode, vpot_position):
-        pass
+    def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, vpot_position):
+        self._log('V-Pot #%d LED ring NOT set to position %02d (mode %d).' % \
+                      (vpot_id, vpot_position, vpot_mode))
 
 
     def update_encoder_light(self, position, value):
@@ -164,215 +170,211 @@ class MidiControllerTemplate(object):
         """
         send hex codes of maximum 72 bytes to controller LCD
 
-        position 1: top row (left controller block)
-        position 2: top row (right controller block)
-        position 3: bottom row (left controller block)
-        position 4: bottom row (right controller block)
+        position 1: top row
+        position 2: bottom row
         """
         pass
 
 
-    def update_lcd(self, position, strings, preserve_space, shorten):
+    def update_lcd(self, position, new_string):
         """
         send string of maximum 72 bytes to controller LCD
 
-        position 1: top row (left controller block)
-        position 2: top row (right controller block)
-        position 3: bottom row (left controller block)
-        position 4: bottom row (right controller block)
+        position 1: top row
+        position 2: bottom row
         """
         pass
 
 
     def update_led_channel_record_ready(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_RECORD_READY_%d" not found (%s).' % \
+        self._log('LED "CHANNEL_RECORD_READY_%d" NOT set to "%s".' % \
                       (channel + 1, self._LED_STATUS[status]))
 
 
     def update_led_channel_solo(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_SOLO_%d" not found (%s).' % \
+        self._log('LED "CHANNEL_SOLO_%d" NOT set to "%s".' % \
                       (channel + 1, self._LED_STATUS[status]))
 
 
     def update_led_channel_mute(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_MUTE_%d" not found (%s).' % \
+        self._log('LED "CHANNEL_MUTE_%d" NOT set to "%s".' % \
                       (channel + 1, self._LED_STATUS[status]))
 
 
     def update_led_channel_select(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_SELECT_%d" not found (%s).' % \
+        self._log('LED "CHANNEL_SELECT_%d" NOT set to "%s".' % \
                       (channel + 1, self._LED_STATUS[status]))
 
 
     def update_led_assignment_track(self, status):
-        self._log('LED "ASSIGNMENT_TRACK" not found (%s).' % \
+        self._log('LED "ASSIGNMENT_TRACK" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_assignment_send(self, status):
-        self._log('LED "ASSIGNMENT_SEND" not found (%s).' % \
+        self._log('LED "ASSIGNMENT_SEND" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_assignment_pan_surround(self, status):
-        self._log('LED "ASSIGNMENT_PAN_SURROUND" not found (%s).' % \
+        self._log('LED "ASSIGNMENT_PAN_SURROUND" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_assignment_plug_in(self, status):
-        self._log('LED "ASSIGNMENT_PLUG_IN" not found (%s).' % \
+        self._log('LED "ASSIGNMENT_PLUG_IN" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_assignment_eq(self, status):
-        self._log('LED "ASSIGNMENT_EQ" not found (%s).' % \
+        self._log('LED "ASSIGNMENT_EQ" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_assignment_instrument(self, status):
-        self._log('LED "ASSIGNMENT_INSTRUMENT" not found (%s).' % \
+        self._log('LED "ASSIGNMENT_INSTRUMENT" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_flip(self, status):
-        self._log('LED "FLIP" not found (%s).' % \
+        self._log('LED "FLIP" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_global_view(self, status):
-        self._log('LED "GLOBAL_VIEW" not found (%s).' % \
+        self._log('LED "GLOBAL_VIEW" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_automation_read_off(self, status):
-        self._log('LED "AUTOMATION_READ_OFF" not found (%s).' % \
+        self._log('LED "AUTOMATION_READ_OFF" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_automation_write(self, status):
-        self._log('LED "AUTOMATION_WRITE" not found (%s).' % \
+        self._log('LED "AUTOMATION_WRITE" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_automation_trim(self, status):
-        self._log('LED "AUTOMATION_TRIM" not found (%s).' % \
+        self._log('LED "AUTOMATION_TRIM" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_automation_touch(self, status):
-        self._log('LED "AUTOMATION_TOUCH" not found (%s).' % \
+        self._log('LED "AUTOMATION_TOUCH" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_automation_latch(self, status):
-        self._log('LED "AUTOMATION_LATCH" not found (%s).' % \
+        self._log('LED "AUTOMATION_LATCH" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_group(self, status):
-        self._log('LED "GROUP" not found (%s).' % \
+        self._log('LED "GROUP" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_utilities_save(self, status):
-        self._log('LED "UTILITIES_SAVE" not found (%s).' % \
+        self._log('LED "UTILITIES_SAVE" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_utilities_undo(self, status):
-        self._log('LED "UTILITIES_UNDO" not found (%s).' % \
+        self._log('LED "UTILITIES_UNDO" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_marker(self, status):
-        self._log('LED "MARKER" not found (%s).' % \
+        self._log('LED "MARKER" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_nudge(self, status):
-        self._log('LED "NUDGE" not found (%s).' % \
+        self._log('LED "NUDGE" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_cycle(self, status):
-        self._log('LED "CYCLE" not found (%s).' % \
+        self._log('LED "CYCLE" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_drop(self, status):
-        self._log('LED "DROP" not found (%s).' % \
+        self._log('LED "DROP" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_replace(self, status):
-        self._log('LED "REPLACE" not found (%s).' % \
+        self._log('LED "REPLACE" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_click(self, status):
-        self._log('LED "CLICK" not found (%s).' % \
+        self._log('LED "CLICK" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_solo(self, status):
-        self._log('LED "SOLO" not found (%s).' % \
+        self._log('LED "SOLO" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_rewind(self, status):
-        self._log('LED "REWIND" not found (%s).' % \
+        self._log('LED "REWIND" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_fast_forward(self, status):
-        self._log('LED "FAST_FORWARD" not found (%s).' % \
+        self._log('LED "FAST_FORWARD" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_stop(self, status):
-        self._log('LED "STOP" not found (%s).' % \
+        self._log('LED "STOP" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_play(self, status):
-        self._log('LED "PLAY" not found (%s).' % \
+        self._log('LED "PLAY" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_record(self, status):
-        self._log('LED "RECORD" not found (%s).' % \
+        self._log('LED "RECORD" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_zoom(self, status):
-        self._log('LED "ZOOM" not found (%s).' % \
+        self._log('LED "ZOOM" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_scrub(self, status):
-        self._log('LED "SCRUB" not found (%s).' % \
+        self._log('LED "SCRUB" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_smpte(self, status):
-        self._log('LED "SMPTE" not found (%s).' % \
+        self._log('LED "SMPTE" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_beats(self, status):
-        self._log('LED "BEATS" not found (%s).' % \
+        self._log('LED "BEATS" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_rude_solo(self, status):
-        self._log('LED "RUDE_SOLO" not found (%s).' % \
+        self._log('LED "RUDE_SOLO" NOT set to "%s".' % \
                       self._LED_STATUS[status])
 
 
     def update_led_relay_click(self, status):
-        self._log('LED "RELAY_CLICK" not found (%s).' % \
+        self._log('LED "RELAY_CLICK" NOT set to "%s".' % \
                       self._LED_STATUS[status])

@@ -27,8 +27,8 @@ Thank you for using free software!
 MIDI_IN_CONTROL = 'ZeRO MkII: Port 2'
 MIDI_OUT_CONTROL = 'ZeRO MkII: Port 2'
 
-MIDI_IN_SEQUENCER = 'In From MIDI Yoke:  4'
-MIDI_OUT_SEQUENCER = 'Out To MIDI Yoke:  3'
+MIDI_IN_SEQUENCER = 'In From MIDI Yoke:  2'
+MIDI_OUT_SEQUENCER = 'Out To MIDI Yoke:  1'
 
 
 from PythonMcu.Hardware.Novation import *

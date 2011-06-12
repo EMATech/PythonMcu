@@ -55,6 +55,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     _MIDI_CC_CLEAR_ALL_LEDS = 0x4E
     _MIDI_CC_ENCODER_LIGHTS = 0x70
+    _MIDI_CC_ENCODER_MODE = 0x78
     _MIDI_CC_CONTROLLER_ROW_LIGHTS_LEFT = (0x51, 0x53, 0x54, 0x50, 0x52)
     _MIDI_CC_CONTROLLER_ROW_LIGHTS_RIGHT = (0x55, 0x56, 0x57)
 
@@ -299,6 +300,30 @@ class ZeroSlMk2(MidiControllerTemplate):
         self.update_lcd_raw(position, hex_codes)
 
 
+    def set_vpot_led_ring(self, id, center_led, mode, position):
+        if mode == self.VPOT_MODE_WRAP:
+            vpot_mode = 0x00
+        elif mode == self.VPOT_MODE_BOOST_CUT:
+            vpot_mode = 0x20
+        elif mode == self.VPOT_MODE_SPREAD:
+            vpot_mode = 0x30
+        elif mode == self.VPOT_MODE_SINGLE_DOT:
+            vpot_mode = 0x40
+
+        self.update_led(self._MIDI_CC_ENCODER_MODE + id, vpot_mode)
+        self.update_led(self._MIDI_CC_ENCODER_LIGHTS + id, position)
+
+
+    def update_vpot_mode(self, id, status, inverted=False):
+        # channel: 0 - 7
+        if inverted:
+            if status == 1:
+                status = 0
+            elif status == 0:
+                status = 1
+
+
+
     def update_led(self, id, status, inverted=False):
         # channel: 0 - 7
         if inverted:
@@ -333,13 +358,31 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
 if __name__ == "__main__":
+
+    import time
+
     port_midi_input = 'ZeRO MkII: Port 1'
     port_midi_output = 'ZeRO MkII: Port 1'
 
     controller = ZeroSlMk2(port_midi_input, port_midi_output)
     controller.connect()
 
-    import time
-    time.sleep(3)
+    for id in range(0x00, 0x80):
+        print 'testing LED 0x%02X' % id
+        controller.update_led(id, 1)
+        time.sleep(0.05)
+        controller.update_led(id, 0)
+
+    for mode in range(0x00, 0x50, 0x10):
+        for id in range(8):
+            controller.update_led(0x78 + id, mode)
+        for status in range(0x00, 0x0C):
+            print 'testing mode 0x%02X, status 0x%02X' % (mode, status)
+            for id in range(8):
+                controller.update_led(0x70 + id, status)
+            time.sleep(0.05)
+
+        for id in range(8):
+            controller.update_led(0x70 + id, 0)
 
     controller.disconnect()

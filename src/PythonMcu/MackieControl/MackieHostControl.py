@@ -202,7 +202,7 @@ class MackieHostControl:
             vpot_center_led = (message[2] & 0x40) >> 7
             vpot_mode = (message[2] & 0x30) >> 4
             vpot_position = message[2] & 0x0F
-            self._hardware_controller.set_vpot_led(vpot_center_led, vpot_mode, vpot_position)
+            self._hardware_controller.set_vpot_led_ring(vpot_id, vpot_center_led, vpot_mode, vpot_position)
         elif (status == MidiConnection.CONTROL_CHANGE) and \
                 ((message[1] & 0xF0) == 0x40):
             if self._hardware_controller.has_seg7():
