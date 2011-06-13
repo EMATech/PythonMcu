@@ -234,8 +234,8 @@ if __name__ == "__main__":
             print '%02X' % byte,
         print
 
-    midi_input = 'In From MIDI Yoke:  4'
-    midi_output = 'Out To MIDI Yoke:  3'
+    midi_input = 'In From MIDI Yoke:  2'
+    midi_output = 'Out To MIDI Yoke:  1'
 
     midi_connection = MidiConnection(callback_midi_in, midi_input, midi_output)
 

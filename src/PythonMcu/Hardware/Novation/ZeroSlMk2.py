@@ -70,6 +70,13 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     _MIDI_CC_BUTTON_BANK_UP = 0x58
     _MIDI_CC_BUTTON_BANK_DOWN = 0x59
+    _MIDI_CC_BUTTON_REWIND = 0x48
+    _MIDI_CC_BUTTON_FAST_FORWARD = 0x49
+    _MIDI_CC_BUTTON_STOP = 0x4A
+    _MIDI_CC_BUTTON_PLAY = 0x4B
+    _MIDI_CC_BUTTON_RECORD = 0x4C
+    _MIDI_CC_BUTTON_CYCLE = 0x4D
+    _MIDI_CC_BUTTON_TRANSPORT_MODE = 0x4F
 
 
     def __init__(self, midi_input, midi_output):
@@ -77,8 +84,18 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         self.display_available = True
         self.automated_faders_available = False
-        self.seg7_available = False
+        self.display_7seg_available = True
+        self.display_timecode_available = False
         self.meter_bridge_available = False
+
+        self._transport_mode = False
+
+        self._LED_CYCLE = 0
+        self._LED_REWIND = 0
+        self._LED_FAST_FORWARD = 0
+        self._LED_STOP = 0
+        self._LED_PLAY = 0
+        self._LED_RECORD = 0
 
 
     def connect(self):
@@ -89,7 +106,7 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._lcd_strings = ['', '']
 
         self.update_lcd(1, 'Initialising Novation Zero SL MkII hardware controller.')
-        self.update_lcd(2, 'Please wait...')
+        self.update_lcd(2, 'Connecting to your DAW...')
 
         self.send_midi_sysex([0x01, 0x01])
 
@@ -218,6 +235,20 @@ class ZeroSlMk2(MidiControllerTemplate):
                 'self.mackie_control_host.keypress_channel_solo(6, %d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7:
                 'self.mackie_control_host.keypress_channel_solo(7, %d & 0x01)',
+            self._MIDI_CC_BUTTON_TRANSPORT_MODE:
+                'self._keypress_transport_mode(%d & 0x01)',
+            self._MIDI_CC_BUTTON_REWIND:
+                'self.mackie_control_host.keypress_rewind(%d & 0x01)',
+            self._MIDI_CC_BUTTON_FAST_FORWARD:
+                'self.mackie_control_host.keypress_fast_forward(%d & 0x01)',
+            self._MIDI_CC_BUTTON_STOP:
+                'self.mackie_control_host.keypress_stop(%d & 0x01)',
+            self._MIDI_CC_BUTTON_PLAY:
+                'self.mackie_control_host.keypress_play(%d & 0x01)',
+            self._MIDI_CC_BUTTON_RECORD:
+                'self.mackie_control_host.keypress_record(%d & 0x01)',
+            self._MIDI_CC_BUTTON_CYCLE:
+                'self.mackie_control_host.keypress_cycle(%d & 0x01)',
             }
 
         if status == (MidiConnection.CONTROL_CHANGE + \
@@ -239,6 +270,39 @@ class ZeroSlMk2(MidiControllerTemplate):
             self._log(' '.join(message_string))
 
 
+    def _keypress_transport_mode(self, status):
+        if status > 0:
+            self._transport_mode = True
+
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, self._LED_REWIND)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, self._LED_FAST_FORWARD)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, self._LED_STOP)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, self._LED_PLAY)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, self._LED_CYCLE)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, self._LED_RECORD)
+        else:
+            self._transport_mode = False
+
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 0)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 0)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 0)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, 0)
+            self.update_led( \
+                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, 0)
+
+
     def update_encoder_light(self, position, value):
         if self._encoder_positions[position] == value:
             return
@@ -246,6 +310,10 @@ class ZeroSlMk2(MidiControllerTemplate):
             self._encoder_positions[position] = value
 
             self.send_midi_control_change(self._MIDI_CC_ENCODER_LIGHTS + position, value)
+
+
+    def set_display_7seg(self, position, character_code):
+        MidiControllerTemplate.set_display_7seg(self, position, character_code)
 
 
     def update_lcd_raw(self, position, hex_codes):
@@ -355,6 +423,42 @@ class ZeroSlMk2(MidiControllerTemplate):
     def update_led_channel_solo(self, channel, status):
         # channel: 0 - 7
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + channel, status)
+
+
+    def update_led_cycle(self, status):
+        self._LED_CYCLE = status
+        if self._transport_mode:
+            self._keypress_transport_mode(1)
+
+
+    def update_led_rewind(self, status):
+        self._LED_REWIND = status
+        if self._transport_mode:
+            self._keypress_transport_mode(1)
+
+
+    def update_led_fast_forward(self, status):
+        self._LED_FAST_FORWARD = status
+        if self._transport_mode:
+            self._keypress_transport_mode(1)
+
+
+    def update_led_stop(self, status):
+        self._LED_STOP = status
+        if self._transport_mode:
+            self._keypress_transport_mode(1)
+
+
+    def update_led_play(self, status):
+        self._LED_PLAY = status
+        if self._transport_mode:
+            self._keypress_transport_mode(1)
+
+
+    def update_led_record(self, status):
+        self._LED_RECORD = status
+        if self._transport_mode:
+            self._keypress_transport_mode(1)
 
 
 if __name__ == "__main__":

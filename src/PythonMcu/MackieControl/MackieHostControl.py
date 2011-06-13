@@ -165,7 +165,7 @@ class MackieHostControl:
     def receive_midi(self, status, message):
         if status == MidiConnection.SYSTEM_MESSAGE:
             if message[0:6] == [0xF0, 0x00, 0x00, 0x66, 0x14, 0x12]:
-                if self._hardware_controller.has_display():
+                if self._hardware_controller.has_display_lcd():
                     if message[6] == 56:
                         position = 3
                     else:
@@ -205,10 +205,15 @@ class MackieHostControl:
             self._hardware_controller.set_vpot_led_ring(vpot_id, vpot_center_led, vpot_mode, vpot_position)
         elif (status == MidiConnection.CONTROL_CHANGE) and \
                 ((message[1] & 0xF0) == 0x40):
-            if self._hardware_controller.has_seg7():
-                seg7_position = message[1] & 0x0F
-                seg7_character = message[2]
-                self._hardware_controller.set_seg7(seg7_position, seg7_character)
+            position = message[1] & 0x0F
+            character_code = message[2]
+            if (position < 10):
+                if self._hardware_controller.has_display_timecode():
+                    self._hardware_controller.set_display_timecode( \
+                        position, character_code)
+            elif self._hardware_controller.has_display_7seg():
+                self._hardware_controller.set_display_7seg( \
+                    position, character_code)
         elif status == MidiConnection.CHANNEL_PRESSURE:
             if self._hardware_controller.has_meter_bridge():
                 meter_id = (message[1] & 0x70) >> 4
@@ -686,11 +691,11 @@ class MackieHostControl:
 
 
 if __name__ == "__main__":
-    midi_input = 'In From MIDI Yoke:  4'
-    midi_output = 'Out To MIDI Yoke:  3'
+    midi_input = 'In From MIDI Yoke:  2'
+    midi_output = 'Out To MIDI Yoke:  1'
     controller = None
 
-    host_control = MackieHostControl(midi_input, midi_output, controller)
+    host_control = MackieHostControl(midi_input, midi_output)
     host_control.connect()
 
     host_control.move_fader_7bit(0, 80)

@@ -54,12 +54,19 @@ class MidiControllerTemplate(object):
         self.midi = MidiConnection(self.receive_midi, midi_input, midi_output)
         self.unset_mackie_control_host()
 
-        self.display_available = True
+        self.display_lcd_available = True
         self.automated_faders_available = True
-        self.seg7_available = True
+        self.display_7seg_available = True
+        self.display_timecode_available = True
         self.meter_bridge_available = True
 
-        self.seg7_characters = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+        self.display_7seg_characters = []
+        for counter in range(4):
+            self.display_7seg_characters.append(' ')
+
+        self.display_timecode_characters = []
+        for counter in range(20):
+            self.display_timecode_characters.append(' ')
 
 
     def set_mackie_control_host(self, host):
@@ -83,12 +90,16 @@ class MidiControllerTemplate(object):
         print '[Controller Template]  ' + message
 
 
-    def has_seg7(self):
-        return self.seg7_available
+    def has_display_7seg(self):
+        return self.display_7seg_available
 
 
-    def has_display(self):
-        return self.display_available
+    def has_display_lcd(self):
+        return self.display_lcd_available
+
+
+    def has_display_timecode(self):
+        return self.display_timecode_available
 
 
     def has_automated_faders(self):
@@ -138,23 +149,44 @@ class MidiControllerTemplate(object):
             self._log('Meter #%d NOT set to %03d%%.' % (meter_id, meter_level * 10))
 
 
-    def set_seg7(self, seg7_position, seg7_character):
-        position = 19 - (seg7_position * 2)
-
-        if seg7_character >= 0x40:
-            seg7_character = seg7_character - 0x40
-            self.seg7_characters[position] = '.'
+    def _decode_7seg_character(self, character_code):
+        if character_code >= 0x40:
+            character_code = character_code - 0x40
+            dot = '.'
         else:
-            self.seg7_characters[position] = ' '
+            dot = ' '
 
-        if seg7_character < 0x20:
-            self.seg7_characters[position - 1] = chr(seg7_character + 0x40)
+        if character_code < 0x20:
+            return (chr(character_code + 0x40), dot)
         else:
-            self.seg7_characters[position - 1] = chr(seg7_character)
+            return (chr(character_code), dot)
 
-        if seg7_position >= 9:
-            seg7_string = ''.join(self.seg7_characters)
-            self._log('7 segment display set to "%s".' % seg7_string)
+
+    def set_display_7seg(self, position, character_code):
+        character = self._decode_7seg_character(character_code)
+        position = 23 - (position * 2)
+
+        self.display_7seg_characters[position - 1] = character[0]
+        self.display_7seg_characters[position] = character[1]
+
+        string_7seg = ''.join(self.display_7seg_characters)
+        self._log('7 segment display NOT set to "%s".' % string_7seg)
+
+
+    def set_display_timecode(self, position, character_code):
+        character = self._decode_7seg_character(character_code)
+        position = 19 - (position * 2)
+
+        self.display_timecode_characters[position - 1] = character[0]
+        self.display_timecode_characters[position] = character[1]
+
+        # please note that the logged timecode is not necessarily
+        # correct: it will only be dumped when the display's last
+        # character has been updated -- there may be other updates
+        # still pending!
+        if position == 19:
+            string_timecode = ''.join(self.display_timecode_characters)
+            self._log('timecode display NOT set to "%s".' % string_timecode)
 
 
     def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, vpot_position):
