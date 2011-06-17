@@ -198,16 +198,6 @@ class MidiControllerTemplate(object):
         pass
 
 
-    def update_lcd_raw(self, position, hex_codes):
-        """
-        send hex codes of maximum 72 bytes to controller LCD
-
-        position 1: top row
-        position 2: bottom row
-        """
-        pass
-
-
     def update_lcd(self, position, new_string):
         """
         send string of maximum 72 bytes to controller LCD

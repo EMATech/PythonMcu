@@ -167,22 +167,22 @@ class MackieHostControl:
             if message[0:6] == [0xF0, 0x00, 0x00, 0x66, 0x14, 0x12]:
                 if self._hardware_controller.has_display_lcd():
                     if message[6] == 56:
-                        position = 3
+                        position = 2
                     else:
                         position = 1
 
                     temp_codes = message[7:-1]
-                    hex_codes = [0x20]
+                    display_string = ''
 
-                    for i in range(len(temp_codes)):
-                        hex_codes.append(temp_codes[i])
-                        if (i%7) == 6:
-                            hex_codes.append(0x20)
-                            hex_codes.append(0x20)
+                    for hex_code in temp_codes:
+                        # convert illegal characters to asterisk
+                        if (hex_code < 0x20) or (hex_code > 0x7F):
+                            hex_code = 0x2A
 
-                    hex_codes.append(0x20)
+                        display_string += chr(hex_code)
 
-                    self._hardware_controller.update_lcd_raw(position, hex_codes)
+                    self._hardware_controller.update_lcd( \
+                        position, display_string)
         elif status == MidiConnection.PITCH_WHEEL_CHANGE:
             if self._hardware_controller.has_automated_faders():
                 fader_id = message[0] & 0x0F
