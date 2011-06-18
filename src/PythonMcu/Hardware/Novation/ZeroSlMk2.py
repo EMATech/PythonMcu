@@ -78,6 +78,12 @@ class ZeroSlMk2(MidiControllerTemplate):
     _MIDI_CC_BUTTON_CYCLE = 0x4D
     _MIDI_CC_BUTTON_TRANSPORT_MODE = 0x4F
 
+    _MIDI_CC_LED_AUTOMAP_LEARN = 0x48
+    _MIDI_CC_LED_AUTOMAP_VIEW = 0x49
+    _MIDI_CC_LED_AUTOMAP_USER = 0x4A
+    _MIDI_CC_LED_AUTOMAP_FX = 0x4B
+    _MIDI_CC_LED_AUTOMAP_MIXER = 0x4D
+
 
     def __init__(self, midi_input, midi_output):
         MidiControllerTemplate.__init__(self, midi_input, midi_output)
@@ -399,16 +405,13 @@ class ZeroSlMk2(MidiControllerTemplate):
         """
         if position == 3:
             position = 2
-            print '%d: %s' % (position, new_string)
         elif position == 4:
             position = 2
             new_string = self._lcd_strings[1]
-            print '%d: %s' % (position, new_string)
         else:
             has_changed = False
             new_string = new_string.ljust(72)
 
-            print '%d: %s' % (position, new_string)
             if self._lcd_strings[position - 1] != new_string:
                 self._lcd_strings[position - 1] = new_string
                 has_changed = True
@@ -612,6 +615,22 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._LED_RECORD = status
         if self._transport_mode:
             self._keypress_transport_mode(1)
+
+
+    def update_led_relay_click(self, status):
+        self.update_led(self._MIDI_CC_LED_AUTOMAP_LEARN, status)
+
+
+    def update_led_rude_solo(self, status):
+        self.update_led(self._MIDI_CC_LED_AUTOMAP_VIEW, status)
+
+
+    def update_led_beats(self, status):
+        self.update_led(self._MIDI_CC_LED_AUTOMAP_USER, status)
+
+
+    def update_led_smpte(self, status):
+        self.update_led(self._MIDI_CC_LED_AUTOMAP_FX, status)
 
 
 if __name__ == "__main__":

@@ -693,7 +693,6 @@ class MackieHostControl:
 if __name__ == "__main__":
     midi_input = 'In From MIDI Yoke:  2'
     midi_output = 'Out To MIDI Yoke:  1'
-    controller = None
 
     host_control = MackieHostControl(midi_input, midi_output)
     host_control.connect()
