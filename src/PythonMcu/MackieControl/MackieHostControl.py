@@ -407,13 +407,13 @@ class MackieHostControl:
         if id in selector:
             eval(selector[id])
         else:
-            led_status = 'is off'
+            led_status = 'off'
             if status == 1:
-                status = 'is on'
+                status = 'on'
             elif status == 2:
-                status = 'flashes'
+                status = 'flashing'
 
-            self._log('not implemented: LED #%03d %s.' % (id, led_status))
+            self._log('LED 0x%02X NOT implemented (%s).' % (id, led_status))
 
 
     def _key_pressed(self, status, switch_id):
@@ -425,8 +425,9 @@ class MackieHostControl:
             self._midi.send_note_on(switch_id, 0x7F)
             self._midi.send_note_on(switch_id, 0x00)
         else:
-            self._log('Illegal key press status 0x%02X on switch 0x%02X detected!' % \
-                          (status, switch_id))
+            self._log( \
+                'Illegal key press status 0x%02X on switch 0x%02X detected!' % \
+                    (status, switch_id))
 
 
 

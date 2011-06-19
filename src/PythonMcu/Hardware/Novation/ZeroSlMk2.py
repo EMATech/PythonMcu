@@ -116,6 +116,13 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._led_status['PLAY'] = 0
         self._led_status['RECORD'] = 0
 
+        self._led_status['ASSIGNMENT_TRACK'] = 0
+        self._led_status['ASSIGNMENT_SEND'] = 0
+        self._led_status['ASSIGNMENT_PAN_SURROUND'] = 0
+        self._led_status['ASSIGNMENT_EQ'] = 0
+        self._led_status['ASSIGNMENT_PLUG_IN'] = 0
+        self._led_status['ASSIGNMENT_INSTRUMENT'] = 0
+
 
     def connect(self):
         MidiControllerTemplate.connect(self)
@@ -503,17 +510,33 @@ class ZeroSlMk2(MidiControllerTemplate):
                     # CHANNEL_FUNCTION
                     self.update_led( \
                         self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
-        else:
+        elif self._edit_mode:
             if self._edit_mode == 1:
+                self.update_led( \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM, \
+                        self._led_status['ASSIGNMENT_TRACK'])
+                self.update_led( \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1, \
+                        self._led_status['ASSIGNMENT_SEND'])
+                self.update_led( \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2, \
+                        self._led_status['ASSIGNMENT_PAN_SURROUND'])
+                self.update_led( \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3, \
+                        self._led_status['ASSIGNMENT_EQ'])
+                self.update_led( \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4, \
+                        self._led_status['ASSIGNMENT_PLUG_IN'])
+                self.update_led( \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5, \
+                        self._led_status['ASSIGNMENT_INSTRUMENT'])
+                self.update_led(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6, 0)
+                self.update_led(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7, 0)
+            else:
                 for channel in range(8):
                     self.update_led( \
                         self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
                             self._led_status['CHANNEL_SELECT_%d' % channel])
-            else:
-                # TODO
-                for channel in range(8):
-                    self.update_led( \
-                        self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
 
 
     def change_mode_bank(self, status):
@@ -572,11 +595,28 @@ class ZeroSlMk2(MidiControllerTemplate):
                 self.mackie_control_host.keypress_channel_solo(channel, status)
             else:
                 self.mackie_control_host.keypress_channel_function(channel, status)
-        else:
+        if self._edit_mode:
             if self._edit_mode == 1:
-                self.mackie_control_host.keypress_channel_select(channel, status)
+                if channel == 0:
+                    self.mackie_control_host.keypress_assignment_track(status)
+                elif channel == 1:
+                    self.mackie_control_host.keypress_assignment_send(status)
+                elif channel == 2:
+                    self.mackie_control_host.keypress_assignment_pan_surround( \
+                        status)
+                elif channel == 3:
+                    self.mackie_control_host.keypress_assignment_eq(status)
+                elif channel == 4:
+                    self.mackie_control_host.keypress_assignment_plug_in(status)
+                elif channel == 5:
+                    self.mackie_control_host.keypress_assignment_instrument( \
+                        status)
+                elif channel == 6:
+                    self.mackie_control_host.keypress_user_switch(0, status)
+                elif channel == 7:
+                    self.mackie_control_host.keypress_user_switch(1, status)
             else:
-                pass # assignments
+                self.mackie_control_host.keypress_channel_select(channel, status)
 
 
     def keypress_shift(self, status):
@@ -622,6 +662,48 @@ class ZeroSlMk2(MidiControllerTemplate):
     def keypress_name_value(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, status)
         self.mackie_control_host.keypress_name_value(status)
+
+
+    def update_led_assignment_track(self, status):
+        self._led_status['ASSIGNMENT_TRACK'] = status
+
+        # update LEDs
+        self._update_leds_bottom_row()
+
+
+    def update_led_assignment_send(self, status):
+        self._led_status['ASSIGNMENT_SEND'] = status
+
+        # update LEDs
+        self._update_leds_bottom_row()
+
+
+    def update_led_assignment_pan_surround(self, status):
+        self._led_status['ASSIGNMENT_PAN_SURROUND'] = status
+
+        # update LEDs
+        self._update_leds_bottom_row()
+
+
+    def update_led_assignment_plug_in(self, status):
+        self._led_status['ASSIGNMENT_PLUG_IN'] = status
+
+        # update LEDs
+        self._update_leds_bottom_row()
+
+
+    def update_led_assignment_eq(self, status):
+        self._led_status['ASSIGNMENT_EQ'] = status
+
+        # update LEDs
+        self._update_leds_bottom_row()
+
+
+    def update_led_assignment_instrument(self, status):
+        self._led_status['ASSIGNMENT_INSTRUMENT'] = status
+
+        # update LEDs
+        self._update_leds_bottom_row()
 
 
     def set_vpot_led_ring(self, id, center_led, mode, position):

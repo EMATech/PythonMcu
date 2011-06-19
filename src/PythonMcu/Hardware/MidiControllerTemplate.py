@@ -46,7 +46,7 @@ class MidiControllerTemplate(object):
 
     _LED_STATUS = {
         0x00: 'off',
-        0x01: 'flashes',
+        0x01: 'flashing',
         0x7F: 'on'
         }
 
