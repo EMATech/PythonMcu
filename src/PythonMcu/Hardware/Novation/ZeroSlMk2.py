@@ -76,7 +76,7 @@ class ZeroSlMk2(MidiControllerTemplate):
     _MIDI_CC_BUTTON_PLAY = 0x4B
     _MIDI_CC_BUTTON_RECORD = 0x4C
     _MIDI_CC_BUTTON_CYCLE = 0x4D
-    _MIDI_CC_BUTTON_TRANSPORT_MODE = 0x4F
+    _MIDI_CC_BUTTON_MODE_TRANSPORT = 0x4F
 
     _MIDI_CC_LED_AUTOMAP_LEARN = 0x48
     _MIDI_CC_LED_AUTOMAP_VIEW = 0x49
@@ -150,7 +150,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         # clear all LEDs and switch off "transport" mode
         self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
-        self.send_midi_control_change(self._MIDI_CC_BUTTON_TRANSPORT_MODE, 0x00)
+        self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
 
         # clear special LEDs
         self.update_led_relay_click(0)
@@ -180,7 +180,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         # clear all LEDs and switch off "transport" mode
         self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
-        self.send_midi_control_change(self._MIDI_CC_BUTTON_TRANSPORT_MODE, 0x00)
+        self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
 
         # clear special LEDs
         self.update_led_relay_click(0)
@@ -292,7 +292,7 @@ class ZeroSlMk2(MidiControllerTemplate):
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM:
                 'self.change_mode_bank(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1:
-                'self.change_mode_global(%d & 0x01)',
+                'self.change_mode_global_view(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2:
                 'self.change_mode_automation(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3:
@@ -305,7 +305,7 @@ class ZeroSlMk2(MidiControllerTemplate):
                 'self.mackie_control_host.keypress_scrub(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7:
                 'self.mackie_control_host.keypress_zoom(%d & 0x01)',
-            self._MIDI_CC_BUTTON_TRANSPORT_MODE:
+            self._MIDI_CC_BUTTON_MODE_TRANSPORT:
                 'self._keypress_mode_transport(%d & 0x01)',
             self._MIDI_CC_BUTTON_REWIND:
                 'self.mackie_control_host.keypress_rewind(%d & 0x01)',
@@ -340,7 +340,7 @@ class ZeroSlMk2(MidiControllerTemplate):
             self._log(' '.join(message_string))
 
 
-    def _keypress_transport_mode(self, status):
+    def _keypress_mode_transport(self, status):
         if status > 0:
             self._mode_other = self._MODE_OTHER_TRANSPORT
 
@@ -489,6 +489,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     def change_mode_track(self, status):
         self._mode_edit = self._MODE_EDIT_OFF
+        self._mode_other = self._MODE_OTHER_OFF
 
         if status == 1:
             self._mode_track = self._MODE_TRACK_RECORD_READY_FUNCTION
@@ -504,6 +505,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     def change_mode_edit(self, status):
         self._mode_track = self._MODE_TRACK_OFF
+        self._mode_other = self._MODE_OTHER_OFF
 
         if status == 1:
             self._mode_edit = self._MODE_EDIT_VSELECT_SELECT
@@ -515,6 +517,103 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         self._update_leds_top_row()
         self._update_leds_bottom_row()
+
+
+    def _restore_previous_mode(self):
+        if self._mode_track:
+            if self._mode_track == self._MODE_TRACK_RECORD_READY_FUNCTION:
+                self.change_mode_track(1)
+            else:
+                self.change_mode_track(2)
+        else:
+            if self._mode_edit == self._MODE_EDIT_VSELECT_SELECT:
+                self.change_mode_edit(1)
+            else:
+                self.change_mode_edit(2)
+
+
+    def change_mode_bank(self, status):
+        # leave other modes as is in order to return to the old one!
+
+        if status == 1:
+            self._mode_other = self._MODE_OTHER_BANK
+            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 1)
+
+            menu_strings = \
+                ('<<', '<', '>', '>>', \
+                 '', '', '', '')
+            self._set_menu_string(menu_strings)
+
+            self._update_leds_bottom_row()
+        else:
+            self._mode_other = self._MODE_OTHER_OFF
+            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 0)
+
+            self._clear_menu_string()
+            self._restore_previous_mode()
+
+
+    def change_mode_global_view(self, status):
+        # leave other modes as is in order to return to the old one!
+
+        if status == 1:
+            self._mode_other = self._MODE_OTHER_GLOBAL_VIEW
+            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 1)
+
+            menu_strings = \
+                ('MIDI', 'Inputs', 'AudioTr.', 'Instrum.', \
+                 'AUX', 'Busses', 'Outputs', 'User')
+            self._set_menu_string(menu_strings)
+
+            self._update_leds_bottom_row()
+        else:
+            self._mode_other = self._MODE_OTHER_OFF
+            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
+
+            self._clear_menu_string()
+            self._restore_previous_mode()
+
+
+    def change_mode_automation(self, status):
+        # leave other modes as is in order to return to the old one!
+
+        if status == 1:
+            self._mode_other = self._MODE_OTHER_AUTOMATION
+            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 1)
+
+            menu_strings = \
+                ('Read/Off', 'Write', 'Trim', 'Touch', \
+                 'Latch', '', '', 'Group')
+            self._set_menu_string(menu_strings)
+
+            self._update_leds_bottom_row()
+        else:
+            self._mode_other = self._MODE_OTHER_OFF
+            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 0)
+
+            self._clear_menu_string()
+            self._restore_previous_mode()
+
+
+    def change_mode_utility(self, status):
+        # leave other modes as is in order to return to the old one!
+
+        if status == 1:
+            self._mode_other = self._MODE_OTHER_UTILITY
+            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 1)
+
+            menu_strings = \
+                ('Enter', 'Cancel', '', 'Undo', \
+                 '', '', '', 'Save')
+            self._set_menu_string(menu_strings)
+
+            self._update_leds_bottom_row()
+        else:
+            self._mode_other = self._MODE_OTHER_OFF
+            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 0)
+
+            self._clear_menu_string()
+            self._restore_previous_mode()
 
 
     def _update_leds_top_row(self, channel=-1):
@@ -559,7 +658,12 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def _update_leds_bottom_row(self, channel=-1):
-        if self._mode_track:
+        if self._mode_other:
+            if self._mode_other == self._MODE_OTHER_BANK:
+                for channel in range(8):
+                    self.update_led( \
+                        self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
+        elif self._mode_track:
             if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
                 if channel >= 0:
                     self.update_led( \
@@ -613,46 +717,6 @@ class ZeroSlMk2(MidiControllerTemplate):
                                 self._led_status['CHANNEL_SELECT_%d' % channel])
 
 
-    def change_mode_bank(self, status):
-        if status:
-            menu_strings = \
-                ('<<', '<', '>', '>>', \
-                 '', '', '', '')
-            self._set_menu_string(menu_strings)
-        else:
-            self._clear_menu_string()
-
-
-    def change_mode_global(self, status):
-        if status:
-            menu_strings = \
-                ('MIDI', 'Inputs', 'AudioTr.', 'Instrum.', \
-                 'AUX', 'Busses', 'Outputs', 'User')
-            self._set_menu_string(menu_strings)
-        else:
-            self._clear_menu_string()
-
-
-    def change_mode_automation(self, status):
-        if status:
-            menu_strings = \
-                ('Read/Off', 'Write', 'Trim', 'Touch', \
-                 'Latch', '', '', 'Group')
-            self._set_menu_string(menu_strings)
-        else:
-            self._clear_menu_string()
-
-
-    def change_mode_utility(self, status):
-        if status:
-            menu_strings = \
-                ('Enter', 'Cancel', '', 'Undo', \
-                 '', '', '', 'Save')
-            self._set_menu_string(menu_strings)
-        else:
-            self._clear_menu_string()
-
-
     def _keypress_top_row(self, channel, status):
         if self._mode_track:
             if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
@@ -664,12 +728,26 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def _keypress_bottom_row(self, channel, status):
-        if self._mode_track:
+        if self._mode_other:
+            if self._mode_other == self._MODE_OTHER_BANK:
+                if channel == 0:
+                    self.mackie_control_host.keypress_fader_banks_bank_left( \
+                        status)
+                elif channel == 1:
+                    self.mackie_control_host.keypress_fader_banks_channel_left( \
+                        status)
+                elif channel == 2:
+                    self.mackie_control_host.keypress_fader_banks_channel_right( \
+                        status)
+                elif channel == 3:
+                    self.mackie_control_host.keypress_fader_banks_bank_right( \
+                        status)
+        elif self._mode_track:
             if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
                 self.mackie_control_host.keypress_channel_solo(channel, status)
             else:
                 self.mackie_control_host.keypress_channel_function(channel, status)
-        if self._mode_edit:
+        elif self._mode_edit:
             if self._mode_edit == self._MODE_EDIT_VSELECT_ASSIGNMENT:
                 if channel == 0:
                     self.mackie_control_host.keypress_assignment_track(status)
