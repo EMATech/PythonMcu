@@ -36,22 +36,13 @@ from PythonMcu.Midi.MidiConnection import MidiConnection
 
 class ZeroSlMk2(MidiControllerTemplate):
     # Novation Digital Music System
-    MIDI_MANUFACTURER_ID = (0x00, 0x20, 0x29)
+    MIDI_MANUFACTURER_ID = [0x00, 0x20, 0x29]
 
     # MIDI device ID and initialisation of Novation ZeRO SL Mkii
-    MIDI_DEVICE_ID = (0x03, 0x03, 0x12, 0x00, 0x04, 0x00)
+    MIDI_DEVICE_ID = [0x03, 0x03, 0x12, 0x00, 0x04, 0x00]
 
     # MIDI channel of controller
     _MIDI_DEVICE_CHANNEL = 0
-
-    # number of available channels strips on controller
-    _CHANNEL_STRIPS = 8
-
-    # number of available LCD pages on controller
-    _LCD_PAGES = 4
-
-    # number of available LCD characters per channel strip
-    _LCD_FIELD_LENGTH = 9
 
     _MIDI_CC_CLEAR_ALL_LEDS = 0x4E
     _MIDI_CC_ENCODER_LIGHTS = 0x70
@@ -105,7 +96,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         self.display_available = True
         self.automated_faders_available = False
-        self.display_7seg_available = True
+        self.display_7seg_available = False
         self.display_timecode_available = False
         self.meter_bridge_available = False
 
@@ -130,33 +121,37 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._led_status['ASSIGNMENT_PLUG_IN'] = 0
         self._led_status['ASSIGNMENT_INSTRUMENT'] = 0
 
+        self._led_status['FLIP'] = 0
+        self._led_status['SCRUB'] = 0
+        self._led_status['ZOOM'] = 0
+
+        self._led_status['RELAY_CLICK'] = 0
+        self._led_status['RUDE_SOLO'] = 0
+        self._led_status['BEATS'] = 0
+        self._led_status['SMPTE'] = 0
+
+        self._lcd_strings = ['', '']
         self._menu_string = ''
+
+        self._vpot_modes = \
+            [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        self._vpot_positions = \
+            [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
 
         self._mode_track = self._MODE_TRACK_MUTE_SOLO
         self._mode_edit = self._MODE_EDIT_OFF
         self._mode_other = self._MODE_OTHER_OFF
+        self._mode_automap = False
 
 
     def connect(self):
         MidiControllerTemplate.connect(self)
+        self._is_connected = True
 
-        self._log('Starting "Ableton" mode...')
-
-        self._lcd_strings = ['', '']
         self._update_lcd(1, 'Novation Zero SL MkII:  initialising...')
         self._update_lcd(2, 'Mackie Host Control:    connecting...')
 
-        self.send_midi_sysex([0x01, 0x01])
-
-        # clear all LEDs and switch off "transport" mode
-        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
-        self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
-
-        # clear special LEDs
-        self.update_led_relay_click(0)
-        self.update_led_rude_solo(0)
-        self.update_led_beats(0)
-        self.update_led_smpte(0)
+        self.enter_ableton_mode()
 
         # select "track" mode ("V-Select" + "Assignment")
         self.change_mode_track(2)
@@ -166,32 +161,65 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._log('Connected.')
 
 
-    def host_connected(self):
-        self._update_lcd(2, 'Mackie Host Control:    connected.')
-
-
     def disconnect(self):
         self._log('Disconnecting...')
 
         self._update_lcd(1, 'Novation Zero SL MkII:  disconnecting...')
         self._update_lcd(2, '')
 
-        self._log('Stopping "Ableton" mode...')
+        self.leave_ableton_mode()
+
+        self._is_connected = False
+        MidiControllerTemplate.disconnect(self)
+
+
+    def host_connected(self):
+        self._update_lcd(2, 'Mackie Host Control:    connected.')
+
+
+    def leave_ableton_mode(self):
+        self._log('Leaving "Ableton" mode...')
 
         # clear all LEDs and switch off "transport" mode
         self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
         self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
 
-        # clear special LEDs
-        self.update_led_relay_click(0)
-        self.update_led_rude_solo(0)
-        self.update_led_beats(0)
-        self.update_led_smpte(0)
+        # update special LEDs (do NOT use "update_led_xxx" functions
+        # here, otherwise the original status is lost on leaving
+        # "Automap" mode!
+        self.update_led( \
+            self._MIDI_CC_LED_AUTOMAP_LEARN, self._led_status['RELAY_CLICK'])
+        self.update_led( \
+            self._MIDI_CC_LED_AUTOMAP_VIEW, self._led_status['RUDE_SOLO'])
+        self.update_led( \
+            self._MIDI_CC_LED_AUTOMAP_USER, self._led_status['BEATS'])
+        self.update_led( \
+            self._MIDI_CC_LED_AUTOMAP_FX, self._led_status['SMPTE'])
 
         self.send_midi_sysex([0x02, 0x02, 0x05])
         self.send_midi_sysex([0x01, 0x00])
 
-        MidiControllerTemplate.disconnect(self)
+
+    def enter_ableton_mode(self):
+        self._log('Entering "Ableton" mode...')
+
+        self.send_midi_sysex([0x01, 0x01])
+
+        # clear all LEDs and switch off "transport" mode
+        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
+        self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
+
+        # update special LEDs (do NOT use "update_led_xxx" functions
+        # here, otherwise the original status is lost on leaving
+        # "Automap" mode!
+        self.update_led( \
+            self._MIDI_CC_LED_AUTOMAP_LEARN, self._led_status['RELAY_CLICK'])
+        self.update_led( \
+            self._MIDI_CC_LED_AUTOMAP_VIEW, self._led_status['RUDE_SOLO'])
+        self.update_led( \
+            self._MIDI_CC_LED_AUTOMAP_USER, self._led_status['BEATS'])
+        self.update_led( \
+            self._MIDI_CC_LED_AUTOMAP_FX, self._led_status['SMPTE'])
 
 
     def _log(self, message):
@@ -199,11 +227,45 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def send_midi_control_change(self, cc_number, cc_value):
+        if not self._is_connected:
+            return
+
         MidiControllerTemplate.send_midi_control_change( \
             self, self._MIDI_DEVICE_CHANNEL, cc_number, cc_value)
 
 
     def receive_midi(self, status, message):
+        if (message[0] == 0xF0) and (message[-1] == 0xF7):
+            if (message[1:4] == self.MIDI_MANUFACTURER_ID) and \
+                    (message[4:10] == self.MIDI_DEVICE_ID):
+                sysex_message = message[10:-1]
+
+                if sysex_message == [1, 0]:
+                    self.leave_ableton_mode()
+
+                    self._mode_automap = True
+                    self._is_connected = False
+                elif sysex_message == [1, 1]:
+                    if self._mode_automap:
+                        self._mode_automap = False
+                        self._is_connected = True
+
+                        self.enter_ableton_mode()
+
+                        self._restore_previous_mode()
+                        self._restore_leds()
+                        self._restore_vpots()
+
+                        self._update_lcd(1, self._lcd_strings[0])
+                        self._update_lcd(2, self._lcd_strings[1])
+
+            # all MIDI SysEx messages handled (including invalid
+            # ones), so quit processing here
+            return
+
+        if not self._is_connected:
+            return
+
         cc_selector = {
             self._MIDI_CC_FADERS: \
                 'self.mackie_control_host.move_fader_7bit(0, %d)',
@@ -328,6 +390,10 @@ class ZeroSlMk2(MidiControllerTemplate):
 
             if cc_number in cc_selector:
                 eval(cc_selector[cc_number] % cc_value)
+            elif cc_number == 0x6B:
+                # this controller change message is sent on entering
+                # and leaving "Automap" mode and can be ignored
+                pass
             else:
                 message_string = ['status %02X: ' % status]
                 for byte in message:
@@ -381,6 +447,9 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def update_encoder_light(self, position, value):
+        if not self._is_connected:
+            return
+
         if self._encoder_positions[position] == value:
             return
         else:
@@ -415,6 +484,9 @@ class ZeroSlMk2(MidiControllerTemplate):
         position 1: top row
         position 2: bottom row
         """
+        if not self._is_connected:
+            return
+
         if position == 2:
             position = 3
         sysex_data = [0x02, 0x01, 0x00, position, 0x04]
@@ -451,6 +523,16 @@ class ZeroSlMk2(MidiControllerTemplate):
             if (n%7) == 6:
                 converted_string += '  '
 
+        has_changed = False
+        converted_string = converted_string.ljust(72)
+
+        if self._lcd_strings[position - 1] != converted_string:
+            self._lcd_strings[position - 1] = converted_string
+            has_changed = True
+
+        if not has_changed or self._menu_string:
+            return
+
         self._update_lcd(position, converted_string)
 
 
@@ -469,15 +551,7 @@ class ZeroSlMk2(MidiControllerTemplate):
             position = 2
             new_string = self._lcd_strings[1]
         else:
-            has_changed = False
             new_string = new_string.ljust(72)
-
-            if self._lcd_strings[position - 1] != new_string:
-                self._lcd_strings[position - 1] = new_string
-                has_changed = True
-
-            if not has_changed or self._menu_string:
-                return
 
         # convert string
         hex_codes = []
@@ -530,6 +604,25 @@ class ZeroSlMk2(MidiControllerTemplate):
                 self.change_mode_edit(1)
             else:
                 self.change_mode_edit(2)
+
+
+    def _restore_leds(self):
+        self.update_led_flip(self._led_status['FLIP'])
+        self.update_led_scrub(self._led_status['SCRUB'])
+        self.update_led_zoom(self._led_status['ZOOM'])
+
+        self.update_led_relay_click(self._led_status['RELAY_CLICK'])
+        self.update_led_rude_solo(self._led_status['RUDE_SOLO'])
+        self.update_led_beats(self._led_status['BEATS'])
+        self.update_led_smpte(self._led_status['SMPTE'])
+
+
+    def _restore_vpots(self):
+        for id in range(8):
+            self.update_led( \
+                self._MIDI_CC_ENCODER_MODE + id, self._vpot_modes[id])
+            self.update_led( \
+                self._MIDI_CC_ENCODER_LIGHTS + id, self._vpot_positions[id])
 
 
     def change_mode_bank(self, status):
@@ -617,6 +710,9 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def _update_leds_top_row(self, channel=-1):
+        if not self._is_connected:
+            return
+
         if self._mode_track:
             if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
                 if channel >= 0:
@@ -658,6 +754,9 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def _update_leds_bottom_row(self, channel=-1):
+        if not self._is_connected:
+            return
+
         if self._mode_other:
             if self._mode_other == self._MODE_OTHER_BANK:
                 for channel in range(8):
@@ -868,21 +967,17 @@ class ZeroSlMk2(MidiControllerTemplate):
         elif mode == self.VPOT_MODE_SINGLE_DOT:
             vpot_mode = 0x40
 
+        self._vpot_modes[id] = vpot_mode
+        self._vpot_positions[id] = position
+
         self.update_led(self._MIDI_CC_ENCODER_MODE + id, vpot_mode)
         self.update_led(self._MIDI_CC_ENCODER_LIGHTS + id, position)
 
 
-    def update_vpot_mode(self, id, status, inverted=False):
-        # channel: 0 - 7
-        if inverted:
-            if status == 1:
-                status = 0
-            elif status == 0:
-                status = 1
-
-
-
     def update_led(self, id, status):
+        if not self._is_connected:
+            return
+
         MidiControllerTemplate.send_midi_control_change( \
             self, self._MIDI_DEVICE_CHANNEL, id, status)
 
@@ -936,14 +1031,17 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def update_led_flip(self, status):
+        self._led_status['FLIP'] = status
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, status)
 
 
     def update_led_scrub(self, status):
+        self._led_status['SCRUB'] = status
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6, status)
 
 
     def update_led_zoom(self, status):
+        self._led_status['ZOOM'] = status
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7, status)
 
 
@@ -984,18 +1082,22 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def update_led_relay_click(self, status):
+        self._led_status['RELAY_CLICK'] = status
         self.update_led(self._MIDI_CC_LED_AUTOMAP_LEARN, status)
 
 
     def update_led_rude_solo(self, status):
+        self._led_status['RUDE_SOLO'] = status
         self.update_led(self._MIDI_CC_LED_AUTOMAP_VIEW, status)
 
 
     def update_led_beats(self, status):
+        self._led_status['BEATS'] = status
         self.update_led(self._MIDI_CC_LED_AUTOMAP_USER, status)
 
 
     def update_led_smpte(self, status):
+        self._led_status['SMPTE'] = status
         self.update_led(self._MIDI_CC_LED_AUTOMAP_FX, status)
 
 
