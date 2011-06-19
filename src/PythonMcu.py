@@ -45,13 +45,15 @@ print
 
 try:
     controller = ZeroSlMk2.ZeroSlMk2(MIDI_IN_CONTROL, MIDI_OUT_CONTROL)
-    controller.connect()
-
     host_control = MackieHostControl(MIDI_IN_SEQUENCER, MIDI_OUT_SEQUENCER)
-    host_control.connect()
 
-    host_control.set_hardware_controller(controller)
+    # set this here so the hardware controller can notify the user
+    # about the connection process
     controller.set_mackie_control_host(host_control)
+    host_control.set_hardware_controller(controller)
+
+    controller.connect()
+    host_control.connect()
 
     print
     while True:

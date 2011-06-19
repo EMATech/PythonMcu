@@ -84,6 +84,14 @@ class ZeroSlMk2(MidiControllerTemplate):
     _MIDI_CC_LED_AUTOMAP_FX = 0x4B
     _MIDI_CC_LED_AUTOMAP_MIXER = 0x4D
 
+    _MODE_TRACK_OFF = 0
+    _MODE_TRACK_MUTE_SOLO = 1
+    _MODE_TRACK_RECORD_READY_FUNCTION = 2
+
+    _MODE_EDIT_OFF = 0
+    _MODE_EDIT_VSELECT_ASSIGNMENT = 1
+    _MODE_EDIT_VSELECT_SELECT = 2
+
 
     def __init__(self, midi_input, midi_output):
         MidiControllerTemplate.__init__(self, midi_input, midi_output)
@@ -94,20 +102,12 @@ class ZeroSlMk2(MidiControllerTemplate):
         self.display_timecode_available = False
         self.meter_bridge_available = False
 
-        self._menu_string = ''
-
-        self._track_mode = 1
-        self._edit_mode = 0
-        self._transport_mode = False
-
         self._led_status = {}
         for channel in range(8):
             self._led_status['CHANNEL_RECORD_READY_%d' % channel] = 0
             self._led_status['CHANNEL_SELECT_%d' % channel] = 0
             self._led_status['CHANNEL_MUTE_%d' % channel] = 0
             self._led_status['CHANNEL_SOLO_%d' % channel] = 0
-
-        self.change_mode_track(2)
 
         self._led_status['CYCLE'] = 0
         self._led_status['REWIND'] = 0
@@ -123,6 +123,12 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._led_status['ASSIGNMENT_PLUG_IN'] = 0
         self._led_status['ASSIGNMENT_INSTRUMENT'] = 0
 
+        self._menu_string = ''
+
+        self._track_mode = self._MODE_TRACK_MUTE_SOLO
+        self._edit_mode = self._MODE_EDIT_OFF
+        self._transport_mode = False
+
 
     def connect(self):
         MidiControllerTemplate.connect(self)
@@ -130,23 +136,50 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._log('Starting "Ableton" mode...')
 
         self._lcd_strings = ['', '']
-
-        self._update_lcd(1, 'Initialising Novation Zero SL MkII hardware controller.')
-        self._update_lcd(2, 'Connecting to your DAW...')
+        self._update_lcd(1, 'Novation Zero SL MkII:  initialising...')
+        self._update_lcd(2, 'Mackie Host Control:    connecting...')
 
         self.send_midi_sysex([0x01, 0x01])
 
+        # clear all LEDs and switch off "transport" mode
         self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
+        self.send_midi_control_change(self._MIDI_CC_BUTTON_TRANSPORT_MODE, 0x00)
+
+        # clear special LEDs
+        self.update_led_relay_click(0)
+        self.update_led_rude_solo(0)
+        self.update_led_beats(0)
+        self.update_led_smpte(0)
+
+        # select "track" mode ("V-Select" + "Assignment")
+        self.change_mode_track(2)
+
+        self._update_lcd(1, 'Novation Zero SL MkII:  initialised.')
 
         self._log('Connected.')
+
+
+    def host_connected(self):
+        self._update_lcd(2, 'Mackie Host Control:    connected.')
 
 
     def disconnect(self):
         self._log('Disconnecting...')
 
+        self._update_lcd(1, 'Novation Zero SL MkII:  disconnecting...')
+        self._update_lcd(2, '')
+
         self._log('Stopping "Ableton" mode...')
 
+        # clear all LEDs and switch off "transport" mode
         self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
+        self.send_midi_control_change(self._MIDI_CC_BUTTON_TRANSPORT_MODE, 0x00)
+
+        # clear special LEDs
+        self.update_led_relay_click(0)
+        self.update_led_rude_solo(0)
+        self.update_led_beats(0)
+        self.update_led_smpte(0)
 
         self.send_midi_sysex([0x02, 0x02, 0x05])
         self.send_midi_sysex([0x01, 0x00])
@@ -355,7 +388,6 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     def _clear_menu_string(self):
         self._menu_string = ''
-        self._log('Menu: cleared.')
         self._update_lcd(4, '')
 
 
@@ -366,7 +398,6 @@ class ZeroSlMk2(MidiControllerTemplate):
         for menu_string in menu_strings:
             self._menu_string += menu_string.center(9)
 
-        self._log('Menu: "%s".' % self._menu_string)
         self._update_lcd(3, self._menu_string)
 
 
@@ -450,12 +481,12 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def change_mode_track(self, status):
-        self._edit_mode = 0
+        self._edit_mode = self._MODE_EDIT_OFF
 
         if status == 1:
-            self._track_mode = 2
+            self._track_mode = self._MODE_TRACK_RECORD_READY_FUNCTION
         else:
-            self._track_mode = 1
+            self._track_mode = self._MODE_TRACK_MUTE_SOLO
 
         self.update_led(self._MIDI_CC_BUTTON_BANK_DOWN, self._track_mode)
         self.update_led(self._MIDI_CC_BUTTON_BANK_UP, self._edit_mode)
@@ -465,12 +496,12 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def change_mode_edit(self, status):
-        self._track_mode = 0
+        self._track_mode = self._MODE_TRACK_OFF
 
         if status == 1:
-            self._edit_mode = 2
+            self._edit_mode = self._MODE_EDIT_VSELECT_SELECT
         else:
-            self._edit_mode = 1
+            self._edit_mode = self._MODE_EDIT_VSELECT_ASSIGNMENT
 
         self.update_led(self._MIDI_CC_BUTTON_BANK_DOWN, self._track_mode)
         self.update_led(self._MIDI_CC_BUTTON_BANK_UP, self._edit_mode)
@@ -481,7 +512,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     def _update_leds_top_row(self):
         if self._track_mode:
-            if self._track_mode == 1:
+            if self._track_mode == self._MODE_TRACK_MUTE_SOLO:
                 for channel in range(8):
                     self.update_led( \
                         self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
@@ -500,7 +531,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     def _update_leds_bottom_row(self):
         if self._track_mode:
-            if self._track_mode == 1:
+            if self._track_mode == self._MODE_TRACK_MUTE_SOLO:
                 for channel in range(8):
                     self.update_led( \
                         self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
@@ -511,7 +542,7 @@ class ZeroSlMk2(MidiControllerTemplate):
                     self.update_led( \
                         self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
         elif self._edit_mode:
-            if self._edit_mode == 1:
+            if self._edit_mode == self._MODE_EDIT_VSELECT_ASSIGNMENT:
                 self.update_led( \
                     self._MIDI_CC_BUTTONS_LEFT_BOTTOM, \
                         self._led_status['ASSIGNMENT_TRACK'])
@@ -581,7 +612,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     def _keypress_top_row(self, channel, status):
         if self._track_mode:
-            if self._track_mode == 1:
+            if self._track_mode == self._MODE_TRACK_MUTE_SOLO:
                 self.mackie_control_host.keypress_channel_mute(channel, status)
             else:
                 self.mackie_control_host.keypress_channel_record_ready(channel, status)
@@ -591,12 +622,12 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     def _keypress_bottom_row(self, channel, status):
         if self._track_mode:
-            if self._track_mode == 1:
+            if self._track_mode == self._MODE_TRACK_MUTE_SOLO:
                 self.mackie_control_host.keypress_channel_solo(channel, status)
             else:
                 self.mackie_control_host.keypress_channel_function(channel, status)
         if self._edit_mode:
-            if self._edit_mode == 1:
+            if self._edit_mode == self._MODE_EDIT_VSELECT_ASSIGNMENT:
                 if channel == 0:
                     self.mackie_control_host.keypress_assignment_track(status)
                 elif channel == 1:

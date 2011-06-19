@@ -81,6 +81,10 @@ class MidiControllerTemplate(object):
         self._log('Opening MIDI ports...')
 
 
+    def host_connected(self):
+        self._log('Mackie Host Control connected...')
+
+
     def disconnect(self):
         self.midi.disconnect()
         self._log('Disconnected.')

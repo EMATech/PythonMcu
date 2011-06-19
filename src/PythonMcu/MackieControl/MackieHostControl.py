@@ -150,6 +150,8 @@ class MackieHostControl:
                 time.sleep(0.1)
 
             self._connected = True
+            if self._hardware_controller:
+                self._hardware_controller.host_connected()
 
         self._log('Connected.')
 
