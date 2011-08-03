@@ -530,10 +530,15 @@ class ZeroSlMk2(MidiControllerTemplate):
             self._lcd_strings[position - 1] = converted_string
             has_changed = True
 
-        if not has_changed or self._menu_string:
+        # no need to update, so exit now
+        if not has_changed:
             return
-
-        self._update_lcd(position, converted_string)
+        # menu is shown, so update strings silently and exit
+        elif (position == 2) and self._menu_string:
+            return
+        # update display
+        else:
+            self._update_lcd(position, converted_string)
 
 
     def _update_lcd(self, position, new_string):
