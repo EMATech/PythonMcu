@@ -126,6 +126,10 @@ class MackieHostControl:
         self._midi = MidiConnection(self.receive_midi, midi_input, midi_output)
         self.unset_hardware_controller()
 
+        # LCD has 2 rows with 56 characters each, fill with spaces
+        self._lcd_characters = [' '] * 56 * 2
+        self._lcd_strings = ['', '']
+
 
     def set_hardware_controller(self, controller):
         self._hardware_controller = controller
@@ -168,23 +172,29 @@ class MackieHostControl:
         if status == MidiConnection.SYSTEM_MESSAGE:
             if message[0:6] == [0xF0, 0x00, 0x00, 0x66, 0x14, 0x12]:
                 if self._hardware_controller.has_display_lcd():
-                    if message[6] == 56:
-                        position = 2
-                    else:
-                        position = 1
+                    lcd_position = message[6] - 1
+                    temp_string = message[7:-1]
 
-                    temp_codes = message[7:-1]
-                    display_string = ''
+                    for hex_code in temp_string:
+                        lcd_position += 1
+                        if lcd_position >= 112:
+                            break
 
-                    for hex_code in temp_codes:
                         # convert illegal characters to asterisk
                         if (hex_code < 0x20) or (hex_code > 0x7F):
                             hex_code = 0x2A
+                        self._lcd_characters[lcd_position] = chr(hex_code)
 
-                        display_string += chr(hex_code)
+                    line_1 = ''.join(self._lcd_characters[:56])
+                    line_2 = ''.join(self._lcd_characters[56:])
 
-                    self._hardware_controller.update_lcd( \
-                        position, display_string)
+                    if self._lcd_strings[0] != line_1:
+                        self._lcd_strings[0] = line_1
+                        self._hardware_controller.update_lcd(1, line_1)
+
+                    if self._lcd_strings[1] != line_2:
+                        self._lcd_strings[1] = line_2
+                        self._hardware_controller.update_lcd(2, line_2)
         elif status == MidiConnection.PITCH_WHEEL_CHANGE:
             if self._hardware_controller.has_automated_faders():
                 fader_id = message[0] & 0x0F
