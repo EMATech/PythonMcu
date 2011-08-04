@@ -979,12 +979,24 @@ class ZeroSlMk2(MidiControllerTemplate):
         self.update_led(self._MIDI_CC_ENCODER_LIGHTS + id, position)
 
 
-    def update_led(self, id, status):
+    def update_led(self, led_id, led_status):
         if not self._is_connected:
             return
 
         MidiControllerTemplate.send_midi_control_change( \
-            self, self._MIDI_DEVICE_CHANNEL, id, status)
+            self, self._MIDI_DEVICE_CHANNEL, led_id, led_status)
+
+
+    def update_led_2(self, led_id, led_status):
+        if not self._is_connected:
+            return
+
+        controller_type = led_id[:2]
+        controller_id = int(led_id[2:])
+
+        if controller_type == 'cc':
+            MidiControllerTemplate.send_midi_control_change( \
+                self, self._MIDI_DEVICE_CHANNEL, controller_id, led_status)
 
 
     def update_led_channel_record_ready(self, channel, status):

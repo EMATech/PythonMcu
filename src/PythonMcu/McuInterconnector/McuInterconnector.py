@@ -42,6 +42,77 @@ class McuInterconnector(object):
         0x7F: 'on'
         }
 
+    _MCU_COMMANDS = [
+        'mute_channel_1',
+        'mute_channel_2',
+        'mute_channel_3',
+        'mute_channel_4',
+        'mute_channel_5',
+        'mute_channel_6',
+        'mute_channel_7',
+        'mute_channel_8',
+        'record_ready_channel_1',
+        'record_ready_channel_2',
+        'record_ready_channel_3',
+        'record_ready_channel_4',
+        'record_ready_channel_5',
+        'record_ready_channel_6',
+        'record_ready_channel_7',
+        'record_ready_channel_8',
+        'select_channel_1',
+        'select_channel_2',
+        'select_channel_3',
+        'select_channel_4',
+        'select_channel_5',
+        'select_channel_6',
+        'select_channel_7',
+        'select_channel_8',
+        'solo_channel_1',
+        'solo_channel_2',
+        'solo_channel_3',
+        'solo_channel_4',
+        'solo_channel_5',
+        'solo_channel_6',
+        'solo_channel_7',
+        'solo_channel_8',
+
+        'assignment_eq',
+        'assignment_instrument',
+        'assignment_pan_surround',
+        'assignment_plug_in',
+        'assignment_send',
+        'assignment_track',
+        'automation_latch',
+        'automation_read_off',
+        'automation_touch',
+        'automation_trim',
+        'automation_write',
+        'beats',
+        'click',
+        'cycle',
+        'drop',
+        'fast_forward',
+        'flip',
+        'global_view',
+        'group',
+        'marker',
+        'nudge',
+        'play',
+        'record',
+        'relay_click',
+        'replace',
+        'rewind',
+        'rude_solo',
+        'scrub',
+        'smpte',
+        'solo',
+        'stop',
+        'utilities_save',
+        'utilities_undo',
+        'zoom'
+    ]
+
+
     def __init__(self, mackie_host_control, midi_controller):
         self.set_mackie_host_control(mackie_host_control)
         self._midi_controller = midi_controller
@@ -49,11 +120,44 @@ class McuInterconnector(object):
         # set this here so the hardware controller can notify the user
         # about the connection process
         self._midi_controller.set_mackie_host_control(self._mackie_host_control)
-        self._mackie_host_control.set_hardware_controller(self._midi_controller)
+        self._mackie_host_control.set_hardware_controller(self)
+
+        self._led__midi_to_mcu = {}
+
+        self._led__mcu_to_midi = {}
+        for command in self._MCU_COMMANDS:
+            self._led__mcu_to_midi[command] = { 'midi_control': None, 'value': 0 }
+
+        # DEBUG
+        self._debug = True
+
+        self.link_controls('mute_channel_1', 'cc24')
+        self.link_controls('mute_channel_2', 'cc25')
+        self.link_controls('mute_channel_3', 'cc26')
+        self.link_controls('mute_channel_4', 'cc27')
+        self.link_controls('mute_channel_5', 'cc28')
+        self.link_controls('mute_channel_6', 'cc29')
+        self.link_controls('mute_channel_7', 'cc30')
+        self.link_controls('mute_channel_8', 'cc31')
+
+        self.link_controls('solo_channel_1', 'cc32')
+        self.link_controls('solo_channel_2', 'cc33')
+        self.link_controls('solo_channel_3', 'cc34')
+        self.link_controls('solo_channel_4', 'cc35')
+        self.link_controls('solo_channel_5', 'cc36')
+        self.link_controls('solo_channel_6', 'cc37')
+        self.link_controls('solo_channel_7', 'cc38')
+        self.link_controls('solo_channel_8', 'cc39')
 
 
-    def set_mackie_host_control(self, host):
-        self._mackie_host_control = host
+    def link_controls(self, mcu_command, midi_control):
+        self._led__midi_to_mcu[midi_control] = mcu_command
+        self._led__mcu_to_midi[mcu_command]['midi_control'] = midi_control
+
+
+    def unlink_controls(self, mcu_command, midi_control):
+        del self._led__midi_to_mcu[midi_control]
+        self._led__mcu_to_midi[mcu_command]['midi_control'] = None
 
 
     def unset_mackie_host_control(self):
@@ -72,26 +176,6 @@ class McuInterconnector(object):
 
     def _log(self, message):
         print '[MCU Interconnector   ]  ' + message
-
-
-    def has_display_7seg(self):
-        return self.display_7seg_available
-
-
-    def has_display_lcd(self):
-        return self.display_lcd_available
-
-
-    def has_display_timecode(self):
-        return self.display_timecode_available
-
-
-    def has_automated_faders(self):
-        return self.automated_faders_available
-
-
-    def has_meter_bridge(self):
-        return self.meter_bridge_available
 
 
     def process_midi_input(self):
@@ -114,18 +198,40 @@ class McuInterconnector(object):
         pass
 
 
+    def set_mackie_host_control(self, host):
+        self._mackie_host_control = host
+
+
+    def host_connected(self):
+        self._log('Mackie Host Control connected...')
+
+
+    def has_display_7seg(self):
+        return self._midi_controller.has_display_7seg()
+
+
+    def has_display_lcd(self):
+        return self._midi_controller.has_display_lcd()
+
+
+    def has_display_timecode(self):
+        return self._midi_controller.has_display_timecode()
+
+
+    def has_automated_faders(self):
+        return self._midi_controller.has_automated_faders()
+
+
+    def has_meter_bridge(self):
+        return self._midi_controller.has_meter_bridge()
+
+
     def fader_moved(self, fader_id, fader_position):
-        self._log('Hardware fader #%d NOT moved to position %04d.' % \
-                      (fader_id, fader_position))
+        self._midi_controller.fader_moved(fader_id, fader_position)
 
 
     def set_peak_level(self, meter_id, meter_level):
-        if meter_level == 0x0F:
-            self._log('Meter #%d overload NOT cleared.' % meter_id)
-        elif meter_level == 0x0F:
-            self._log('Meter #%d NOT set to overload.' % meter_id)
-        else:
-            self._log('Meter #%d NOT set to %03d%%.' % (meter_id, meter_level * 10))
+        self._midi_controller.set_peak_level(meter_id, meter_level)
 
 
     def _decode_7seg_character(self, character_code):
@@ -142,39 +248,21 @@ class McuInterconnector(object):
 
 
     def set_display_7seg(self, position, character_code):
-        character = self._decode_7seg_character(character_code)
-        position = 23 - (position * 2)
-
-        self.display_7seg_characters[position - 1] = character[0]
-        self.display_7seg_characters[position] = character[1]
-
-        string_7seg = ''.join(self.display_7seg_characters)
-        self._log('7 segment display NOT set to "%s".' % string_7seg)
+        self._midi_controller.set_display_7seg(position, character_code)
 
 
     def set_display_timecode(self, position, character_code):
-        character = self._decode_7seg_character(character_code)
-        position = 19 - (position * 2)
-
-        self.display_timecode_characters[position - 1] = character[0]
-        self.display_timecode_characters[position] = character[1]
-
-        # please note that the logged timecode is not necessarily
-        # correct: it will only be dumped when the display's last
-        # character has been updated -- there may be other updates
-        # still pending!
-        if position == 19:
-            string_timecode = ''.join(self.display_timecode_characters)
-            self._log('timecode display NOT set to "%s".' % string_timecode)
+        self._midi_controller.set_display_timecode(position, character_code)
 
 
-    def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, vpot_position):
-        self._log('V-Pot #%d LED ring NOT set to position %02d (mode %d).' % \
-                      (vpot_id, vpot_position, vpot_mode))
+    def set_vpot_led_ring(self, vpot_id, vpot_center_led, \
+                              vpot_mode, vpot_position):
+        self._midi_controller.set_vpot_led_ring( \
+            vpot_id, vpot_center_led, vpot_mode, vpot_position)
 
 
     def update_encoder_light(self, position, value):
-        pass
+        self._midi_controller.update_encoder_light(position, value)
 
 
     def update_lcd(self, position, new_string):
@@ -184,198 +272,172 @@ class McuInterconnector(object):
         position 1: top row
         position 2: bottom row
         """
-        pass
+        self._midi_controller.update_lcd(position, new_string)
+
+
+    def _update_led(self, command, status):
+        if self._led__mcu_to_midi[command]['value'] != status:
+            self._led__mcu_to_midi[command]['value'] = status
+
+            if self._led__mcu_to_midi[command]['midi_control'] is not None:
+                self._midi_controller.update_led_2( \
+                    self._led__mcu_to_midi[command]['midi_control'], status)
+            elif self._debug:
+                self._log('LED "%s" NOT set to "%s".' % \
+                              (command.upper(), self._LED_STATUS[status]))
 
 
     def update_led_channel_record_ready(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_RECORD_READY_%d" NOT set to "%s".' % \
-                      (channel + 1, self._LED_STATUS[status]))
+        self._update_led('record_ready_channel_%d' % (channel + 1), status)
 
 
     def update_led_channel_solo(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_SOLO_%d" NOT set to "%s".' % \
-                      (channel + 1, self._LED_STATUS[status]))
+        self._update_led('solo_channel_%d' % (channel + 1), status)
 
 
     def update_led_channel_mute(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_MUTE_%d" NOT set to "%s".' % \
-                      (channel + 1, self._LED_STATUS[status]))
+        self._update_led('mute_channel_%d' % (channel + 1), status)
 
 
     def update_led_channel_select(self, channel, status):
         # channel: 0 - 7
-        self._log('LED "CHANNEL_SELECT_%d" NOT set to "%s".' % \
-                      (channel + 1, self._LED_STATUS[status]))
+        self._update_led('select_channel_%d' % (channel + 1), status)
 
 
     def update_led_assignment_track(self, status):
-        self._log('LED "ASSIGNMENT_TRACK" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('assignment_track', status)
 
 
     def update_led_assignment_send(self, status):
-        self._log('LED "ASSIGNMENT_SEND" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('assignment_send', status)
 
 
     def update_led_assignment_pan_surround(self, status):
-        self._log('LED "ASSIGNMENT_PAN_SURROUND" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('assignment_pan_surround', status)
 
 
     def update_led_assignment_plug_in(self, status):
-        self._log('LED "ASSIGNMENT_PLUG_IN" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('assignment_plug_in', status)
 
 
     def update_led_assignment_eq(self, status):
-        self._log('LED "ASSIGNMENT_EQ" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('assignment_eq', status)
 
 
     def update_led_assignment_instrument(self, status):
-        self._log('LED "ASSIGNMENT_INSTRUMENT" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('assignment_instrument', status)
 
 
     def update_led_flip(self, status):
-        self._log('LED "FLIP" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('flip', status)
 
 
     def update_led_global_view(self, status):
-        self._log('LED "GLOBAL_VIEW" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('global_view', status)
 
 
     def update_led_automation_read_off(self, status):
-        self._log('LED "AUTOMATION_READ_OFF" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('automation_read_off', status)
 
 
     def update_led_automation_write(self, status):
-        self._log('LED "AUTOMATION_WRITE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('automation_write', status)
 
 
     def update_led_automation_trim(self, status):
-        self._log('LED "AUTOMATION_TRIM" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('automation_trim', status)
 
 
     def update_led_automation_touch(self, status):
-        self._log('LED "AUTOMATION_TOUCH" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('automation_touch', status)
 
 
     def update_led_automation_latch(self, status):
-        self._log('LED "AUTOMATION_LATCH" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('automation_latch', status)
 
 
     def update_led_group(self, status):
-        self._log('LED "GROUP" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('group', status)
 
 
     def update_led_utilities_save(self, status):
-        self._log('LED "UTILITIES_SAVE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('utilities_save', status)
 
 
     def update_led_utilities_undo(self, status):
-        self._log('LED "UTILITIES_UNDO" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('utilities_undo', status)
 
 
     def update_led_marker(self, status):
-        self._log('LED "MARKER" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('marker', status)
 
 
     def update_led_nudge(self, status):
-        self._log('LED "NUDGE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('nudge', status)
 
 
     def update_led_cycle(self, status):
-        self._log('LED "CYCLE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('cycle', status)
 
 
     def update_led_drop(self, status):
-        self._log('LED "DROP" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('drop', status)
 
 
     def update_led_replace(self, status):
-        self._log('LED "REPLACE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('replace', status)
 
 
     def update_led_click(self, status):
-        self._log('LED "CLICK" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('click', status)
 
 
     def update_led_solo(self, status):
-        self._log('LED "SOLO" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('solo', status)
 
 
     def update_led_rewind(self, status):
-        self._log('LED "REWIND" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('rewind', status)
 
 
     def update_led_fast_forward(self, status):
-        self._log('LED "FAST_FORWARD" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('fast_forward', status)
 
 
     def update_led_stop(self, status):
-        self._log('LED "STOP" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('stop', status)
 
 
     def update_led_play(self, status):
-        self._log('LED "PLAY" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('play', status)
 
 
     def update_led_record(self, status):
-        self._log('LED "RECORD" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('record', status)
 
 
     def update_led_zoom(self, status):
-        self._log('LED "ZOOM" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('zoom', status)
 
 
     def update_led_scrub(self, status):
-        self._log('LED "SCRUB" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('scrub', status)
 
 
     def update_led_smpte(self, status):
-        self._log('LED "SMPTE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('smpte', status)
 
 
     def update_led_beats(self, status):
-        self._log('LED "BEATS" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('beats', status)
 
 
     def update_led_rude_solo(self, status):
-        self._log('LED "RUDE_SOLO" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('rude_solo', status)
 
 
     def update_led_relay_click(self, status):
-        self._log('LED "RELAY_CLICK" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
+        self._update_led('relay_click', status)

@@ -212,6 +212,10 @@ class MidiControllerTemplate(object):
         pass
 
 
+    def update_led(self, led_id, led_status):
+        pass
+
+
     def update_led_channel_record_ready(self, channel, status):
         # channel: 0 - 7
         self._log('LED "CHANNEL_RECORD_READY_%d" NOT set to "%s".' % \
