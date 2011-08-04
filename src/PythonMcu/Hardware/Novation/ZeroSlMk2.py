@@ -268,37 +268,37 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         cc_selector = {
             self._MIDI_CC_FADERS: \
-                'self.mackie_control_host.move_fader_7bit(0, %d)',
+                'self.mackie_host_control.move_fader_7bit(0, %d)',
             self._MIDI_CC_FADERS + 1: \
-                'self.mackie_control_host.move_fader_7bit(1, %d)',
+                'self.mackie_host_control.move_fader_7bit(1, %d)',
             self._MIDI_CC_FADERS + 2: \
-                'self.mackie_control_host.move_fader_7bit(2, %d)',
+                'self.mackie_host_control.move_fader_7bit(2, %d)',
             self._MIDI_CC_FADERS + 3: \
-                'self.mackie_control_host.move_fader_7bit(3, %d)',
+                'self.mackie_host_control.move_fader_7bit(3, %d)',
             self._MIDI_CC_FADERS + 4: \
-                'self.mackie_control_host.move_fader_7bit(4, %d)',
+                'self.mackie_host_control.move_fader_7bit(4, %d)',
             self._MIDI_CC_FADERS + 5: \
-                'self.mackie_control_host.move_fader_7bit(5, %d)',
+                'self.mackie_host_control.move_fader_7bit(5, %d)',
             self._MIDI_CC_FADERS + 6: \
-                'self.mackie_control_host.move_fader_7bit(6, %d)',
+                'self.mackie_host_control.move_fader_7bit(6, %d)',
             self._MIDI_CC_FADERS + 7: \
-                'self.mackie_control_host.move_fader_7bit(7, %d)',
+                'self.mackie_host_control.move_fader_7bit(7, %d)',
             self._MIDI_CC_ENCODERS:
-                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 0, %d)',
+                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 0, %d)',
             self._MIDI_CC_ENCODERS + 1:
-                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 1, %d)',
+                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 1, %d)',
             self._MIDI_CC_ENCODERS + 2:
-                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 2, %d)',
+                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 2, %d)',
             self._MIDI_CC_ENCODERS + 3:
-                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 3, %d)',
+                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 3, %d)',
             self._MIDI_CC_ENCODERS + 4:
-                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 4, %d)',
+                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 4, %d)',
             self._MIDI_CC_ENCODERS + 5:
-                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 5, %d)',
+                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 5, %d)',
             self._MIDI_CC_ENCODERS + 6:
-                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 6, %d)',
+                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 6, %d)',
             self._MIDI_CC_ENCODERS + 7:
-                'self.mackie_control_host.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 7, %d)',
+                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 7, %d)',
             self._MIDI_CC_BUTTONS_LEFT_TOP:
                 'self._keypress_top_row(0, %d & 0x01)',
             self._MIDI_CC_BUTTONS_LEFT_TOP + 1:
@@ -362,25 +362,25 @@ class ZeroSlMk2(MidiControllerTemplate):
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4:
                 'self.keypress_name_value(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5:
-                'self.mackie_control_host.keypress_flip(%d & 0x01)',
+                'self.mackie_host_control.keypress_flip(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6:
-                'self.mackie_control_host.keypress_scrub(%d & 0x01)',
+                'self.mackie_host_control.keypress_scrub(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7:
-                'self.mackie_control_host.keypress_zoom(%d & 0x01)',
+                'self.mackie_host_control.keypress_zoom(%d & 0x01)',
             self._MIDI_CC_BUTTON_MODE_TRANSPORT:
                 'self._keypress_mode_transport(%d & 0x01)',
             self._MIDI_CC_BUTTON_REWIND:
-                'self.mackie_control_host.keypress_rewind(%d & 0x01)',
+                'self.mackie_host_control.keypress_rewind(%d & 0x01)',
             self._MIDI_CC_BUTTON_FAST_FORWARD:
-                'self.mackie_control_host.keypress_fast_forward(%d & 0x01)',
+                'self.mackie_host_control.keypress_fast_forward(%d & 0x01)',
             self._MIDI_CC_BUTTON_STOP:
-                'self.mackie_control_host.keypress_stop(%d & 0x01)',
+                'self.mackie_host_control.keypress_stop(%d & 0x01)',
             self._MIDI_CC_BUTTON_PLAY:
-                'self.mackie_control_host.keypress_play(%d & 0x01)',
+                'self.mackie_host_control.keypress_play(%d & 0x01)',
             self._MIDI_CC_BUTTON_RECORD:
-                'self.mackie_control_host.keypress_record(%d & 0x01)',
+                'self.mackie_host_control.keypress_record(%d & 0x01)',
             self._MIDI_CC_BUTTON_CYCLE:
-                'self.mackie_control_host.keypress_cycle(%d & 0x01)',
+                'self.mackie_host_control.keypress_cycle(%d & 0x01)',
             }
 
         if status == (MidiConnection.CONTROL_CHANGE + \
@@ -824,100 +824,100 @@ class ZeroSlMk2(MidiControllerTemplate):
     def _keypress_top_row(self, channel, status):
         if self._mode_track:
             if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
-                self.mackie_control_host.keypress_channel_mute(channel, status)
+                self.mackie_host_control.keypress_channel_mute(channel, status)
             else:
-                self.mackie_control_host.keypress_channel_record_ready(channel, status)
+                self.mackie_host_control.keypress_channel_record_ready(channel, status)
         else:
-            self.mackie_control_host.keypress_channel_vselect(channel, status)
+            self.mackie_host_control.keypress_channel_vselect(channel, status)
 
 
     def _keypress_bottom_row(self, channel, status):
         if self._mode_other:
             if self._mode_other == self._MODE_OTHER_BANK:
                 if channel == 0:
-                    self.mackie_control_host.keypress_fader_banks_bank_left( \
+                    self.mackie_host_control.keypress_fader_banks_bank_left( \
                         status)
                 elif channel == 1:
-                    self.mackie_control_host.keypress_fader_banks_channel_left( \
+                    self.mackie_host_control.keypress_fader_banks_channel_left( \
                         status)
                 elif channel == 2:
-                    self.mackie_control_host.keypress_fader_banks_channel_right( \
+                    self.mackie_host_control.keypress_fader_banks_channel_right( \
                         status)
                 elif channel == 3:
-                    self.mackie_control_host.keypress_fader_banks_bank_right( \
+                    self.mackie_host_control.keypress_fader_banks_bank_right( \
                         status)
         elif self._mode_track:
             if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
-                self.mackie_control_host.keypress_channel_solo(channel, status)
+                self.mackie_host_control.keypress_channel_solo(channel, status)
             else:
-                self.mackie_control_host.keypress_channel_function(channel, status)
+                self.mackie_host_control.keypress_channel_function(channel, status)
         elif self._mode_edit:
             if self._mode_edit == self._MODE_EDIT_VSELECT_ASSIGNMENT:
                 if channel == 0:
-                    self.mackie_control_host.keypress_assignment_track(status)
+                    self.mackie_host_control.keypress_assignment_track(status)
                 elif channel == 1:
-                    self.mackie_control_host.keypress_assignment_send(status)
+                    self.mackie_host_control.keypress_assignment_send(status)
                 elif channel == 2:
-                    self.mackie_control_host.keypress_assignment_pan_surround( \
+                    self.mackie_host_control.keypress_assignment_pan_surround( \
                         status)
                 elif channel == 3:
-                    self.mackie_control_host.keypress_assignment_eq(status)
+                    self.mackie_host_control.keypress_assignment_eq(status)
                 elif channel == 4:
-                    self.mackie_control_host.keypress_assignment_plug_in(status)
+                    self.mackie_host_control.keypress_assignment_plug_in(status)
                 elif channel == 5:
-                    self.mackie_control_host.keypress_assignment_instrument( \
+                    self.mackie_host_control.keypress_assignment_instrument( \
                         status)
                 elif channel == 6:
-                    self.mackie_control_host.keypress_user_switch(0, status)
+                    self.mackie_host_control.keypress_user_switch(0, status)
                 elif channel == 7:
-                    self.mackie_control_host.keypress_user_switch(1, status)
+                    self.mackie_host_control.keypress_user_switch(1, status)
             else:
-                self.mackie_control_host.keypress_channel_select(channel, status)
+                self.mackie_host_control.keypress_channel_select(channel, status)
 
 
     def keypress_shift(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP, status)
-        self.mackie_control_host.keypress_shift(status)
+        self.mackie_host_control.keypress_shift(status)
 
 
     def keypress_control(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 1, status)
-        self.mackie_control_host.keypress_control(status)
+        self.mackie_host_control.keypress_control(status)
 
 
     def keypress_command_alt(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 2, status)
-        self.mackie_control_host.keypress_command_alt(status)
+        self.mackie_host_control.keypress_command_alt(status)
 
 
     def keypress_option(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 3, status)
-        self.mackie_control_host.keypress_option(status)
+        self.mackie_host_control.keypress_option(status)
 
 
     def keypress_cursor_left(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 4, status)
-        self.mackie_control_host.keypress_cursor_left(status)
+        self.mackie_host_control.keypress_cursor_left(status)
 
 
     def keypress_cursor_right(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 5, status)
-        self.mackie_control_host.keypress_cursor_right(status)
+        self.mackie_host_control.keypress_cursor_right(status)
 
 
     def keypress_cursor_down(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 6, status)
-        self.mackie_control_host.keypress_cursor_down(status)
+        self.mackie_host_control.keypress_cursor_down(status)
 
 
     def keypress_cursor_up(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 7, status)
-        self.mackie_control_host.keypress_cursor_up(status)
+        self.mackie_host_control.keypress_cursor_up(status)
 
 
     def keypress_name_value(self, status):
         self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, status)
-        self.mackie_control_host.keypress_name_value(status)
+        self.mackie_host_control.keypress_name_value(status)
 
 
     def update_led_assignment_track(self, status):

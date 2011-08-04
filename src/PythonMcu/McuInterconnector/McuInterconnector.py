@@ -29,20 +29,12 @@ import types
 
 if __name__ == "__main__":
     # allow "PythonMcu" package imports when executing this module
-    sys.path.append('../../../')
+    sys.path.append('../../')
 
 from PythonMcu.Midi.MidiConnection import MidiConnection
 
 
-class MidiControllerTemplate(object):
-
-    MIDI_MANUFACTURER_ID = None
-    MIDI_DEVICE_ID = None
-
-    VPOT_MODE_SINGLE_DOT = 0x00
-    VPOT_MODE_BOOST_CUT = 0x01
-    VPOT_MODE_WRAP = 0x02
-    VPOT_MODE_SPREAD = 0x03
+class McuInterconnector(object):
 
     _LED_STATUS = {
         0x00: 'off',
@@ -50,48 +42,36 @@ class MidiControllerTemplate(object):
         0x7F: 'on'
         }
 
-    def __init__(self, midi_input, midi_output):
-        self.midi = MidiConnection(self.receive_midi, midi_input, midi_output)
-        self.unset_mackie_host_control()
+    def __init__(self, mackie_host_control, midi_controller):
+        self.set_mackie_host_control(mackie_host_control)
+        self._midi_controller = midi_controller
 
-        self.display_lcd_available = True
-        self.automated_faders_available = True
-        self.display_7seg_available = True
-        self.display_timecode_available = True
-        self.meter_bridge_available = True
-
-        self.display_7seg_characters = []
-        for counter in range(4):
-            self.display_7seg_characters.append(' ')
-
-        self.display_timecode_characters = []
-        for counter in range(20):
-            self.display_timecode_characters.append(' ')
+        # set this here so the hardware controller can notify the user
+        # about the connection process
+        self._midi_controller.set_mackie_host_control(self._mackie_host_control)
+        self._mackie_host_control.set_hardware_controller(self._midi_controller)
 
 
     def set_mackie_host_control(self, host):
-        self.mackie_host_control = host
+        self._mackie_host_control = host
 
 
     def unset_mackie_host_control(self):
-        self.mackie_host_control = None
+        self._mackie_host_control = None
 
 
     def connect(self):
-        self._log('Opening MIDI ports...')
-
-
-    def host_connected(self):
-        self._log('Mackie Host Control connected...')
+        self._midi_controller.connect()
+        self._mackie_host_control.connect()
 
 
     def disconnect(self):
-        self.midi.disconnect()
-        self._log('Disconnected.')
+        self._mackie_host_control.disconnect()
+        self._midi_controller.disconnect()
 
 
     def _log(self, message):
-        print '[Controller Template]  ' + message
+        print '[MCU Interconnector   ]  ' + message
 
 
     def has_display_7seg(self):
@@ -115,7 +95,8 @@ class MidiControllerTemplate(object):
 
 
     def process_midi_input(self):
-        self.midi.process_input_buffer()
+        self._midi_controller.process_midi_input()
+        self._mackie_host_control.process_midi_input()
 
 
     def receive_midi(self, status, message):
@@ -130,13 +111,7 @@ class MidiControllerTemplate(object):
 
 
     def send_midi_sysex(self, data):
-        assert(type(data) == types.ListType)
-
-        header = []
-        header.extend(self.MIDI_MANUFACTURER_ID)
-        header.extend(self.MIDI_DEVICE_ID)
-
-        self.midi.send_sysex(header, data)
+        pass
 
 
     def fader_moved(self, fader_id, fader_position):

@@ -33,6 +33,7 @@ MIDI_OUT_SEQUENCER = 'Out To MIDI Yoke:  1'
 
 from PythonMcu.Hardware.Novation import *
 from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
+from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
 
 import threading
 import sys
@@ -44,28 +45,24 @@ print 'Starting application...'
 print
 
 try:
-    controller = ZeroSlMk2.ZeroSlMk2(MIDI_IN_CONTROL, MIDI_OUT_CONTROL)
-    host_control = MackieHostControl(MIDI_IN_SEQUENCER, MIDI_OUT_SEQUENCER)
+    midi_controller = ZeroSlMk2.ZeroSlMk2(MIDI_IN_CONTROL, MIDI_OUT_CONTROL)
+    mackie_host_control = MackieHostControl(MIDI_IN_SEQUENCER, MIDI_OUT_SEQUENCER)
 
-    # set this here so the hardware controller can notify the user
-    # about the connection process
-    controller.set_mackie_control_host(host_control)
-    host_control.set_hardware_controller(controller)
-
-    controller.connect()
-    host_control.connect()
+    # the "interconnector" is the brain of this application -- it
+    # interconnects Mackie Control Host and MIDI controller while
+    # handling the complete MIDI translation between those two
+    interconnector = McuInterconnector(mackie_host_control, midi_controller)
+    interconnector.connect()
 
     print
     while True:
-        controller.process_midi_input()
-        host_control.process_midi_input()
+        interconnector.process_midi_input()
 
         time.sleep(0.01)
 except KeyboardInterrupt:
     print
 
-    host_control.disconnect()
-    controller.disconnect()
+    interconnector.disconnect()
 
     print
     print 'Exiting application...'
