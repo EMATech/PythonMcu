@@ -199,7 +199,6 @@ class McuInterconnector(object):
 
     # --- Hardware Controller commands ---
 
-
     def has_display_7seg(self):
         return self._hardware_controller.has_display_7seg()
 
