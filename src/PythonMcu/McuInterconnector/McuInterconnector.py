@@ -113,20 +113,20 @@ class McuInterconnector(object):
     ]
 
 
-    def __init__(self, mackie_host_control, midi_controller):
-        self.set_mackie_host_control(mackie_host_control)
-        self._midi_controller = midi_controller
+    def __init__(self, mackie_host_control, hardware_controller):
+        self._mackie_host_control = mackie_host_control
+        self._hardware_controller = hardware_controller
 
         # set this here so the hardware controller can notify the user
         # about the connection process
-        self._midi_controller.set_mackie_host_control(self._mackie_host_control)
+        self._hardware_controller.set_mackie_host_control(self._mackie_host_control)
         self._mackie_host_control.set_hardware_controller(self)
 
-        self._led__midi_to_mcu = {}
+        self._led__hardware_to_mcu = {}
 
-        self._led__mcu_to_midi = {}
+        self._led__mcu_to_hardware = {}
         for command in self._MCU_COMMANDS:
-            self._led__mcu_to_midi[command] = { 'midi_control': None, 'value': 0 }
+            self._led__mcu_to_hardware[command] = { 'midi_control': None, 'value': 0 }
 
         # DEBUG
         self._debug = True
@@ -150,119 +150,98 @@ class McuInterconnector(object):
         self.link_controls('solo_channel_8', 'cc39')
 
 
-    def link_controls(self, mcu_command, midi_control):
-        self._led__midi_to_mcu[midi_control] = mcu_command
-        self._led__mcu_to_midi[mcu_command]['midi_control'] = midi_control
+    def _log(self, message):
+        print '[MCU Interconnector   ]  ' + message
 
 
-    def unlink_controls(self, mcu_command, midi_control):
-        del self._led__midi_to_mcu[midi_control]
-        self._led__mcu_to_midi[mcu_command]['midi_control'] = None
-
-
-    def unset_mackie_host_control(self):
-        self._mackie_host_control = None
-
+    # --- MCU Interconnector commands ---
 
     def connect(self):
-        self._midi_controller.connect()
+        self._hardware_controller.connect()
         self._mackie_host_control.connect()
 
 
     def disconnect(self):
         self._mackie_host_control.disconnect()
-        self._midi_controller.disconnect()
-
-
-    def _log(self, message):
-        print '[MCU Interconnector   ]  ' + message
-
-
-    def process_midi_input(self):
-        self._midi_controller.process_midi_input()
-        self._mackie_host_control.process_midi_input()
-
-
-    def receive_midi(self, status, message):
-        message_string = ['status %02X: ' % status]
-        for byte in message:
-            message_string.append('%02X' % byte)
-        self._log(' '.join(message_string))
-
-
-    def send_midi_control_change(self, channel, cc_number, cc_value):
-        self.midi.send_control_change(channel, cc_number, cc_value)
-
-
-    def send_midi_sysex(self, data):
-        pass
-
-
-    def set_mackie_host_control(self, host):
-        self._mackie_host_control = host
+        self._hardware_controller.disconnect()
 
 
     def host_connected(self):
-        self._log('Mackie Host Control connected...')
+        self._hardware_controller.host_connected()
+
+
+    def process_midi_input(self):
+        self._hardware_controller.process_midi_input()
+        self._mackie_host_control.process_midi_input()
+
+
+    def link_controls(self, mcu_command, midi_control):
+        self._led__hardware_to_mcu[midi_control] = mcu_command
+        self._led__mcu_to_hardware[mcu_command]['midi_control'] = midi_control
+
+
+    def unlink_controls(self, mcu_command, midi_control):
+        del self._led__hardware_to_mcu[midi_control]
+        self._led__mcu_to_hardware[mcu_command]['midi_control'] = None
+
+
+    def _update_led(self, command, status):
+        if self._led__mcu_to_hardware[command]['value'] != status:
+            self._led__mcu_to_hardware[command]['value'] = status
+
+            if self._led__mcu_to_hardware[command]['midi_control'] is not None:
+                self._hardware_controller.update_led_2( \
+                    self._led__mcu_to_hardware[command]['midi_control'], status)
+            elif self._debug:
+                self._log('LED "%s" NOT set to "%s".' % \
+                              (command.upper(), self._LED_STATUS[status]))
+
+
+    # --- Hardware Controller commands ---
 
 
     def has_display_7seg(self):
-        return self._midi_controller.has_display_7seg()
+        return self._hardware_controller.has_display_7seg()
 
 
     def has_display_lcd(self):
-        return self._midi_controller.has_display_lcd()
+        return self._hardware_controller.has_display_lcd()
 
 
     def has_display_timecode(self):
-        return self._midi_controller.has_display_timecode()
+        return self._hardware_controller.has_display_timecode()
 
 
     def has_automated_faders(self):
-        return self._midi_controller.has_automated_faders()
+        return self._hardware_controller.has_automated_faders()
 
 
     def has_meter_bridge(self):
-        return self._midi_controller.has_meter_bridge()
+        return self._hardware_controller.has_meter_bridge()
 
+
+    # --- Mackie Control Unit commands ---
 
     def fader_moved(self, fader_id, fader_position):
-        self._midi_controller.fader_moved(fader_id, fader_position)
+        self._hardware_controller.fader_moved(fader_id, fader_position)
 
 
     def set_peak_level(self, meter_id, meter_level):
-        self._midi_controller.set_peak_level(meter_id, meter_level)
-
-
-    def _decode_7seg_character(self, character_code):
-        if character_code >= 0x40:
-            character_code = character_code - 0x40
-            dot = '.'
-        else:
-            dot = ' '
-
-        if character_code < 0x20:
-            return (chr(character_code + 0x40), dot)
-        else:
-            return (chr(character_code), dot)
+        self._hardware_controller.set_peak_level(meter_id, meter_level)
 
 
     def set_display_7seg(self, position, character_code):
-        self._midi_controller.set_display_7seg(position, character_code)
+        self._hardware_controller.set_display_7seg(position, character_code)
 
 
     def set_display_timecode(self, position, character_code):
-        self._midi_controller.set_display_timecode(position, character_code)
+        self._hardware_controller.set_display_timecode(position, character_code)
 
 
     def set_vpot_led_ring(self, vpot_id, vpot_center_led, \
                               vpot_mode, vpot_position):
-        self._midi_controller.set_vpot_led_ring( \
+        self._hardware_controller.set_vpot_led_ring( \
             vpot_id, vpot_center_led, vpot_mode, vpot_position)
-
-
-    def update_encoder_light(self, position, value):
-        self._midi_controller.update_encoder_light(position, value)
 
 
     def update_lcd(self, position, new_string):
@@ -272,19 +251,7 @@ class McuInterconnector(object):
         position 1: top row
         position 2: bottom row
         """
-        self._midi_controller.update_lcd(position, new_string)
-
-
-    def _update_led(self, command, status):
-        if self._led__mcu_to_midi[command]['value'] != status:
-            self._led__mcu_to_midi[command]['value'] = status
-
-            if self._led__mcu_to_midi[command]['midi_control'] is not None:
-                self._midi_controller.update_led_2( \
-                    self._led__mcu_to_midi[command]['midi_control'], status)
-            elif self._debug:
-                self._log('LED "%s" NOT set to "%s".' % \
-                              (command.upper(), self._LED_STATUS[status]))
+        self._hardware_controller.update_lcd(position, new_string)
 
 
     def update_led_channel_record_ready(self, channel, status):

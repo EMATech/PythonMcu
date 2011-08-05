@@ -198,10 +198,6 @@ class MidiControllerTemplate(object):
                       (vpot_id, vpot_position, vpot_mode))
 
 
-    def update_encoder_light(self, position, value):
-        pass
-
-
     def update_lcd(self, position, new_string):
         """
         send string of maximum 72 bytes to controller LCD

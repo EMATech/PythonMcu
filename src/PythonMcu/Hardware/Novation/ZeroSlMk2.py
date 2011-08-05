@@ -446,18 +446,6 @@ class ZeroSlMk2(MidiControllerTemplate):
                 self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, 0)
 
 
-    def update_encoder_light(self, position, value):
-        if not self._is_connected:
-            return
-
-        if self._encoder_positions[position] == value:
-            return
-        else:
-            self._encoder_positions[position] = value
-
-            self.send_midi_control_change(self._MIDI_CC_ENCODER_LIGHTS + position, value)
-
-
     def set_display_7seg(self, position, character_code):
         MidiControllerTemplate.set_display_7seg(self, position, character_code)
 
