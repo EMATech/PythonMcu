@@ -43,6 +43,14 @@ class McuInterconnector(object):
         }
 
     _MCU_COMMANDS = [
+        'function_channel_1',
+        'function_channel_2',
+        'function_channel_3',
+        'function_channel_4',
+        'function_channel_5',
+        'function_channel_6',
+        'function_channel_7',
+        'function_channel_8',
         'mute_channel_1',
         'mute_channel_2',
         'mute_channel_3',
@@ -75,6 +83,14 @@ class McuInterconnector(object):
         'solo_channel_6',
         'solo_channel_7',
         'solo_channel_8',
+        'vselect_channel_1',
+        'vselect_channel_2',
+        'vselect_channel_3',
+        'vselect_channel_4',
+        'vselect_channel_5',
+        'vselect_channel_6',
+        'vselect_channel_7',
+        'vselect_channel_8',
 
         'assignment_eq',
         'assignment_instrument',
@@ -89,6 +105,12 @@ class McuInterconnector(object):
         'automation_write',
         'beats',
         'click',
+        'command',
+        'control',
+        'cursor_down',
+        'cursor_left',
+        'cursor_right',
+        'cursor_up',
         'cycle',
         'drop',
         'fast_forward',
@@ -96,7 +118,9 @@ class McuInterconnector(object):
         'global_view',
         'group',
         'marker',
+        'name_value',
         'nudge',
+        'option',
         'play',
         'record',
         'relay_click',
@@ -104,14 +128,14 @@ class McuInterconnector(object):
         'rewind',
         'rude_solo',
         'scrub',
+        'shift',
         'smpte',
         'solo',
         'stop',
         'utilities_save',
         'utilities_undo',
-        'zoom'
+        'zoom',
     ]
-
 
     def __init__(self, mackie_host_control, hardware_controller):
         self._mackie_host_control = mackie_host_control
@@ -119,35 +143,13 @@ class McuInterconnector(object):
 
         # set this here so the hardware controller can notify the user
         # about the connection process
-        self._hardware_controller.set_mackie_host_control(self)
+        self._hardware_controller.set_interconnector(self)
         self._mackie_host_control.set_hardware_controller(self)
 
         self._led__hardware_to_mcu = {}
-
         self._led__mcu_to_hardware = {}
-        for command in self._MCU_COMMANDS:
-            self._led__mcu_to_hardware[command] = { 'midi_control': None, 'value': 0 }
 
-        # DEBUG
-        self._debug = True
-
-        self.link_controls('mute_channel_1', 'cc24')
-        self.link_controls('mute_channel_2', 'cc25')
-        self.link_controls('mute_channel_3', 'cc26')
-        self.link_controls('mute_channel_4', 'cc27')
-        self.link_controls('mute_channel_5', 'cc28')
-        self.link_controls('mute_channel_6', 'cc29')
-        self.link_controls('mute_channel_7', 'cc30')
-        self.link_controls('mute_channel_8', 'cc31')
-
-        self.link_controls('solo_channel_1', 'cc32')
-        self.link_controls('solo_channel_2', 'cc33')
-        self.link_controls('solo_channel_3', 'cc34')
-        self.link_controls('solo_channel_4', 'cc35')
-        self.link_controls('solo_channel_5', 'cc36')
-        self.link_controls('solo_channel_6', 'cc37')
-        self.link_controls('solo_channel_7', 'cc38')
-        self.link_controls('solo_channel_8', 'cc39')
+        self.unlink_all_controls()
 
 
     def _log(self, message):
@@ -175,26 +177,56 @@ class McuInterconnector(object):
         self._mackie_host_control.process_midi_input()
 
 
-    def link_controls(self, mcu_command, midi_control):
+    def link_control(self, mcu_command, midi_control):
         self._led__hardware_to_mcu[midi_control] = mcu_command
         self._led__mcu_to_hardware[mcu_command]['midi_control'] = midi_control
 
+        self._update_led(mcu_command)
 
-    def unlink_controls(self, mcu_command, midi_control):
+
+    def unlink_control(self, mcu_command, midi_control):
         del self._led__hardware_to_mcu[midi_control]
         self._led__mcu_to_hardware[mcu_command]['midi_control'] = None
 
 
-    def _update_led(self, command, status):
-        if self._led__mcu_to_hardware[command]['value'] != status:
-            self._led__mcu_to_hardware[command]['value'] = status
+    def unlink_all_controls(self):
+        for midi_control in self._led__hardware_to_mcu.keys():
+            self._hardware_controller.set_led(midi_control, 0)
 
-            if self._led__mcu_to_hardware[command]['midi_control'] is not None:
-                self._hardware_controller.update_led_2( \
-                    self._led__mcu_to_hardware[command]['midi_control'], status)
-            elif self._debug:
-                self._log('LED "%s" NOT set to "%s".' % \
-                              (command.upper(), self._LED_STATUS[status]))
+        self._led__hardware_to_mcu = {}
+        self._led__mcu_to_hardware = {}
+
+        for command in self._MCU_COMMANDS:
+            self._led__mcu_to_hardware[command] = \
+            {
+                'midi_control': None,
+                'value': 0
+            }
+
+
+    def _update_led(self, mcu_command):
+        if self._led__mcu_to_hardware[mcu_command]['midi_control'] is not None:
+            status = self._led__mcu_to_hardware[mcu_command]['value']
+            self._hardware_controller.set_led( \
+                self._led__mcu_to_hardware[mcu_command]['midi_control'], status)
+
+
+    def keypress(self, internal_id, status):
+        if internal_id in self._led__hardware_to_mcu:
+            command = 'self._mackie_host_control.keypress_%s(%d)' % (self._led__hardware_to_mcu[internal_id], status)
+
+            eval(command)
+            return True
+        else:
+            return False
+
+
+    def _set_led(self, mcu_command, status):
+        if self._led__mcu_to_hardware[mcu_command]['midi_control'] is not None:
+            if self._led__mcu_to_hardware[mcu_command]['value'] != status:
+                self._led__mcu_to_hardware[mcu_command]['value'] = status
+
+                self._update_led(mcu_command)
 
 
     # --- Hardware Controller commands ---
@@ -235,258 +267,6 @@ class McuInterconnector(object):
         self._mackie_host_control.move_fader_7bit(fader_id, fader_value)
 
 
-    def keypress_channel_record_ready(self, channel, status):
-        self._mackie_host_control.keypress_channel_record_ready(channel, status)
-
-
-    def keypress_channel_solo(self, channel, status):
-        self._mackie_host_control.keypress_channel_solo(channel, status)
-
-
-    def keypress_channel_mute(self, channel, status):
-        self._mackie_host_control.keypress_channel_mute(channel, status)
-
-
-    def keypress_channel_select(self, channel, status):
-        self._mackie_host_control.keypress_channel_select(channel, status)
-
-
-    def keypress_channel_vselect(self, channel, status):
-        self._mackie_host_control.keypress_channel_vselect(channel, status)
-
-
-    def keypress_channel_function(self, channel, status):
-        self._mackie_host_control.keypress_channel_function(channel, status)
-
-
-    def keypress_assignment_track(self, status):
-        self._mackie_host_control.keypress_assignment_track(status)
-
-
-    def keypress_assignment_send(self, status):
-        self._mackie_host_control.keypress_assignment_send(status)
-
-
-    def keypress_assignment_pan_surround(self, status):
-        self._mackie_host_control.keypress_assignment_pan_surround(status)
-
-
-    def keypress_assignment_plug_in(self, status):
-        self._mackie_host_control.keypress_assignment_plug_in(status)
-
-
-    def keypress_assignment_eq(self, status):
-        self._mackie_host_control.keypress_assignment_eq(status)
-
-
-    def keypress_assignment_instrument(self, status):
-        self._mackie_host_control.keypress_assignment_instrument(status)
-
-
-    def keypress_fader_banks_bank_left(self, status):
-        self._mackie_host_control.keypress_fader_banks_bank_left(status)
-
-
-    def keypress_fader_banks_bank_right(self, status):
-        self._mackie_host_control.keypress_fader_banks_bank_right(status)
-
-
-    def keypress_fader_banks_channel_left(self, status):
-        self._mackie_host_control.keypress_fader_banks_channel_left(status)
-
-
-    def keypress_fader_banks_channel_right(self, status):
-        self._mackie_host_control.keypress_fader_banks_channel_right(status)
-
-
-    def keypress_flip(self, status):
-        self._mackie_host_control.keypress_flip(status)
-
-
-    def keypress_global_view(self, status):
-        self._mackie_host_control.keypress_global_view(status)
-
-
-    def keypress_name_value(self, status):
-        self._mackie_host_control.keypress_name_value(status)
-
-
-    def keypress_smpte_beats(self, status):
-        self._mackie_host_control.keypress_smpte_beats(status)
-
-
-    def keypress_global_view_midi_tracks(self, status):
-        self._mackie_host_control.keypress_global_view_midi_tracks(status)
-
-
-    def keypress_global_view_inputs(self, status):
-        self._mackie_host_control.keypress_global_view_inputs(status)
-
-
-    def keypress_global_view_audio_tracks(self, status):
-        self._mackie_host_control.keypress_global_view_audio_tracks(status)
-
-
-    def keypress_global_view_audio_instruments(self, status):
-        self._mackie_host_control.keypress_global_view_audio_instruments(status)
-
-
-    def keypress_global_view_aux(self, status):
-        self._mackie_host_control.keypress_global_view_aux(status)
-
-
-    def keypress_global_view_busses(self, status):
-        self._mackie_host_control.keypress_global_view_busses(status)
-
-
-    def keypress_global_view_outputs(self, status):
-        self._mackie_host_control.keypress_global_view_outputs(status)
-
-
-    def keypress_global_view_user(self, status):
-        self._mackie_host_control.keypress_global_view_user(status)
-
-
-    def keypress_shift(self, status):
-        self._mackie_host_control.keypress_shift(status)
-
-
-    def keypress_option(self, status):
-        self._mackie_host_control.keypress_option(status)
-
-
-    def keypress_control(self, status):
-        self._mackie_host_control.keypress_control(status)
-
-
-    def keypress_command_alt(self, status):
-        self._mackie_host_control.keypress_command_alt(status)
-
-
-    def keypress_automation_read_off(self, status):
-        self._mackie_host_control.keypress_automation_read_off(status)
-
-
-    def keypress_automation_write(self, status):
-        self._mackie_host_control.keypress_automation_write(status)
-
-
-    def keypress_automation_trim(self, status):
-        self._mackie_host_control.keypress_automation_trim(status)
-
-
-    def keypress_automation_touch(self, status):
-        self._mackie_host_control.keypress_automation_touch(status)
-
-
-    def keypress_automation_latch(self, status):
-        self._mackie_host_control.keypress_automation_latch(status)
-
-
-    def keypress_group(self, status):
-        self._mackie_host_control.keypress_group(status)
-
-
-    def keypress_utilities_save(self, status):
-        self._mackie_host_control.keypress_utilities_save(status)
-
-
-    def keypress_utilities_undo(self, status):
-        self._mackie_host_control.keypress_utilities_undo(status)
-
-
-    def keypress_utilities_cancel(self, status):
-        self._mackie_host_control.keypress_utilities_cancel(status)
-
-
-    def keypress_utilities_enter(self, status):
-        self._mackie_host_control.keypress_utilities_enter(status)
-
-
-    def keypress_marker(self, status):
-        self._mackie_host_control.keypress_marker(status)
-
-
-    def keypress_nudge(self, status):
-        self._mackie_host_control.keypress_nudge(status)
-
-
-    def keypress_cycle(self, status):
-        self._mackie_host_control.keypress_cycle(status)
-
-
-    def keypress_drop(self, status):
-        self._mackie_host_control.keypress_drop(status)
-
-
-    def keypress_replace(self, status):
-        self._mackie_host_control.keypress_replace(status)
-
-
-    def keypress_click(self, status):
-        self._mackie_host_control.keypress_click(status)
-
-
-    def keypress_solo(self, status):
-        self._mackie_host_control.keypress_solo(status)
-
-
-    def keypress_rewind(self, status):
-        self._mackie_host_control.keypress_rewind(status)
-
-
-    def keypress_fast_forward(self, status):
-        self._mackie_host_control.keypress_fast_forward(status)
-
-
-    def keypress_stop(self, status):
-        self._mackie_host_control.keypress_stop(status)
-
-
-    def keypress_play(self, status):
-        self._mackie_host_control.keypress_play(status)
-
-
-    def keypress_record(self, status):
-        self._mackie_host_control.keypress_record(status)
-
-
-    def keypress_cursor_up(self, status):
-        self._mackie_host_control.keypress_cursor_up(status)
-
-
-    def keypress_cursor_down(self, status):
-        self._mackie_host_control.keypress_cursor_down(status)
-
-
-    def keypress_cursor_left(self, status):
-        self._mackie_host_control.keypress_cursor_left(status)
-
-
-    def keypress_cursor_right(self, status):
-        self._mackie_host_control.keypress_cursor_right(status)
-
-
-    def keypress_zoom(self, status):
-        self._mackie_host_control.keypress_zoom(status)
-
-
-    def keypress_scrub(self, status):
-        self._mackie_host_control.keypress_scrub(status)
-
-
-    def keypress_user_switch(self, switch_number, status):
-        self._mackie_host_control.keypress_user_switch(switch_number, status)
-
-
-    def keypress_channel_fader_touch(self, channel, status):
-        self._mackie_host_control.keypress_channel_fader_touch(channel, status)
-
-
-    def keypress_master_fader_touch(self, status):
-        self._mackie_host_control.keypress_master_fader_touch(status)
-
-
     # --- Mackie Control Unit commands ---
 
     def fader_moved(self, fader_id, fader_position):
@@ -511,167 +291,167 @@ class McuInterconnector(object):
             vpot_id, vpot_center_led, vpot_mode, vpot_position)
 
 
-    def update_lcd(self, position, new_string):
+    def set_lcd(self, position, new_string):
         """
         send string of maximum 72 bytes to controller LCD
 
         position 1: top row
         position 2: bottom row
         """
-        self._hardware_controller.update_lcd(position, new_string)
+        self._hardware_controller.set_lcd(position, new_string)
 
 
-    def update_led_channel_record_ready(self, channel, status):
+    def set_led_channel_record_ready(self, channel, status):
         # channel: 0 - 7
-        self._update_led('record_ready_channel_%d' % (channel + 1), status)
+        self._set_led('record_ready_channel_%d' % (channel + 1), status)
 
 
-    def update_led_channel_solo(self, channel, status):
+    def set_led_channel_solo(self, channel, status):
         # channel: 0 - 7
-        self._update_led('solo_channel_%d' % (channel + 1), status)
+        self._set_led('solo_channel_%d' % (channel + 1), status)
 
 
-    def update_led_channel_mute(self, channel, status):
+    def set_led_channel_mute(self, channel, status):
         # channel: 0 - 7
-        self._update_led('mute_channel_%d' % (channel + 1), status)
+        self._set_led('mute_channel_%d' % (channel + 1), status)
 
 
-    def update_led_channel_select(self, channel, status):
+    def set_led_channel_select(self, channel, status):
         # channel: 0 - 7
-        self._update_led('select_channel_%d' % (channel + 1), status)
+        self._set_led('select_channel_%d' % (channel + 1), status)
 
 
-    def update_led_assignment_track(self, status):
-        self._update_led('assignment_track', status)
+    def set_led_assignment_track(self, status):
+        self._set_led('assignment_track', status)
 
 
-    def update_led_assignment_send(self, status):
-        self._update_led('assignment_send', status)
+    def set_led_assignment_send(self, status):
+        self._set_led('assignment_send', status)
 
 
-    def update_led_assignment_pan_surround(self, status):
-        self._update_led('assignment_pan_surround', status)
+    def set_led_assignment_pan_surround(self, status):
+        self._set_led('assignment_pan_surround', status)
 
 
-    def update_led_assignment_plug_in(self, status):
-        self._update_led('assignment_plug_in', status)
+    def set_led_assignment_plug_in(self, status):
+        self._set_led('assignment_plug_in', status)
 
 
-    def update_led_assignment_eq(self, status):
-        self._update_led('assignment_eq', status)
+    def set_led_assignment_eq(self, status):
+        self._set_led('assignment_eq', status)
 
 
-    def update_led_assignment_instrument(self, status):
-        self._update_led('assignment_instrument', status)
+    def set_led_assignment_instrument(self, status):
+        self._set_led('assignment_instrument', status)
 
 
-    def update_led_flip(self, status):
-        self._update_led('flip', status)
+    def set_led_flip(self, status):
+        self._set_led('flip', status)
 
 
-    def update_led_global_view(self, status):
-        self._update_led('global_view', status)
+    def set_led_global_view(self, status):
+        self._set_led('global_view', status)
 
 
-    def update_led_automation_read_off(self, status):
-        self._update_led('automation_read_off', status)
+    def set_led_automation_read_off(self, status):
+        self._set_led('automation_read_off', status)
 
 
-    def update_led_automation_write(self, status):
-        self._update_led('automation_write', status)
+    def set_led_automation_write(self, status):
+        self._set_led('automation_write', status)
 
 
-    def update_led_automation_trim(self, status):
-        self._update_led('automation_trim', status)
+    def set_led_automation_trim(self, status):
+        self._set_led('automation_trim', status)
 
 
-    def update_led_automation_touch(self, status):
-        self._update_led('automation_touch', status)
+    def set_led_automation_touch(self, status):
+        self._set_led('automation_touch', status)
 
 
-    def update_led_automation_latch(self, status):
-        self._update_led('automation_latch', status)
+    def set_led_automation_latch(self, status):
+        self._set_led('automation_latch', status)
 
 
-    def update_led_group(self, status):
-        self._update_led('group', status)
+    def set_led_group(self, status):
+        self._set_led('group', status)
 
 
-    def update_led_utilities_save(self, status):
-        self._update_led('utilities_save', status)
+    def set_led_utilities_save(self, status):
+        self._set_led('utilities_save', status)
 
 
-    def update_led_utilities_undo(self, status):
-        self._update_led('utilities_undo', status)
+    def set_led_utilities_undo(self, status):
+        self._set_led('utilities_undo', status)
 
 
-    def update_led_marker(self, status):
-        self._update_led('marker', status)
+    def set_led_marker(self, status):
+        self._set_led('marker', status)
 
 
-    def update_led_nudge(self, status):
-        self._update_led('nudge', status)
+    def set_led_nudge(self, status):
+        self._set_led('nudge', status)
 
 
-    def update_led_cycle(self, status):
-        self._update_led('cycle', status)
+    def set_led_cycle(self, status):
+        self._set_led('cycle', status)
 
 
-    def update_led_drop(self, status):
-        self._update_led('drop', status)
+    def set_led_drop(self, status):
+        self._set_led('drop', status)
 
 
-    def update_led_replace(self, status):
-        self._update_led('replace', status)
+    def set_led_replace(self, status):
+        self._set_led('replace', status)
 
 
-    def update_led_click(self, status):
-        self._update_led('click', status)
+    def set_led_click(self, status):
+        self._set_led('click', status)
 
 
-    def update_led_solo(self, status):
-        self._update_led('solo', status)
+    def set_led_solo(self, status):
+        self._set_led('solo', status)
 
 
-    def update_led_rewind(self, status):
-        self._update_led('rewind', status)
+    def set_led_rewind(self, status):
+        self._set_led('rewind', status)
 
 
-    def update_led_fast_forward(self, status):
-        self._update_led('fast_forward', status)
+    def set_led_fast_forward(self, status):
+        self._set_led('fast_forward', status)
 
 
-    def update_led_stop(self, status):
-        self._update_led('stop', status)
+    def set_led_stop(self, status):
+        self._set_led('stop', status)
 
 
-    def update_led_play(self, status):
-        self._update_led('play', status)
+    def set_led_play(self, status):
+        self._set_led('play', status)
 
 
-    def update_led_record(self, status):
-        self._update_led('record', status)
+    def set_led_record(self, status):
+        self._set_led('record', status)
 
 
-    def update_led_zoom(self, status):
-        self._update_led('zoom', status)
+    def set_led_zoom(self, status):
+        self._set_led('zoom', status)
 
 
-    def update_led_scrub(self, status):
-        self._update_led('scrub', status)
+    def set_led_scrub(self, status):
+        self._set_led('scrub', status)
 
 
-    def update_led_smpte(self, status):
-        self._update_led('smpte', status)
+    def set_led_smpte(self, status):
+        self._set_led('smpte', status)
 
 
-    def update_led_beats(self, status):
-        self._update_led('beats', status)
+    def set_led_beats(self, status):
+        self._set_led('beats', status)
 
 
-    def update_led_rude_solo(self, status):
-        self._update_led('rude_solo', status)
+    def set_led_rude_solo(self, status):
+        self._set_led('rude_solo', status)
 
 
-    def update_led_relay_click(self, status):
-        self._update_led('relay_click', status)
+    def set_led_relay_click(self, status):
+        self._set_led('relay_click', status)

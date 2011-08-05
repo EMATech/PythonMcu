@@ -219,11 +219,11 @@ class MackieHostControl:
 
                     if self._lcd_strings[0] != line_1:
                         self._lcd_strings[0] = line_1
-                        self._hardware_controller.update_lcd(1, line_1)
+                        self._hardware_controller.set_lcd(1, line_1)
 
                     if self._lcd_strings[1] != line_2:
                         self._lcd_strings[1] = line_2
-                        self._hardware_controller.update_lcd(2, line_2)
+                        self._hardware_controller.set_lcd(2, line_2)
         elif status == MidiConnection.PITCH_WHEEL_CHANGE:
             if self._automated_faders_available:
                 fader_id = message[0] & 0x0F
@@ -236,7 +236,7 @@ class MackieHostControl:
                 led_status = 1  # on
             elif message[2] == 0x01:
                 led_status = 2  # flashing
-            self._update_led(led_id, led_status)
+            self._set_led(led_id, led_status)
         elif (status == MidiConnection.CONTROL_CHANGE) and \
                 ((message[1] & 0xF0) == 0x30):
             vpot_id = message[1] & 0x0F
@@ -317,34 +317,228 @@ class MackieHostControl:
                     (status, switch_id))
 
 
-    def keypress_channel_record_ready(self, channel, status):
-        # channel: 0 - 7
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY + channel)
+    def keypress_record_ready_channel(self, channel, status):
+        # channel: 1 - 8
+        self._key_pressed( \
+            status, self._LED_SWITCH_CHANNEL_RECORD_READY + channel - 1)
 
 
-    def keypress_channel_solo(self, channel, status):
-        # channel: 0 - 7
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + channel)
+    def keypress_record_ready_channel_1(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY)
 
 
-    def keypress_channel_mute(self, channel, status):
-        # channel: 0 - 7
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + channel)
+    def keypress_record_ready_channel_2(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY + 1)
 
 
-    def keypress_channel_select(self, channel, status):
-        # channel: 0 - 7
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT + channel)
+    def keypress_record_ready_channel_3(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY + 2)
 
 
-    def keypress_channel_vselect(self, channel, status):
-        # channel: 0 - 7
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + channel)
+    def keypress_record_ready_channel_4(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY + 3)
 
 
-    def keypress_channel_function(self, channel, status):
-        # channel: 0 - 7
-        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + channel)
+    def keypress_record_ready_channel_5(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY + 4)
+
+
+    def keypress_record_ready_channel_6(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY + 5)
+
+
+    def keypress_record_ready_channel_7(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY + 6)
+
+
+    def keypress_record_ready_channel_8(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_RECORD_READY + 7)
+
+
+    def keypress_solo_channel(self, channel, status):
+        # channel: 1 - 8
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + channel - 1)
+
+
+    def keypress_solo_channel_1(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO)
+
+
+    def keypress_solo_channel_2(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + 1)
+
+
+    def keypress_solo_channel_3(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + 2)
+
+
+    def keypress_solo_channel_4(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + 3)
+
+
+    def keypress_solo_channel_5(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + 4)
+
+
+    def keypress_solo_channel_6(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + 5)
+
+
+    def keypress_solo_channel_7(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + 6)
+
+
+    def keypress_solo_channel_8(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SOLO + 7)
+
+
+    def keypress_mute_channel(self, channel, status):
+        # channel: 1 - 8
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + channel - 1)
+
+
+    def keypress_mute_channel_1(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE)
+
+
+    def keypress_mute_channel_2(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + 1)
+
+
+    def keypress_mute_channel_3(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + 2)
+
+
+    def keypress_mute_channel_4(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + 3)
+
+
+    def keypress_mute_channel_5(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + 4)
+
+
+    def keypress_mute_channel_6(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + 5)
+
+
+    def keypress_mute_channel_7(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + 6)
+
+
+    def keypress_mute_channel_8(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_MUTE + 7)
+
+
+    def keypress_select_channel(self, channel, status):
+        # channel: 1 - 8
+        self._key_pressed( \
+            status, self._LED_SWITCH_CHANNEL_SELECT + channel - 1)
+
+
+    def keypress_select_channel_1(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT)
+
+
+    def keypress_select_channel_2(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT + 1)
+
+
+    def keypress_select_channel_3(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT + 2)
+
+
+    def keypress_select_channel_4(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT + 3)
+
+
+    def keypress_select_channel_5(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT + 4)
+
+
+    def keypress_select_channel_6(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT + 5)
+
+
+    def keypress_select_channel_7(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT + 6)
+
+
+    def keypress_select_channel_8(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_SELECT + 7)
+
+
+    def keypress_vselect_channel(self, channel, status):
+        # channel: 1 - 8
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + channel - 1)
+
+
+    def keypress_vselect_channel_1(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT)
+
+
+    def keypress_vselect_channel_2(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 1)
+
+
+    def keypress_vselect_channel_3(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 2)
+
+
+    def keypress_vselect_channel_4(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 3)
+
+
+    def keypress_vselect_channel_5(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 4)
+
+
+    def keypress_vselect_channel_6(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 5)
+
+
+    def keypress_vselect_channel_7(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 6)
+
+
+    def keypress_vselect_channel_8(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 7)
+
+
+    def keypress_function_channel(self, channel, status):
+        # channel: 1 - 8
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + channel - 1)
+
+
+    def keypress_function_channel_1(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION)
+
+
+    def keypress_function_channel_2(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 1)
+
+
+    def keypress_function_channel_3(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 2)
+
+
+    def keypress_function_channel_4(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 3)
+
+
+    def keypress_function_channel_5(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 4)
+
+
+    def keypress_function_channel_6(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 5)
+
+
+    def keypress_function_channel_7(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 6)
+
+
+    def keypress_function_channel_8(self, status):
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 7)
 
 
     def keypress_assignment_track(self, status):
@@ -564,155 +758,199 @@ class MackieHostControl:
 
 
     def keypress_user_switch(self, switch_number, status):
-        # switch_number: 0 - 1
-        self._key_pressed(status, self._SWITCH_USER_SWITCH_A + switch_number)
+        # switch_number: 1 - 2
+        if switch_number == 1:
+            self._key_pressed(status, self._SWITCH_USER_SWITCH_A)
+        else:
+            self._key_pressed(status, self._SWITCH_USER_SWITCH_B)
 
 
-    def keypress_channel_fader_touch(self, channel, status):
-        # channel: 0 - 7
-        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH + channel)
+    def keypress_user_switch_1(self, status):
+        self._key_pressed(status, self._SWITCH_USER_SWITCH_A)
 
 
-    def keypress_master_fader_touch(self, status):
+    def keypress_user_switch_2(self, status):
+        self._key_pressed(status, self._SWITCH_USER_SWITCH_B)
+
+
+    def keypress_fader_touch_channel(self, channel, status):
+        # channel: 1 - 8
+        self._key_pressed( \
+            status, self._SWITCH_CHANNEL_FADER_TOUCH + channel - 1)
+
+
+    def keypress_fader_touch_channel_1(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH)
+
+
+    def keypress_fader_touch_channel_2(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH + 1)
+
+
+    def keypress_fader_touch_channel_3(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH + 2)
+
+
+    def keypress_fader_touch_channel_4(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH + 3)
+
+
+    def keypress_fader_touch_channel_5(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH + 4)
+
+
+    def keypress_fader_touch_channel_6(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH + 5)
+
+
+    def keypress_fader_touch_channel_7(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH + 6)
+
+
+    def keypress_fader_touch_channel_8(self, status):
+        self._key_pressed(status, self._SWITCH_CHANNEL_FADER_TOUCH + 7)
+
+
+    def keypress_fader_touch_master(self, status):
         self._key_pressed(status, self._SWITCH_MASTER_FADER_TOUCH)
 
 
     # --- commands from Mackie Control Host ---
 
-    def _update_led(self, id, status):
+    def _set_led(self, id, status):
         selector = {
             self._LED_SWITCH_CHANNEL_RECORD_READY: \
-                'self._hardware_controller.update_led_channel_record_ready(0, status)',
+                'self._hardware_controller.set_led_channel_record_ready(0, status)',
             self._LED_SWITCH_CHANNEL_RECORD_READY + 1: \
-                'self._hardware_controller.update_led_channel_record_ready(1, status)',
+                'self._hardware_controller.set_led_channel_record_ready(1, status)',
             self._LED_SWITCH_CHANNEL_RECORD_READY + 2: \
-                'self._hardware_controller.update_led_channel_record_ready(2, status)',
+                'self._hardware_controller.set_led_channel_record_ready(2, status)',
             self._LED_SWITCH_CHANNEL_RECORD_READY + 3: \
-                'self._hardware_controller.update_led_channel_record_ready(3, status)',
+                'self._hardware_controller.set_led_channel_record_ready(3, status)',
             self._LED_SWITCH_CHANNEL_RECORD_READY + 4: \
-                'self._hardware_controller.update_led_channel_record_ready(4, status)',
+                'self._hardware_controller.set_led_channel_record_ready(4, status)',
             self._LED_SWITCH_CHANNEL_RECORD_READY + 5: \
-                'self._hardware_controller.update_led_channel_record_ready(5, status)',
+                'self._hardware_controller.set_led_channel_record_ready(5, status)',
             self._LED_SWITCH_CHANNEL_RECORD_READY + 6: \
-                'self._hardware_controller.update_led_channel_record_ready(6, status)',
+                'self._hardware_controller.set_led_channel_record_ready(6, status)',
             self._LED_SWITCH_CHANNEL_RECORD_READY + 7: \
-                'self._hardware_controller.update_led_channel_record_ready(7, status)',
+                'self._hardware_controller.set_led_channel_record_ready(7, status)',
             self._LED_SWITCH_CHANNEL_SOLO: \
-                'self._hardware_controller.update_led_channel_solo(0, status)',
+                'self._hardware_controller.set_led_channel_solo(0, status)',
             self._LED_SWITCH_CHANNEL_SOLO + 1: \
-                'self._hardware_controller.update_led_channel_solo(1, status)',
+                'self._hardware_controller.set_led_channel_solo(1, status)',
             self._LED_SWITCH_CHANNEL_SOLO + 2: \
-                'self._hardware_controller.update_led_channel_solo(2, status)',
+                'self._hardware_controller.set_led_channel_solo(2, status)',
             self._LED_SWITCH_CHANNEL_SOLO + 3: \
-                'self._hardware_controller.update_led_channel_solo(3, status)',
+                'self._hardware_controller.set_led_channel_solo(3, status)',
             self._LED_SWITCH_CHANNEL_SOLO + 4: \
-                'self._hardware_controller.update_led_channel_solo(4, status)',
+                'self._hardware_controller.set_led_channel_solo(4, status)',
             self._LED_SWITCH_CHANNEL_SOLO + 5: \
-                'self._hardware_controller.update_led_channel_solo(5, status)',
+                'self._hardware_controller.set_led_channel_solo(5, status)',
             self._LED_SWITCH_CHANNEL_SOLO + 6: \
-                'self._hardware_controller.update_led_channel_solo(6, status)',
+                'self._hardware_controller.set_led_channel_solo(6, status)',
             self._LED_SWITCH_CHANNEL_SOLO + 7: \
-                'self._hardware_controller.update_led_channel_solo(7, status)',
+                'self._hardware_controller.set_led_channel_solo(7, status)',
             self._LED_SWITCH_CHANNEL_MUTE: \
-                'self._hardware_controller.update_led_channel_mute(0, status)',
+                'self._hardware_controller.set_led_channel_mute(0, status)',
             self._LED_SWITCH_CHANNEL_MUTE + 1: \
-                'self._hardware_controller.update_led_channel_mute(1, status)',
+                'self._hardware_controller.set_led_channel_mute(1, status)',
             self._LED_SWITCH_CHANNEL_MUTE + 2: \
-                'self._hardware_controller.update_led_channel_mute(2, status)',
+                'self._hardware_controller.set_led_channel_mute(2, status)',
             self._LED_SWITCH_CHANNEL_MUTE + 3: \
-                'self._hardware_controller.update_led_channel_mute(3, status)',
+                'self._hardware_controller.set_led_channel_mute(3, status)',
             self._LED_SWITCH_CHANNEL_MUTE + 4: \
-                'self._hardware_controller.update_led_channel_mute(4, status)',
+                'self._hardware_controller.set_led_channel_mute(4, status)',
             self._LED_SWITCH_CHANNEL_MUTE + 5: \
-                'self._hardware_controller.update_led_channel_mute(5, status)',
+                'self._hardware_controller.set_led_channel_mute(5, status)',
             self._LED_SWITCH_CHANNEL_MUTE + 6: \
-                'self._hardware_controller.update_led_channel_mute(6, status)',
+                'self._hardware_controller.set_led_channel_mute(6, status)',
             self._LED_SWITCH_CHANNEL_MUTE + 7: \
-                'self._hardware_controller.update_led_channel_mute(7, status)',
+                'self._hardware_controller.set_led_channel_mute(7, status)',
             self._LED_SWITCH_CHANNEL_SELECT: \
-                'self._hardware_controller.update_led_channel_select(0, status)',
+                'self._hardware_controller.set_led_channel_select(0, status)',
             self._LED_SWITCH_CHANNEL_SELECT + 1: \
-                'self._hardware_controller.update_led_channel_select(1, status)',
+                'self._hardware_controller.set_led_channel_select(1, status)',
             self._LED_SWITCH_CHANNEL_SELECT + 2: \
-                'self._hardware_controller.update_led_channel_select(2, status)',
+                'self._hardware_controller.set_led_channel_select(2, status)',
             self._LED_SWITCH_CHANNEL_SELECT + 3: \
-                'self._hardware_controller.update_led_channel_select(3, status)',
+                'self._hardware_controller.set_led_channel_select(3, status)',
             self._LED_SWITCH_CHANNEL_SELECT + 4: \
-                'self._hardware_controller.update_led_channel_select(4, status)',
+                'self._hardware_controller.set_led_channel_select(4, status)',
             self._LED_SWITCH_CHANNEL_SELECT + 5: \
-                'self._hardware_controller.update_led_channel_select(5, status)',
+                'self._hardware_controller.set_led_channel_select(5, status)',
             self._LED_SWITCH_CHANNEL_SELECT + 6: \
-                'self._hardware_controller.update_led_channel_select(6, status)',
+                'self._hardware_controller.set_led_channel_select(6, status)',
             self._LED_SWITCH_CHANNEL_SELECT + 7: \
-                'self._hardware_controller.update_led_channel_select(7, status)',
+                'self._hardware_controller.set_led_channel_select(7, status)',
             self._LED_SWITCH_ASSIGNMENT_TRACK: \
-                'self._hardware_controller.update_led_assignment_track(status)',
+                'self._hardware_controller.set_led_assignment_track(status)',
             self._LED_SWITCH_ASSIGNMENT_SEND: \
-                'self._hardware_controller.update_led_assignment_send(status)',
+                'self._hardware_controller.set_led_assignment_send(status)',
             self._LED_SWITCH_ASSIGNMENT_PAN_SURROUND: \
-                'self._hardware_controller.update_led_assignment_pan_surround(status)',
+                'self._hardware_controller.set_led_assignment_pan_surround(status)',
             self._LED_SWITCH_ASSIGNMENT_PLUG_IN: \
-                'self._hardware_controller.update_led_assignment_plug_in(status)',
+                'self._hardware_controller.set_led_assignment_plug_in(status)',
             self._LED_SWITCH_ASSIGNMENT_EQ: \
-                'self._hardware_controller.update_led_assignment_eq(status)',
+                'self._hardware_controller.set_led_assignment_eq(status)',
             self._LED_SWITCH_ASSIGNMENT_INSTRUMENT: \
-                'self._hardware_controller.update_led_assignment_instrument(status)',
+                'self._hardware_controller.set_led_assignment_instrument(status)',
             self._LED_SWITCH_FLIP: \
-                'self._hardware_controller.update_led_flip(status)',
+                'self._hardware_controller.set_led_flip(status)',
             self._LED_SWITCH_GLOBAL_VIEW: \
-                'self._hardware_controller.update_led_global_view(status)',
+                'self._hardware_controller.set_led_global_view(status)',
             self._LED_SWITCH_AUTOMATION_READ_OFF: \
-                'self._hardware_controller.update_led_automation_read_off(status)',
+                'self._hardware_controller.set_led_automation_read_off(status)',
             self._LED_SWITCH_AUTOMATION_WRITE: \
-                'self._hardware_controller.update_led_automation_write(status)',
+                'self._hardware_controller.set_led_automation_write(status)',
             self._LED_SWITCH_AUTOMATION_TRIM: \
-                'self._hardware_controller.update_led_automation_trim(status)',
+                'self._hardware_controller.set_led_automation_trim(status)',
             self._LED_SWITCH_AUTOMATION_TOUCH: \
-                'self._hardware_controller.update_led_automation_touch(status)',
+                'self._hardware_controller.set_led_automation_touch(status)',
             self._LED_SWITCH_AUTOMATION_LATCH: \
-                'self._hardware_controller.update_led_automation_latch(status)',
+                'self._hardware_controller.set_led_automation_latch(status)',
             self._LED_SWITCH_GROUP: \
-                'self._hardware_controller.update_led_group(status)',
+                'self._hardware_controller.set_led_group(status)',
             self._LED_SWITCH_UTILITIES_SAVE: \
-                'self._hardware_controller.update_led_utilities_save(status)',
+                'self._hardware_controller.set_led_utilities_save(status)',
             self._LED_SWITCH_UTILITIES_UNDO: \
-                'self._hardware_controller.update_led_utilities_undo(status)',
+                'self._hardware_controller.set_led_utilities_undo(status)',
             self._LED_SWITCH_MARKER: \
-                'self._hardware_controller.update_led_marker(status)',
+                'self._hardware_controller.set_led_marker(status)',
             self._LED_SWITCH_NUDGE: \
-                'self._hardware_controller.update_led_nudge(status)',
+                'self._hardware_controller.set_led_nudge(status)',
             self._LED_SWITCH_CYCLE: \
-                'self._hardware_controller.update_led_cycle(status)',
+                'self._hardware_controller.set_led_cycle(status)',
             self._LED_SWITCH_DROP: \
-                'self._hardware_controller.update_led_drop(status)',
+                'self._hardware_controller.set_led_drop(status)',
             self._LED_SWITCH_REPLACE: \
-                'self._hardware_controller.update_led_replace(status)',
+                'self._hardware_controller.set_led_replace(status)',
             self._LED_SWITCH_CLICK: \
-                'self._hardware_controller.update_led_click(status)',
+                'self._hardware_controller.set_led_click(status)',
             self._LED_SWITCH_SOLO: \
-                'self._hardware_controller.update_led_solo(status)',
+                'self._hardware_controller.set_led_solo(status)',
             self._LED_SWITCH_REWIND: \
-                'self._hardware_controller.update_led_rewind(status)',
+                'self._hardware_controller.set_led_rewind(status)',
             self._LED_SWITCH_FAST_FORWARD: \
-                'self._hardware_controller.update_led_fast_forward(status)',
+                'self._hardware_controller.set_led_fast_forward(status)',
             self._LED_SWITCH_STOP: \
-                'self._hardware_controller.update_led_stop(status)',
+                'self._hardware_controller.set_led_stop(status)',
             self._LED_SWITCH_PLAY: \
-                'self._hardware_controller.update_led_play(status)',
+                'self._hardware_controller.set_led_play(status)',
             self._LED_SWITCH_RECORD: \
-                'self._hardware_controller.update_led_record(status)',
+                'self._hardware_controller.set_led_record(status)',
             self._LED_SWITCH_ZOOM: \
-                'self._hardware_controller.update_led_zoom(status)',
+                'self._hardware_controller.set_led_zoom(status)',
             self._LED_SWITCH_SCRUB: \
-                'self._hardware_controller.update_led_scrub(status)',
+                'self._hardware_controller.set_led_scrub(status)',
             self._LED_SMPTE: \
-                'self._hardware_controller.update_led_smpte(status)',
+                'self._hardware_controller.set_led_smpte(status)',
             self._LED_BEATS: \
-                'self._hardware_controller.update_led_beats(status)',
+                'self._hardware_controller.set_led_beats(status)',
             self._LED_RUDE_SOLO: \
-                'self._hardware_controller.update_led_rude_solo(status)',
+                'self._hardware_controller.set_led_rude_solo(status)',
             self._LED_RELAY_CLICK: \
-                'self._hardware_controller.update_led_relay_click(status)'
+                'self._hardware_controller.set_led_relay_click(status)'
             }
 
         if id in selector:

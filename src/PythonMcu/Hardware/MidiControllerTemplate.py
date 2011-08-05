@@ -52,7 +52,7 @@ class MidiControllerTemplate(object):
 
     def __init__(self, midi_input, midi_output):
         self.midi = MidiConnection(self.receive_midi, midi_input, midi_output)
-        self.unset_mackie_host_control()
+        self.unset_interconnector()
 
         self.display_lcd_available = True
         self.automated_faders_available = True
@@ -69,12 +69,12 @@ class MidiControllerTemplate(object):
             self.display_timecode_characters.append(' ')
 
 
-    def set_mackie_host_control(self, host):
-        self.mackie_host_control = host
+    def set_interconnector(self, host):
+        self.interconnector = host
 
 
-    def unset_mackie_host_control(self):
-        self.mackie_host_control = None
+    def unset_interconnector(self):
+        self.interconnector = None
 
 
     def connect(self):
@@ -198,7 +198,7 @@ class MidiControllerTemplate(object):
                       (vpot_id, vpot_position, vpot_mode))
 
 
-    def update_lcd(self, position, new_string):
+    def set_lcd(self, position, new_string):
         """
         send string of maximum 72 bytes to controller LCD
 
@@ -208,199 +208,5 @@ class MidiControllerTemplate(object):
         pass
 
 
-    def update_led(self, led_id, led_status):
+    def set_led(self, internal_id, led_status):
         pass
-
-
-    def update_led_channel_record_ready(self, channel, status):
-        # channel: 0 - 7
-        self._log('LED "CHANNEL_RECORD_READY_%d" NOT set to "%s".' % \
-                      (channel + 1, self._LED_STATUS[status]))
-
-
-    def update_led_channel_solo(self, channel, status):
-        # channel: 0 - 7
-        self._log('LED "CHANNEL_SOLO_%d" NOT set to "%s".' % \
-                      (channel + 1, self._LED_STATUS[status]))
-
-
-    def update_led_channel_mute(self, channel, status):
-        # channel: 0 - 7
-        self._log('LED "CHANNEL_MUTE_%d" NOT set to "%s".' % \
-                      (channel + 1, self._LED_STATUS[status]))
-
-
-    def update_led_channel_select(self, channel, status):
-        # channel: 0 - 7
-        self._log('LED "CHANNEL_SELECT_%d" NOT set to "%s".' % \
-                      (channel + 1, self._LED_STATUS[status]))
-
-
-    def update_led_assignment_track(self, status):
-        self._log('LED "ASSIGNMENT_TRACK" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_assignment_send(self, status):
-        self._log('LED "ASSIGNMENT_SEND" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_assignment_pan_surround(self, status):
-        self._log('LED "ASSIGNMENT_PAN_SURROUND" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_assignment_plug_in(self, status):
-        self._log('LED "ASSIGNMENT_PLUG_IN" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_assignment_eq(self, status):
-        self._log('LED "ASSIGNMENT_EQ" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_assignment_instrument(self, status):
-        self._log('LED "ASSIGNMENT_INSTRUMENT" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_flip(self, status):
-        self._log('LED "FLIP" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_global_view(self, status):
-        self._log('LED "GLOBAL_VIEW" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_automation_read_off(self, status):
-        self._log('LED "AUTOMATION_READ_OFF" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_automation_write(self, status):
-        self._log('LED "AUTOMATION_WRITE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_automation_trim(self, status):
-        self._log('LED "AUTOMATION_TRIM" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_automation_touch(self, status):
-        self._log('LED "AUTOMATION_TOUCH" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_automation_latch(self, status):
-        self._log('LED "AUTOMATION_LATCH" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_group(self, status):
-        self._log('LED "GROUP" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_utilities_save(self, status):
-        self._log('LED "UTILITIES_SAVE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_utilities_undo(self, status):
-        self._log('LED "UTILITIES_UNDO" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_marker(self, status):
-        self._log('LED "MARKER" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_nudge(self, status):
-        self._log('LED "NUDGE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_cycle(self, status):
-        self._log('LED "CYCLE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_drop(self, status):
-        self._log('LED "DROP" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_replace(self, status):
-        self._log('LED "REPLACE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_click(self, status):
-        self._log('LED "CLICK" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_solo(self, status):
-        self._log('LED "SOLO" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_rewind(self, status):
-        self._log('LED "REWIND" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_fast_forward(self, status):
-        self._log('LED "FAST_FORWARD" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_stop(self, status):
-        self._log('LED "STOP" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_play(self, status):
-        self._log('LED "PLAY" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_record(self, status):
-        self._log('LED "RECORD" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_zoom(self, status):
-        self._log('LED "ZOOM" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_scrub(self, status):
-        self._log('LED "SCRUB" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_smpte(self, status):
-        self._log('LED "SMPTE" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_beats(self, status):
-        self._log('LED "BEATS" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_rude_solo(self, status):
-        self._log('LED "RUDE_SOLO" NOT set to "%s".' % \
-                      self._LED_STATUS[status])
-
-
-    def update_led_relay_click(self, status):
-        self._log('LED "RELAY_CLICK" NOT set to "%s".' % \
-                      self._LED_STATUS[status])

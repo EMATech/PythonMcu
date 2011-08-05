@@ -100,36 +100,6 @@ class ZeroSlMk2(MidiControllerTemplate):
         self.display_timecode_available = False
         self.meter_bridge_available = False
 
-        self._led_status = {}
-        for channel in range(8):
-            self._led_status['CHANNEL_RECORD_READY_%d' % channel] = 0
-            self._led_status['CHANNEL_SELECT_%d' % channel] = 0
-            self._led_status['CHANNEL_MUTE_%d' % channel] = 0
-            self._led_status['CHANNEL_SOLO_%d' % channel] = 0
-
-        self._led_status['CYCLE'] = 0
-        self._led_status['REWIND'] = 0
-        self._led_status['FAST_FORWARD'] = 0
-        self._led_status['STOP'] = 0
-        self._led_status['PLAY'] = 0
-        self._led_status['RECORD'] = 0
-
-        self._led_status['ASSIGNMENT_TRACK'] = 0
-        self._led_status['ASSIGNMENT_SEND'] = 0
-        self._led_status['ASSIGNMENT_PAN_SURROUND'] = 0
-        self._led_status['ASSIGNMENT_EQ'] = 0
-        self._led_status['ASSIGNMENT_PLUG_IN'] = 0
-        self._led_status['ASSIGNMENT_INSTRUMENT'] = 0
-
-        self._led_status['FLIP'] = 0
-        self._led_status['SCRUB'] = 0
-        self._led_status['ZOOM'] = 0
-
-        self._led_status['RELAY_CLICK'] = 0
-        self._led_status['RUDE_SOLO'] = 0
-        self._led_status['BEATS'] = 0
-        self._led_status['SMPTE'] = 0
-
         self._lcd_strings = ['', '']
         self._menu_string = ''
 
@@ -148,15 +118,42 @@ class ZeroSlMk2(MidiControllerTemplate):
         MidiControllerTemplate.connect(self)
         self._is_connected = True
 
-        self._update_lcd(1, 'Novation Zero SL MkII:  initialising...')
-        self._update_lcd(2, 'Mackie Host Control:    connecting...')
+        self._set_lcd(1, 'Novation Zero SL MkII:  initialising...')
+        self._set_lcd(2, 'Mackie Host Control:    connecting...')
 
         self.enter_ableton_mode()
 
-        # select "track" mode ("V-Select" + "Assignment")
+        self.link_control( \
+            'shift', self._MIDI_CC_BUTTONS_RIGHT_TOP)
+        self.link_control( \
+            'control', self._MIDI_CC_BUTTONS_RIGHT_TOP + 1)
+        self.link_control( \
+            'command', self._MIDI_CC_BUTTONS_RIGHT_TOP + 2)
+        self.link_control( \
+            'option', self._MIDI_CC_BUTTONS_RIGHT_TOP + 3)
+        self.link_control( \
+            'cursor_left', self._MIDI_CC_BUTTONS_RIGHT_TOP + 4)
+        self.link_control( \
+            'cursor_right', self._MIDI_CC_BUTTONS_RIGHT_TOP + 5)
+        self.link_control( \
+            'cursor_down', self._MIDI_CC_BUTTONS_RIGHT_TOP + 6)
+        self.link_control( \
+            'cursor_up', self._MIDI_CC_BUTTONS_RIGHT_TOP + 7)
+
+        self.link_control( \
+            'name_value', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4)
+        self.link_control( \
+            'flip', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5)
+        self.link_control( \
+            'scrub', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6)
+        self.link_control( \
+            'zoom', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7)
+
+
+        # select "track" mode ("Mute" + "Solo")
         self.change_mode_track(2)
 
-        self._update_lcd(1, 'Novation Zero SL MkII:  initialised.')
+        self._set_lcd(1, 'Novation Zero SL MkII:  initialised.')
 
         self._log('Connected.')
 
@@ -164,8 +161,10 @@ class ZeroSlMk2(MidiControllerTemplate):
     def disconnect(self):
         self._log('Disconnecting...')
 
-        self._update_lcd(1, 'Novation Zero SL MkII:  disconnecting...')
-        self._update_lcd(2, '')
+        self.unlink_all_controls()
+
+        self._set_lcd(1, 'Novation Zero SL MkII:  disconnecting...')
+        self._set_lcd(2, '')
 
         self.leave_ableton_mode()
 
@@ -174,7 +173,25 @@ class ZeroSlMk2(MidiControllerTemplate):
 
 
     def host_connected(self):
-        self._update_lcd(2, 'Mackie Host Control:    connected.')
+        self._set_lcd(2, 'Mackie Host Control:    connected.')
+
+
+    def link_control(self, mcu_command, midi_control):
+        midi_control_change = 'cc%d' % midi_control
+
+        self.interconnector.link_control( \
+            mcu_command, midi_control_change)
+
+
+    def unlink_control(self, mcu_command, midi_control):
+        midi_control_change = 'cc%d' % midi_control
+
+        self.interconnector.unlink_control( \
+            mcu_command, midi_control_change)
+
+
+    def unlink_all_controls(self):
+        self.interconnector.unlink_all_controls()
 
 
     def leave_ableton_mode(self):
@@ -184,17 +201,18 @@ class ZeroSlMk2(MidiControllerTemplate):
         self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
         self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
 
-        # update special LEDs (do NOT use "update_led_xxx" functions
+        # update special LEDs (do NOT use "set_led_xxx" functions
         # here, otherwise the original status is lost on leaving
         # "Automap" mode!
-        self.update_led( \
-            self._MIDI_CC_LED_AUTOMAP_LEARN, self._led_status['RELAY_CLICK'])
-        self.update_led( \
-            self._MIDI_CC_LED_AUTOMAP_VIEW, self._led_status['RUDE_SOLO'])
-        self.update_led( \
-            self._MIDI_CC_LED_AUTOMAP_USER, self._led_status['BEATS'])
-        self.update_led( \
-            self._MIDI_CC_LED_AUTOMAP_FX, self._led_status['SMPTE'])
+
+        # self._set_led( \
+        #     self._MIDI_CC_LED_AUTOMAP_LEARN, self._led_status['RELAY_CLICK'])
+        # self._set_led( \
+        #     self._MIDI_CC_LED_AUTOMAP_VIEW, self._led_status['RUDE_SOLO'])
+        # self._set_led( \
+        #     self._MIDI_CC_LED_AUTOMAP_USER, self._led_status['BEATS'])
+        # self._set_led( \
+        #     self._MIDI_CC_LED_AUTOMAP_FX, self._led_status['SMPTE'])
 
         self.send_midi_sysex([0x02, 0x02, 0x05])
         self.send_midi_sysex([0x01, 0x00])
@@ -209,17 +227,18 @@ class ZeroSlMk2(MidiControllerTemplate):
         self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
         self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
 
-        # update special LEDs (do NOT use "update_led_xxx" functions
+        # update special LEDs (do NOT use "set_led_xxx" functions
         # here, otherwise the original status is lost on leaving
         # "Automap" mode!
-        self.update_led( \
-            self._MIDI_CC_LED_AUTOMAP_LEARN, self._led_status['RELAY_CLICK'])
-        self.update_led( \
-            self._MIDI_CC_LED_AUTOMAP_VIEW, self._led_status['RUDE_SOLO'])
-        self.update_led( \
-            self._MIDI_CC_LED_AUTOMAP_USER, self._led_status['BEATS'])
-        self.update_led( \
-            self._MIDI_CC_LED_AUTOMAP_FX, self._led_status['SMPTE'])
+
+        # self._set_led( \
+        #     self._MIDI_CC_LED_AUTOMAP_LEARN, self._led_status['RELAY_CLICK'])
+        # self._set_led( \
+        #     self._MIDI_CC_LED_AUTOMAP_VIEW, self._led_status['RUDE_SOLO'])
+        # self._set_led( \
+        #     self._MIDI_CC_LED_AUTOMAP_USER, self._led_status['BEATS'])
+        # self._set_led( \
+        #     self._MIDI_CC_LED_AUTOMAP_FX, self._led_status['SMPTE'])
 
 
     def _log(self, message):
@@ -253,11 +272,11 @@ class ZeroSlMk2(MidiControllerTemplate):
                         self.enter_ableton_mode()
 
                         self._restore_previous_mode()
-                        self._restore_leds()
+                        # self._restore_leds()
                         self._restore_vpots()
 
-                        self._update_lcd(1, self._lcd_strings[0])
-                        self._update_lcd(2, self._lcd_strings[1])
+                        self._set_lcd(1, self._lcd_strings[0])
+                        self._set_lcd(2, self._lcd_strings[1])
 
             # all MIDI SysEx messages handled (including invalid
             # ones), so quit processing here
@@ -268,85 +287,37 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         cc_selector = {
             self._MIDI_CC_FADERS: \
-                'self.mackie_host_control.move_fader_7bit(0, %d)',
+                'self.interconnector.move_fader_7bit(0, %d)',
             self._MIDI_CC_FADERS + 1: \
-                'self.mackie_host_control.move_fader_7bit(1, %d)',
+                'self.interconnector.move_fader_7bit(1, %d)',
             self._MIDI_CC_FADERS + 2: \
-                'self.mackie_host_control.move_fader_7bit(2, %d)',
+                'self.interconnector.move_fader_7bit(2, %d)',
             self._MIDI_CC_FADERS + 3: \
-                'self.mackie_host_control.move_fader_7bit(3, %d)',
+                'self.interconnector.move_fader_7bit(3, %d)',
             self._MIDI_CC_FADERS + 4: \
-                'self.mackie_host_control.move_fader_7bit(4, %d)',
+                'self.interconnector.move_fader_7bit(4, %d)',
             self._MIDI_CC_FADERS + 5: \
-                'self.mackie_host_control.move_fader_7bit(5, %d)',
+                'self.interconnector.move_fader_7bit(5, %d)',
             self._MIDI_CC_FADERS + 6: \
-                'self.mackie_host_control.move_fader_7bit(6, %d)',
+                'self.interconnector.move_fader_7bit(6, %d)',
             self._MIDI_CC_FADERS + 7: \
-                'self.mackie_host_control.move_fader_7bit(7, %d)',
+                'self.interconnector.move_fader_7bit(7, %d)',
             self._MIDI_CC_ENCODERS:
-                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 0, %d)',
+                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 0, %d)',
             self._MIDI_CC_ENCODERS + 1:
-                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 1, %d)',
+                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 1, %d)',
             self._MIDI_CC_ENCODERS + 2:
-                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 2, %d)',
+                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 2, %d)',
             self._MIDI_CC_ENCODERS + 3:
-                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 3, %d)',
+                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 3, %d)',
             self._MIDI_CC_ENCODERS + 4:
-                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 4, %d)',
+                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 4, %d)',
             self._MIDI_CC_ENCODERS + 5:
-                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 5, %d)',
+                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 5, %d)',
             self._MIDI_CC_ENCODERS + 6:
-                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 6, %d)',
+                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 6, %d)',
             self._MIDI_CC_ENCODERS + 7:
-                'self.mackie_host_control.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 7, %d)',
-            self._MIDI_CC_BUTTONS_LEFT_TOP:
-                'self._keypress_top_row(0, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_TOP + 1:
-                'self._keypress_top_row(1, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_TOP + 2:
-                'self._keypress_top_row(2, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_TOP + 3:
-                'self._keypress_top_row(3, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_TOP + 4:
-                'self._keypress_top_row(4, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_TOP + 5:
-                'self._keypress_top_row(5, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_TOP + 6:
-                'self._keypress_top_row(6, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_TOP + 7:
-                'self._keypress_top_row(7, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_BOTTOM:
-                'self._keypress_bottom_row(0, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1:
-                'self._keypress_bottom_row(1, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2:
-                'self._keypress_bottom_row(2, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3:
-                'self._keypress_bottom_row(3, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4:
-                'self._keypress_bottom_row(4, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5:
-                'self._keypress_bottom_row(5, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6:
-                'self._keypress_bottom_row(6, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7:
-                'self._keypress_bottom_row(7, %d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_TOP:
-                'self.keypress_shift(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_TOP + 1:
-                'self.keypress_control(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_TOP + 2:
-                'self.keypress_command_alt(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_TOP + 3:
-                'self.keypress_option(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_TOP + 4:
-                'self.keypress_cursor_left(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_TOP + 5:
-                'self.keypress_cursor_right(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_TOP + 6:
-                'self.keypress_cursor_down(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_TOP + 7:
-                'self.keypress_cursor_up(%d & 0x01)',
+                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 7, %d)',
             self._MIDI_CC_BUTTON_BANK_UP:
                 'self.change_mode_edit(%d & 0x01)',
             self._MIDI_CC_BUTTON_BANK_DOWN:
@@ -359,28 +330,8 @@ class ZeroSlMk2(MidiControllerTemplate):
                 'self.change_mode_automation(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3:
                 'self.change_mode_utility(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4:
-                'self.keypress_name_value(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5:
-                'self.mackie_host_control.keypress_flip(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6:
-                'self.mackie_host_control.keypress_scrub(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7:
-                'self.mackie_host_control.keypress_zoom(%d & 0x01)',
             self._MIDI_CC_BUTTON_MODE_TRANSPORT:
                 'self._keypress_mode_transport(%d & 0x01)',
-            self._MIDI_CC_BUTTON_REWIND:
-                'self.mackie_host_control.keypress_rewind(%d & 0x01)',
-            self._MIDI_CC_BUTTON_FAST_FORWARD:
-                'self.mackie_host_control.keypress_fast_forward(%d & 0x01)',
-            self._MIDI_CC_BUTTON_STOP:
-                'self.mackie_host_control.keypress_stop(%d & 0x01)',
-            self._MIDI_CC_BUTTON_PLAY:
-                'self.mackie_host_control.keypress_play(%d & 0x01)',
-            self._MIDI_CC_BUTTON_RECORD:
-                'self.mackie_host_control.keypress_record(%d & 0x01)',
-            self._MIDI_CC_BUTTON_CYCLE:
-                'self.mackie_host_control.keypress_cycle(%d & 0x01)',
             }
 
         if status == (MidiConnection.CONTROL_CHANGE + \
@@ -395,10 +346,16 @@ class ZeroSlMk2(MidiControllerTemplate):
                 # and leaving "Automap" mode and can be ignored
                 pass
             else:
-                message_string = ['status %02X: ' % status]
-                for byte in message:
-                    message_string.append('%02X' % byte)
-                self._log(' '.join(message_string))
+                internal_id = 'cc%d' % cc_number
+                status = cc_value & 0x01
+                key_processed = self.interconnector.keypress( \
+                    internal_id, status)
+
+                if not key_processed:
+                    message_string = ['status %02X: ' % status]
+                    for byte in message:
+                        message_string.append('%02X' % byte)
+                    self._log(' '.join(message_string))
         else:
             message_string = ['status %02X: ' % status]
             for byte in message:
@@ -415,34 +372,34 @@ class ZeroSlMk2(MidiControllerTemplate):
                  'SMPTE/Bt', '', 'Drop', 'Replace')
             self._set_menu_string(menu_strings)
 
-            self.update_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, self._led_status['REWIND'])
-            self.update_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, self._led_status['FAST_FORWARD'])
-            self.update_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, self._led_status['STOP'])
-            self.update_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, self._led_status['PLAY'])
-            self.update_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, self._led_status['CYCLE'])
-            self.update_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, self._led_status['RECORD'])
+            # self._set_led( \
+            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, self._led_status['REWIND'])
+            # self._set_led( \
+            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, self._led_status['FAST_FORWARD'])
+            # self._set_led( \
+            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, self._led_status['STOP'])
+            # self._set_led( \
+            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, self._led_status['PLAY'])
+            # self._set_led( \
+            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, self._led_status['CYCLE'])
+            # self._set_led( \
+            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, self._led_status['RECORD'])
         else:
             self._mode_other = self._MODE_OTHER_OFF
 
             self._clear_menu_string()
 
-            self.update_led( \
+            self._set_led( \
                 self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 0)
-            self.update_led( \
+            self._set_led( \
                 self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
-            self.update_led( \
+            self._set_led( \
                 self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 0)
-            self.update_led( \
+            self._set_led( \
                 self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 0)
-            self.update_led( \
+            self._set_led( \
                 self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, 0)
-            self.update_led( \
+            self._set_led( \
                 self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, 0)
 
 
@@ -452,7 +409,7 @@ class ZeroSlMk2(MidiControllerTemplate):
 
     def _clear_menu_string(self):
         self._menu_string = ''
-        self._update_lcd(4, '')
+        self._set_lcd(4, '')
 
 
     def _set_menu_string(self, menu_strings):
@@ -462,10 +419,10 @@ class ZeroSlMk2(MidiControllerTemplate):
         for menu_string in menu_strings:
             self._menu_string += menu_string.center(9)
 
-        self._update_lcd(3, self._menu_string)
+        self._set_lcd(3, self._menu_string)
 
 
-    def _update_lcd_raw(self, position, hex_codes):
+    def _set_lcd_raw(self, position, hex_codes):
         """
         send hex codes of maximum 72 bytes to controller LCD
 
@@ -498,7 +455,7 @@ class ZeroSlMk2(MidiControllerTemplate):
         self.send_midi_sysex(sysex_data)
 
 
-    def update_lcd(self, position, new_string):
+    def set_lcd(self, position, new_string):
         """
         send string of maximum 56 bytes to controller LCD
 
@@ -526,10 +483,10 @@ class ZeroSlMk2(MidiControllerTemplate):
             return
         # update display
         else:
-            self._update_lcd(position, converted_string)
+            self._set_lcd(position, converted_string)
 
 
-    def _update_lcd(self, position, new_string):
+    def _set_lcd(self, position, new_string):
         """
         send string of maximum 72 bytes to controller LCD
 
@@ -551,7 +508,7 @@ class ZeroSlMk2(MidiControllerTemplate):
         for character in new_string:
             hex_codes.append(ord(character))
 
-        self._update_lcd_raw(position, hex_codes)
+        self._set_lcd_raw(position, hex_codes)
 
 
     def change_mode_track(self, status):
@@ -560,14 +517,82 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         if status == 1:
             self._mode_track = self._MODE_TRACK_RECORD_READY_FUNCTION
+
+            self.link_control( \
+                'record_ready_channel_1', self._MIDI_CC_BUTTONS_LEFT_TOP)
+            self.link_control( \
+                'record_ready_channel_2', self._MIDI_CC_BUTTONS_LEFT_TOP + 1)
+            self.link_control( \
+                'record_ready_channel_3', self._MIDI_CC_BUTTONS_LEFT_TOP + 2)
+            self.link_control( \
+                'record_ready_channel_4', self._MIDI_CC_BUTTONS_LEFT_TOP + 3)
+            self.link_control( \
+                'record_ready_channel_5', self._MIDI_CC_BUTTONS_LEFT_TOP + 4)
+            self.link_control( \
+                'record_ready_channel_6', self._MIDI_CC_BUTTONS_LEFT_TOP + 5)
+            self.link_control( \
+                'record_ready_channel_7', self._MIDI_CC_BUTTONS_LEFT_TOP + 6)
+            self.link_control( \
+                'record_ready_channel_8', self._MIDI_CC_BUTTONS_LEFT_TOP + 7)
+
+            self.link_control( \
+                'function_channel_1', self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
+            self.link_control( \
+                'function_channel_2', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1)
+            self.link_control( \
+                'function_channel_3', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2)
+            self.link_control( \
+                'function_channel_4', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3)
+            self.link_control( \
+                'function_channel_5', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4)
+            self.link_control( \
+                'function_channel_6', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5)
+            self.link_control( \
+                'function_channel_7', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6)
+            self.link_control( \
+                'function_channel_8', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
         else:
             self._mode_track = self._MODE_TRACK_MUTE_SOLO
 
-        self.update_led(self._MIDI_CC_BUTTON_BANK_DOWN, self._mode_track)
-        self.update_led(self._MIDI_CC_BUTTON_BANK_UP, self._mode_edit)
+            self.link_control( \
+                'mute_channel_1', self._MIDI_CC_BUTTONS_LEFT_TOP)
+            self.link_control( \
+                'mute_channel_2', self._MIDI_CC_BUTTONS_LEFT_TOP + 1)
+            self.link_control( \
+                'mute_channel_3', self._MIDI_CC_BUTTONS_LEFT_TOP + 2)
+            self.link_control( \
+                'mute_channel_4', self._MIDI_CC_BUTTONS_LEFT_TOP + 3)
+            self.link_control( \
+                'mute_channel_5', self._MIDI_CC_BUTTONS_LEFT_TOP + 4)
+            self.link_control( \
+                'mute_channel_6', self._MIDI_CC_BUTTONS_LEFT_TOP + 5)
+            self.link_control( \
+                'mute_channel_7', self._MIDI_CC_BUTTONS_LEFT_TOP + 6)
+            self.link_control( \
+                'mute_channel_8', self._MIDI_CC_BUTTONS_LEFT_TOP + 7)
 
-        self._update_leds_top_row()
-        self._update_leds_bottom_row()
+            self.link_control( \
+                'solo_channel_1', self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
+            self.link_control( \
+                'solo_channel_2', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1)
+            self.link_control( \
+                'solo_channel_3', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2)
+            self.link_control( \
+                'solo_channel_4', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3)
+            self.link_control( \
+                'solo_channel_5', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4)
+            self.link_control( \
+                'solo_channel_6', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5)
+            self.link_control( \
+                'solo_channel_7', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6)
+            self.link_control( \
+                'solo_channel_8', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
+
+        self._set_led(self._MIDI_CC_BUTTON_BANK_DOWN, self._mode_track)
+        self._set_led(self._MIDI_CC_BUTTON_BANK_UP, self._mode_edit)
+
+        # self._update_leds_top_row()
+        # self._update_leds_bottom_row()
 
 
     def change_mode_edit(self, status):
@@ -576,14 +601,82 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         if status == 1:
             self._mode_edit = self._MODE_EDIT_VSELECT_SELECT
+
+            self.link_control( \
+                'vselect_channel_1', self._MIDI_CC_BUTTONS_LEFT_TOP)
+            self.link_control( \
+                'vselect_channel_2', self._MIDI_CC_BUTTONS_LEFT_TOP + 1)
+            self.link_control( \
+                'vselect_channel_3', self._MIDI_CC_BUTTONS_LEFT_TOP + 2)
+            self.link_control( \
+                'vselect_channel_4', self._MIDI_CC_BUTTONS_LEFT_TOP + 3)
+            self.link_control( \
+                'vselect_channel_5', self._MIDI_CC_BUTTONS_LEFT_TOP + 4)
+            self.link_control( \
+                'vselect_channel_6', self._MIDI_CC_BUTTONS_LEFT_TOP + 5)
+            self.link_control( \
+                'vselect_channel_7', self._MIDI_CC_BUTTONS_LEFT_TOP + 6)
+            self.link_control( \
+                'vselect_channel_8', self._MIDI_CC_BUTTONS_LEFT_TOP + 7)
+
+            self.link_control( \
+                'select_channel_1', self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
+            self.link_control( \
+                'select_channel_2', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1)
+            self.link_control( \
+                'select_channel_3', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2)
+            self.link_control( \
+                'select_channel_4', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3)
+            self.link_control( \
+                'select_channel_5', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4)
+            self.link_control( \
+                'select_channel_6', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5)
+            self.link_control( \
+                'select_channel_7', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6)
+            self.link_control( \
+                'select_channel_8', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
         else:
             self._mode_edit = self._MODE_EDIT_VSELECT_ASSIGNMENT
 
-        self.update_led(self._MIDI_CC_BUTTON_BANK_DOWN, self._mode_track)
-        self.update_led(self._MIDI_CC_BUTTON_BANK_UP, self._mode_edit)
+            self.link_control( \
+                'vselect_channel_1', self._MIDI_CC_BUTTONS_LEFT_TOP)
+            self.link_control( \
+                'vselect_channel_2', self._MIDI_CC_BUTTONS_LEFT_TOP + 1)
+            self.link_control( \
+                'vselect_channel_3', self._MIDI_CC_BUTTONS_LEFT_TOP + 2)
+            self.link_control( \
+                'vselect_channel_4', self._MIDI_CC_BUTTONS_LEFT_TOP + 3)
+            self.link_control( \
+                'vselect_channel_5', self._MIDI_CC_BUTTONS_LEFT_TOP + 4)
+            self.link_control( \
+                'vselect_channel_6', self._MIDI_CC_BUTTONS_LEFT_TOP + 5)
+            self.link_control( \
+                'vselect_channel_7', self._MIDI_CC_BUTTONS_LEFT_TOP + 6)
+            self.link_control( \
+                'vselect_channel_8', self._MIDI_CC_BUTTONS_LEFT_TOP + 7)
 
-        self._update_leds_top_row()
-        self._update_leds_bottom_row()
+            self.link_control( \
+                'select_channel_1', self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
+            self.link_control( \
+                'select_channel_2', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1)
+            self.link_control( \
+                'select_channel_3', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2)
+            self.link_control( \
+                'select_channel_4', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3)
+            self.link_control( \
+                'select_channel_5', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4)
+            self.link_control( \
+                'select_channel_6', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5)
+            self.link_control( \
+                'select_channel_7', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6)
+            self.link_control( \
+                'select_channel_8', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
+
+        self._set_led(self._MIDI_CC_BUTTON_BANK_DOWN, self._mode_track)
+        self._set_led(self._MIDI_CC_BUTTON_BANK_UP, self._mode_edit)
+
+        # self._update_leds_top_row()
+        # self._update_leds_bottom_row()
 
 
     def _restore_previous_mode(self):
@@ -599,22 +692,22 @@ class ZeroSlMk2(MidiControllerTemplate):
                 self.change_mode_edit(2)
 
 
-    def _restore_leds(self):
-        self.update_led_flip(self._led_status['FLIP'])
-        self.update_led_scrub(self._led_status['SCRUB'])
-        self.update_led_zoom(self._led_status['ZOOM'])
-
-        self.update_led_relay_click(self._led_status['RELAY_CLICK'])
-        self.update_led_rude_solo(self._led_status['RUDE_SOLO'])
-        self.update_led_beats(self._led_status['BEATS'])
-        self.update_led_smpte(self._led_status['SMPTE'])
+    # def _restore_leds(self):
+    #     self.set_led_flip(self._led_status['FLIP'])
+    #     self.set_led_scrub(self._led_status['SCRUB'])
+    #     self.set_led_zoom(self._led_status['ZOOM'])
+    #
+    #     self.set_led_relay_click(self._led_status['RELAY_CLICK'])
+    #     self.set_led_rude_solo(self._led_status['RUDE_SOLO'])
+    #     self.set_led_beats(self._led_status['BEATS'])
+    #     self.set_led_smpte(self._led_status['SMPTE'])
 
 
     def _restore_vpots(self):
         for id in range(8):
-            self.update_led( \
+            self._set_led( \
                 self._MIDI_CC_ENCODER_MODE + id, self._vpot_modes[id])
-            self.update_led( \
+            self._set_led( \
                 self._MIDI_CC_ENCODER_LIGHTS + id, self._vpot_positions[id])
 
 
@@ -623,17 +716,17 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         if status == 1:
             self._mode_other = self._MODE_OTHER_BANK
-            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 1)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 1)
 
             menu_strings = \
                 ('<<', '<', '>', '>>', \
                  '', '', '', '')
             self._set_menu_string(menu_strings)
 
-            self._update_leds_bottom_row()
+            # self._update_leds_bottom_row()
         else:
             self._mode_other = self._MODE_OTHER_OFF
-            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 0)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 0)
 
             self._clear_menu_string()
             self._restore_previous_mode()
@@ -644,17 +737,17 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         if status == 1:
             self._mode_other = self._MODE_OTHER_GLOBAL_VIEW
-            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 1)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 1)
 
             menu_strings = \
                 ('MIDI', 'Inputs', 'AudioTr.', 'Instrum.', \
                  'AUX', 'Busses', 'Outputs', 'User')
             self._set_menu_string(menu_strings)
 
-            self._update_leds_bottom_row()
+            # self._update_leds_bottom_row()
         else:
             self._mode_other = self._MODE_OTHER_OFF
-            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
 
             self._clear_menu_string()
             self._restore_previous_mode()
@@ -665,17 +758,17 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         if status == 1:
             self._mode_other = self._MODE_OTHER_AUTOMATION
-            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 1)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 1)
 
             menu_strings = \
                 ('Read/Off', 'Write', 'Trim', 'Touch', \
                  'Latch', '', '', 'Group')
             self._set_menu_string(menu_strings)
 
-            self._update_leds_bottom_row()
+            # self._update_leds_bottom_row()
         else:
             self._mode_other = self._MODE_OTHER_OFF
-            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 0)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 0)
 
             self._clear_menu_string()
             self._restore_previous_mode()
@@ -686,268 +779,20 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         if status == 1:
             self._mode_other = self._MODE_OTHER_UTILITY
-            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 1)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 1)
 
             menu_strings = \
                 ('Enter', 'Cancel', '', 'Undo', \
                  '', '', '', 'Save')
             self._set_menu_string(menu_strings)
 
-            self._update_leds_bottom_row()
+            # self._update_leds_bottom_row()
         else:
             self._mode_other = self._MODE_OTHER_OFF
-            self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 0)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 0)
 
             self._clear_menu_string()
             self._restore_previous_mode()
-
-
-    def _update_leds_top_row(self, channel=-1):
-        if not self._is_connected:
-            return
-
-        if self._mode_track:
-            if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
-                if channel >= 0:
-                    self.update_led( \
-                        self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
-                            self._led_status['CHANNEL_MUTE_%d' % channel])
-                else:
-                    if channel >= 0:
-                        self.update_led( \
-                            self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
-                                self._led_status['CHANNEL_MUTE_%d' % channel])
-                    else:
-                        for channel in range(8):
-                            self.update_led( \
-                                self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
-                                    self._led_status['CHANNEL_MUTE_%d' % \
-                                                         channel])
-            else:
-                if channel >= 0:
-                    self.update_led( \
-                        self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
-                            self._led_status['CHANNEL_RECORD_READY_%d' % \
-                                                 channel])
-                else:
-                    for channel in range(8):
-                        self.update_led( \
-                            self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
-                                self._led_status['CHANNEL_RECORD_READY_%d' % \
-                                                     channel])
-        else:
-            # CHANNEL_VSELECT
-            if channel >= 0:
-                self.update_led( \
-                    self._MIDI_CC_BUTTONS_LEFT_TOP + channel, 0)
-            else:
-                for channel in range(8):
-                    self.update_led( \
-                        self._MIDI_CC_BUTTONS_LEFT_TOP + channel, 0)
-
-
-    def _update_leds_bottom_row(self, channel=-1):
-        if not self._is_connected:
-            return
-
-        if self._mode_other:
-            if self._mode_other == self._MODE_OTHER_BANK:
-                for channel in range(8):
-                    self.update_led( \
-                        self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
-        elif self._mode_track:
-            if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
-                if channel >= 0:
-                    self.update_led( \
-                        self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
-                            self._led_status['CHANNEL_SOLO_%d' % channel])
-                else:
-                    for channel in range(8):
-                        self.update_led( \
-                            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
-                                self._led_status['CHANNEL_SOLO_%d' % channel])
-            else:
-                # CHANNEL_FUNCTION
-                if channel >= 0:
-                    self.update_led( \
-                        self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
-                else:
-                    for channel in range(8):
-                        self.update_led( \
-                            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
-        elif self._mode_edit:
-            if self._mode_edit == self._MODE_EDIT_VSELECT_ASSIGNMENT:
-                self.update_led( \
-                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM, \
-                        self._led_status['ASSIGNMENT_TRACK'])
-                self.update_led( \
-                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1, \
-                        self._led_status['ASSIGNMENT_SEND'])
-                self.update_led( \
-                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2, \
-                        self._led_status['ASSIGNMENT_PAN_SURROUND'])
-                self.update_led( \
-                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3, \
-                        self._led_status['ASSIGNMENT_EQ'])
-                self.update_led( \
-                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4, \
-                        self._led_status['ASSIGNMENT_PLUG_IN'])
-                self.update_led( \
-                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5, \
-                        self._led_status['ASSIGNMENT_INSTRUMENT'])
-                self.update_led(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6, 0)
-                self.update_led(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7, 0)
-            else:
-                if channel >= 0:
-                    self.update_led( \
-                        self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
-                            self._led_status['CHANNEL_SELECT_%d' % channel])
-                else:
-                    for channel in range(8):
-                        self.update_led( \
-                            self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
-                                self._led_status['CHANNEL_SELECT_%d' % channel])
-
-
-    def _keypress_top_row(self, channel, status):
-        if self._mode_track:
-            if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
-                self.mackie_host_control.keypress_channel_mute(channel, status)
-            else:
-                self.mackie_host_control.keypress_channel_record_ready(channel, status)
-        else:
-            self.mackie_host_control.keypress_channel_vselect(channel, status)
-
-
-    def _keypress_bottom_row(self, channel, status):
-        if self._mode_other:
-            if self._mode_other == self._MODE_OTHER_BANK:
-                if channel == 0:
-                    self.mackie_host_control.keypress_fader_banks_bank_left( \
-                        status)
-                elif channel == 1:
-                    self.mackie_host_control.keypress_fader_banks_channel_left( \
-                        status)
-                elif channel == 2:
-                    self.mackie_host_control.keypress_fader_banks_channel_right( \
-                        status)
-                elif channel == 3:
-                    self.mackie_host_control.keypress_fader_banks_bank_right( \
-                        status)
-        elif self._mode_track:
-            if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
-                self.mackie_host_control.keypress_channel_solo(channel, status)
-            else:
-                self.mackie_host_control.keypress_channel_function(channel, status)
-        elif self._mode_edit:
-            if self._mode_edit == self._MODE_EDIT_VSELECT_ASSIGNMENT:
-                if channel == 0:
-                    self.mackie_host_control.keypress_assignment_track(status)
-                elif channel == 1:
-                    self.mackie_host_control.keypress_assignment_send(status)
-                elif channel == 2:
-                    self.mackie_host_control.keypress_assignment_pan_surround( \
-                        status)
-                elif channel == 3:
-                    self.mackie_host_control.keypress_assignment_eq(status)
-                elif channel == 4:
-                    self.mackie_host_control.keypress_assignment_plug_in(status)
-                elif channel == 5:
-                    self.mackie_host_control.keypress_assignment_instrument( \
-                        status)
-                elif channel == 6:
-                    self.mackie_host_control.keypress_user_switch(0, status)
-                elif channel == 7:
-                    self.mackie_host_control.keypress_user_switch(1, status)
-            else:
-                self.mackie_host_control.keypress_channel_select(channel, status)
-
-
-    def keypress_shift(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP, status)
-        self.mackie_host_control.keypress_shift(status)
-
-
-    def keypress_control(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 1, status)
-        self.mackie_host_control.keypress_control(status)
-
-
-    def keypress_command_alt(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 2, status)
-        self.mackie_host_control.keypress_command_alt(status)
-
-
-    def keypress_option(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 3, status)
-        self.mackie_host_control.keypress_option(status)
-
-
-    def keypress_cursor_left(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 4, status)
-        self.mackie_host_control.keypress_cursor_left(status)
-
-
-    def keypress_cursor_right(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 5, status)
-        self.mackie_host_control.keypress_cursor_right(status)
-
-
-    def keypress_cursor_down(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 6, status)
-        self.mackie_host_control.keypress_cursor_down(status)
-
-
-    def keypress_cursor_up(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_TOP + 7, status)
-        self.mackie_host_control.keypress_cursor_up(status)
-
-
-    def keypress_name_value(self, status):
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, status)
-        self.mackie_host_control.keypress_name_value(status)
-
-
-    def update_led_assignment_track(self, status):
-        self._led_status['ASSIGNMENT_TRACK'] = status
-
-        # update LEDs
-        self._update_leds_bottom_row()
-
-
-    def update_led_assignment_send(self, status):
-        self._led_status['ASSIGNMENT_SEND'] = status
-
-        # update LEDs
-        self._update_leds_bottom_row()
-
-
-    def update_led_assignment_pan_surround(self, status):
-        self._led_status['ASSIGNMENT_PAN_SURROUND'] = status
-
-        # update LEDs
-        self._update_leds_bottom_row()
-
-
-    def update_led_assignment_plug_in(self, status):
-        self._led_status['ASSIGNMENT_PLUG_IN'] = status
-
-        # update LEDs
-        self._update_leds_bottom_row()
-
-
-    def update_led_assignment_eq(self, status):
-        self._led_status['ASSIGNMENT_EQ'] = status
-
-        # update LEDs
-        self._update_leds_bottom_row()
-
-
-    def update_led_assignment_instrument(self, status):
-        self._led_status['ASSIGNMENT_INSTRUMENT'] = status
-
-        # update LEDs
-        self._update_leds_bottom_row()
 
 
     def set_vpot_led_ring(self, id, center_led, mode, position):
@@ -963,11 +808,11 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._vpot_modes[id] = vpot_mode
         self._vpot_positions[id] = position
 
-        self.update_led(self._MIDI_CC_ENCODER_MODE + id, vpot_mode)
-        self.update_led(self._MIDI_CC_ENCODER_LIGHTS + id, position)
+        self._set_led(self._MIDI_CC_ENCODER_MODE + id, vpot_mode)
+        self._set_led(self._MIDI_CC_ENCODER_LIGHTS + id, position)
 
 
-    def update_led(self, led_id, led_status):
+    def _set_led(self, led_id, led_status):
         if not self._is_connected:
             return
 
@@ -975,135 +820,240 @@ class ZeroSlMk2(MidiControllerTemplate):
             self, self._MIDI_DEVICE_CHANNEL, led_id, led_status)
 
 
-    def update_led_2(self, led_id, led_status):
+    def set_led(self, internal_id, led_status):
         if not self._is_connected:
             return
 
-        controller_type = led_id[:2]
-        controller_id = int(led_id[2:])
+        controller_type = internal_id[:2]
+        controller_id = int(internal_id[2:])
 
         if controller_type == 'cc':
             MidiControllerTemplate.send_midi_control_change( \
                 self, self._MIDI_DEVICE_CHANNEL, controller_id, led_status)
 
 
-    def update_led_channel_record_ready(self, channel, status):
-        # channel: 0 - 7
-        self._led_status['CHANNEL_RECORD_READY_%d' % channel] = status
-
-        # update LEDs
-        self._update_leds_top_row(channel)
-
-
-    def update_led_channel_select(self, channel, status):
-        # channel: 0 - 7
-        self._led_status['CHANNEL_SELECT_%d' % channel] = status
-
-        # update LEDs
-        self._update_leds_bottom_row()
+    # def _keypress_top_row(self, channel, status):
+    #     if self._mode_track:
+    #         if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
+    #             self.interconnector.keypress_channel_mute(channel, status)
+    #         else:
+    #             self.interconnector.keypress_channel_record_ready(channel, status)
+    #     else:
+    #         self.interconnector.keypress_channel_vselect(channel, status)
 
 
-    def update_led_channel_vselect(self, channel, status):
-        # channel: 0 - 7
-        self._led_status['CHANNEL_VSELECT_%d' % channel] = status
-
-        # update LEDs
-        self._update_leds_top_row(channel)
-
-
-    def update_led_channel_mute(self, channel, status):
-        # channel: 0 - 7
-        self._led_status['CHANNEL_MUTE_%d' % channel] = status
-
-        # update LEDs
-        self._update_leds_top_row(channel)
-
-
-    def update_led_channel_solo(self, channel, status):
-        # channel: 0 - 7
-        self._led_status['CHANNEL_SOLO_%d' % channel] = status
-
-        # update LEDs
-        self._update_leds_bottom_row(channel)
-
-
-    def update_led_channel_function(self, channel, status):
-        # channel: 0 - 7
-        self._led_status['CHANNEL_FUNCTION_%d' % channel] = status
-
-        # update LEDs
-        self._update_leds_bottom_row(channel)
-
-
-    def update_led_flip(self, status):
-        self._led_status['FLIP'] = status
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, status)
-
-
-    def update_led_scrub(self, status):
-        self._led_status['SCRUB'] = status
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6, status)
-
-
-    def update_led_zoom(self, status):
-        self._led_status['ZOOM'] = status
-        self.update_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7, status)
+    # def _keypress_bottom_row(self, channel, status):
+    #     if self._mode_other:
+    #         if self._mode_other == self._MODE_OTHER_BANK:
+    #             if channel == 0:
+    #                 self.interconnector.keypress_fader_banks_bank_left( \
+    #                     status)
+    #             elif channel == 1:
+    #                 self.interconnector.keypress_fader_banks_channel_left( \
+    #                     status)
+    #             elif channel == 2:
+    #                 self.interconnector.keypress_fader_banks_channel_right( \
+    #                     status)
+    #             elif channel == 3:
+    #                 self.interconnector.keypress_fader_banks_bank_right( \
+    #                     status)
+    #     elif self._mode_track:
+    #         if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
+    #             self.interconnector.keypress_channel_solo(channel, status)
+    #         else:
+    #             self.interconnector.keypress_channel_function(channel, status)
+    #     elif self._mode_edit:
+    #         if self._mode_edit == self._MODE_EDIT_VSELECT_ASSIGNMENT:
+    #             if channel == 0:
+    #                 self.interconnector.keypress_assignment_track(status)
+    #             elif channel == 1:
+    #                 self.interconnector.keypress_assignment_send(status)
+    #             elif channel == 2:
+    #                 self.interconnector.keypress_assignment_pan_surround( \
+    #                     status)
+    #             elif channel == 3:
+    #                 self.interconnector.keypress_assignment_eq(status)
+    #             elif channel == 4:
+    #                 self.interconnector.keypress_assignment_plug_in(status)
+    #             elif channel == 5:
+    #                 self.interconnector.keypress_assignment_instrument( \
+    #                     status)
+    #             elif channel == 6:
+    #                 self.interconnector.keypress_user_switch(0, status)
+    #             elif channel == 7:
+    #                 self.interconnector.keypress_user_switch(1, status)
+    #         else:
+    #             self.interconnector.keypress_channel_select(channel, status)
 
 
-    def update_led_cycle(self, status):
-        self._led_status['CYCLE'] = status
-        if self._mode_other == self._MODE_OTHER_TRANSPORT:
-            self._keypress_mode_transport(1)
+    # def keypress_name_value(self, status):
+    #     self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, status)
+    #     self.interconnector.keypress_name_value(status)
 
 
-    def update_led_rewind(self, status):
-        self._led_status['REWIND'] = status
-        if self._mode_other == self._MODE_OTHER_TRANSPORT:
-            self._keypress_mode_transport(1)
+    # def _update_leds_top_row(self, channel=-1):
+    #     if not self._is_connected:
+    #         return
+    #
+    #     if self._mode_track:
+    #         if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
+    #             if channel >= 0:
+    #                 self._set_led( \
+    #                     self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
+    #                         self._led_status['CHANNEL_MUTE_%d' % channel])
+    #             else:
+    #                 if channel >= 0:
+    #                     self._set_led( \
+    #                         self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
+    #                             self._led_status['CHANNEL_MUTE_%d' % channel])
+    #                 else:
+    #                     for channel in range(8):
+    #                         self._set_led( \
+    #                             self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
+    #                                 self._led_status['CHANNEL_MUTE_%d' % \
+    #                                                      channel])
+    #         else:
+    #             if channel >= 0:
+    #                 self._set_led( \
+    #                     self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
+    #                         self._led_status['CHANNEL_RECORD_READY_%d' % \
+    #                                              channel])
+    #             else:
+    #                 for channel in range(8):
+    #                     self._set_led( \
+    #                         self._MIDI_CC_BUTTONS_LEFT_TOP + channel, \
+    #                             self._led_status['CHANNEL_RECORD_READY_%d' % \
+    #                                                  channel])
+    #     else:
+    #         # CHANNEL_VSELECT
+    #         if channel >= 0:
+    #             self._set_led( \
+    #                 self._MIDI_CC_BUTTONS_LEFT_TOP + channel, 0)
+    #         else:
+    #             for channel in range(8):
+    #                 self._set_led( \
+    #                     self._MIDI_CC_BUTTONS_LEFT_TOP + channel, 0)
 
 
-    def update_led_fast_forward(self, status):
-        self._led_status['FAST_FORWARD'] = status
-        if self._mode_other == self._MODE_OTHER_TRANSPORT:
-            self._keypress_mode_transport(1)
+    # def _update_leds_bottom_row(self, channel=-1):
+    #     if not self._is_connected:
+    #         return
+    #
+    #     if self._mode_other:
+    #         if self._mode_other == self._MODE_OTHER_BANK:
+    #             for channel in range(8):
+    #                 self._set_led( \
+    #                     self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
+    #     elif self._mode_track:
+    #         if self._mode_track == self._MODE_TRACK_MUTE_SOLO:
+    #             if channel >= 0:
+    #                 self._set_led( \
+    #                     self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
+    #                         self._led_status['CHANNEL_SOLO_%d' % channel])
+    #             else:
+    #                 for channel in range(8):
+    #                     self._set_led( \
+    #                         self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
+    #                             self._led_status['CHANNEL_SOLO_%d' % channel])
+    #         else:
+    #             # CHANNEL_FUNCTION
+    #             if channel >= 0:
+    #                 self._set_led( \
+    #                     self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
+    #             else:
+    #                 for channel in range(8):
+    #                     self._set_led( \
+    #                         self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, 0)
+    #     elif self._mode_edit:
+    #         if self._mode_edit == self._MODE_EDIT_VSELECT_ASSIGNMENT:
+    #             self._set_led( \
+    #                 self._MIDI_CC_BUTTONS_LEFT_BOTTOM, \
+    #                     self._led_status['ASSIGNMENT_TRACK'])
+    #             self._set_led( \
+    #                 self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1, \
+    #                     self._led_status['ASSIGNMENT_SEND'])
+    #             self._set_led( \
+    #                 self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2, \
+    #                     self._led_status['ASSIGNMENT_PAN_SURROUND'])
+    #             self._set_led( \
+    #                 self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3, \
+    #                     self._led_status['ASSIGNMENT_EQ'])
+    #             self._set_led( \
+    #                 self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4, \
+    #                     self._led_status['ASSIGNMENT_PLUG_IN'])
+    #             self._set_led( \
+    #                 self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5, \
+    #                     self._led_status['ASSIGNMENT_INSTRUMENT'])
+    #             self._set_led(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6, 0)
+    #             self._set_led(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7, 0)
+    #         else:
+    #             if channel >= 0:
+    #                 self._set_led( \
+    #                     self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
+    #                         self._led_status['CHANNEL_SELECT_%d' % channel])
+    #             else:
+    #                 for channel in range(8):
+    #                     self._set_led( \
+    #                         self._MIDI_CC_BUTTONS_LEFT_BOTTOM + channel, \
+    #                             self._led_status['CHANNEL_SELECT_%d' % channel])
 
 
-    def update_led_stop(self, status):
-        self._led_status['STOP'] = status
-        if self._mode_other == self._MODE_OTHER_TRANSPORT:
-            self._keypress_mode_transport(1)
+    # def set_led_flip(self, status):
+    #     self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, status)
 
 
-    def update_led_play(self, status):
-        self._led_status['PLAY'] = status
-        if self._mode_other == self._MODE_OTHER_TRANSPORT:
-            self._keypress_mode_transport(1)
+    # def set_led_scrub(self, status):
+    #     self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6, status)
 
 
-    def update_led_record(self, status):
-        self._led_status['RECORD'] = status
-        if self._mode_other == self._MODE_OTHER_TRANSPORT:
-            self._keypress_mode_transport(1)
+    # def set_led_zoom(self, status):
+    #     self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7, status)
 
 
-    def update_led_relay_click(self, status):
-        self._led_status['RELAY_CLICK'] = status
-        self.update_led(self._MIDI_CC_LED_AUTOMAP_LEARN, status)
+    # def set_led_cycle(self, status):
+    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
+    #         self._keypress_mode_transport(1)
 
 
-    def update_led_rude_solo(self, status):
-        self._led_status['RUDE_SOLO'] = status
-        self.update_led(self._MIDI_CC_LED_AUTOMAP_VIEW, status)
+    # def set_led_rewind(self, status):
+    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
+    #         self._keypress_mode_transport(1)
 
 
-    def update_led_beats(self, status):
-        self._led_status['BEATS'] = status
-        self.update_led(self._MIDI_CC_LED_AUTOMAP_USER, status)
+    # def set_led_fast_forward(self, status):
+    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
+    #         self._keypress_mode_transport(1)
 
 
-    def update_led_smpte(self, status):
-        self._led_status['SMPTE'] = status
-        self.update_led(self._MIDI_CC_LED_AUTOMAP_FX, status)
+    # def set_led_stop(self, status):
+    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
+    #         self._keypress_mode_transport(1)
+
+
+    # def set_led_play(self, status):
+    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
+    #         self._keypress_mode_transport(1)
+
+
+    # def set_led_record(self, status):
+    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
+    #         self._keypress_mode_transport(1)
+
+
+    # def set_led_relay_click(self, status):
+    #     self._set_led(self._MIDI_CC_LED_AUTOMAP_LEARN, status)
+
+
+    # def set_led_rude_solo(self, status):
+    #     self._set_led(self._MIDI_CC_LED_AUTOMAP_VIEW, status)
+
+
+    # def set_led_beats(self, status):
+    #     self._set_led(self._MIDI_CC_LED_AUTOMAP_USER, status)
+
+
+    # def set_led_smpte(self, status):
+    #     self._set_led(self._MIDI_CC_LED_AUTOMAP_FX, status)
 
 
 if __name__ == "__main__":
@@ -1118,20 +1068,20 @@ if __name__ == "__main__":
 
     for id in range(0x00, 0x80):
         print 'testing LED 0x%02X' % id
-        controller.update_led(id, 1)
+        controller.set_led(id, 1)
         time.sleep(0.05)
-        controller.update_led(id, 0)
+        controller.set_led(id, 0)
 
     for mode in range(0x00, 0x50, 0x10):
         for id in range(8):
-            controller.update_led(0x78 + id, mode)
+            controller.set_led(0x78 + id, mode)
         for status in range(0x00, 0x0C):
             print 'testing mode 0x%02X, status 0x%02X' % (mode, status)
             for id in range(8):
-                controller.update_led(0x70 + id, status)
+                controller.set_led(0x70 + id, status)
             time.sleep(0.05)
 
         for id in range(8):
-            controller.update_led(0x70 + id, 0)
+            controller.set_led(0x70 + id, 0)
 
     controller.disconnect()
