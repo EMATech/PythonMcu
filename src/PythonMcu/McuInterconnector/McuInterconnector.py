@@ -119,7 +119,7 @@ class McuInterconnector(object):
 
         # set this here so the hardware controller can notify the user
         # about the connection process
-        self._hardware_controller.set_mackie_host_control(self._mackie_host_control)
+        self._hardware_controller.set_mackie_host_control(self)
         self._mackie_host_control.set_hardware_controller(self)
 
         self._led__hardware_to_mcu = {}
@@ -217,6 +217,274 @@ class McuInterconnector(object):
 
     def has_meter_bridge(self):
         return self._hardware_controller.has_meter_bridge()
+
+
+    def move_vpot(self, midi_channel, vpot_id, direction, number_of_ticks):
+        self._mackie_host_control.move_vpot( \
+            midi_channel, vpot_id, direction, number_of_ticks)
+
+    def move_vpot_raw(self, midi_channel, vpot_id, vpot_movement):
+        self._mackie_host_control.move_vpot_raw( \
+            midi_channel, vpot_id, vpot_movement)
+
+    def move_fader(self, fader_id, fader_value):
+        self._mackie_host_control.move_fader(fader_id, fader_value)
+
+
+    def move_fader_7bit(self, fader_id, fader_value):
+        self._mackie_host_control.move_fader_7bit(fader_id, fader_value)
+
+
+    def keypress_channel_record_ready(self, channel, status):
+        self._mackie_host_control.keypress_channel_record_ready(channel, status)
+
+
+    def keypress_channel_solo(self, channel, status):
+        self._mackie_host_control.keypress_channel_solo(channel, status)
+
+
+    def keypress_channel_mute(self, channel, status):
+        self._mackie_host_control.keypress_channel_mute(channel, status)
+
+
+    def keypress_channel_select(self, channel, status):
+        self._mackie_host_control.keypress_channel_select(channel, status)
+
+
+    def keypress_channel_vselect(self, channel, status):
+        self._mackie_host_control.keypress_channel_vselect(channel, status)
+
+
+    def keypress_channel_function(self, channel, status):
+        self._mackie_host_control.keypress_channel_function(channel, status)
+
+
+    def keypress_assignment_track(self, status):
+        self._mackie_host_control.keypress_assignment_track(status)
+
+
+    def keypress_assignment_send(self, status):
+        self._mackie_host_control.keypress_assignment_send(status)
+
+
+    def keypress_assignment_pan_surround(self, status):
+        self._mackie_host_control.keypress_assignment_pan_surround(status)
+
+
+    def keypress_assignment_plug_in(self, status):
+        self._mackie_host_control.keypress_assignment_plug_in(status)
+
+
+    def keypress_assignment_eq(self, status):
+        self._mackie_host_control.keypress_assignment_eq(status)
+
+
+    def keypress_assignment_instrument(self, status):
+        self._mackie_host_control.keypress_assignment_instrument(status)
+
+
+    def keypress_fader_banks_bank_left(self, status):
+        self._mackie_host_control.keypress_fader_banks_bank_left(status)
+
+
+    def keypress_fader_banks_bank_right(self, status):
+        self._mackie_host_control.keypress_fader_banks_bank_right(status)
+
+
+    def keypress_fader_banks_channel_left(self, status):
+        self._mackie_host_control.keypress_fader_banks_channel_left(status)
+
+
+    def keypress_fader_banks_channel_right(self, status):
+        self._mackie_host_control.keypress_fader_banks_channel_right(status)
+
+
+    def keypress_flip(self, status):
+        self._mackie_host_control.keypress_flip(status)
+
+
+    def keypress_global_view(self, status):
+        self._mackie_host_control.keypress_global_view(status)
+
+
+    def keypress_name_value(self, status):
+        self._mackie_host_control.keypress_name_value(status)
+
+
+    def keypress_smpte_beats(self, status):
+        self._mackie_host_control.keypress_smpte_beats(status)
+
+
+    def keypress_global_view_midi_tracks(self, status):
+        self._mackie_host_control.keypress_global_view_midi_tracks(status)
+
+
+    def keypress_global_view_inputs(self, status):
+        self._mackie_host_control.keypress_global_view_inputs(status)
+
+
+    def keypress_global_view_audio_tracks(self, status):
+        self._mackie_host_control.keypress_global_view_audio_tracks(status)
+
+
+    def keypress_global_view_audio_instruments(self, status):
+        self._mackie_host_control.keypress_global_view_audio_instruments(status)
+
+
+    def keypress_global_view_aux(self, status):
+        self._mackie_host_control.keypress_global_view_aux(status)
+
+
+    def keypress_global_view_busses(self, status):
+        self._mackie_host_control.keypress_global_view_busses(status)
+
+
+    def keypress_global_view_outputs(self, status):
+        self._mackie_host_control.keypress_global_view_outputs(status)
+
+
+    def keypress_global_view_user(self, status):
+        self._mackie_host_control.keypress_global_view_user(status)
+
+
+    def keypress_shift(self, status):
+        self._mackie_host_control.keypress_shift(status)
+
+
+    def keypress_option(self, status):
+        self._mackie_host_control.keypress_option(status)
+
+
+    def keypress_control(self, status):
+        self._mackie_host_control.keypress_control(status)
+
+
+    def keypress_command_alt(self, status):
+        self._mackie_host_control.keypress_command_alt(status)
+
+
+    def keypress_automation_read_off(self, status):
+        self._mackie_host_control.keypress_automation_read_off(status)
+
+
+    def keypress_automation_write(self, status):
+        self._mackie_host_control.keypress_automation_write(status)
+
+
+    def keypress_automation_trim(self, status):
+        self._mackie_host_control.keypress_automation_trim(status)
+
+
+    def keypress_automation_touch(self, status):
+        self._mackie_host_control.keypress_automation_touch(status)
+
+
+    def keypress_automation_latch(self, status):
+        self._mackie_host_control.keypress_automation_latch(status)
+
+
+    def keypress_group(self, status):
+        self._mackie_host_control.keypress_group(status)
+
+
+    def keypress_utilities_save(self, status):
+        self._mackie_host_control.keypress_utilities_save(status)
+
+
+    def keypress_utilities_undo(self, status):
+        self._mackie_host_control.keypress_utilities_undo(status)
+
+
+    def keypress_utilities_cancel(self, status):
+        self._mackie_host_control.keypress_utilities_cancel(status)
+
+
+    def keypress_utilities_enter(self, status):
+        self._mackie_host_control.keypress_utilities_enter(status)
+
+
+    def keypress_marker(self, status):
+        self._mackie_host_control.keypress_marker(status)
+
+
+    def keypress_nudge(self, status):
+        self._mackie_host_control.keypress_nudge(status)
+
+
+    def keypress_cycle(self, status):
+        self._mackie_host_control.keypress_cycle(status)
+
+
+    def keypress_drop(self, status):
+        self._mackie_host_control.keypress_drop(status)
+
+
+    def keypress_replace(self, status):
+        self._mackie_host_control.keypress_replace(status)
+
+
+    def keypress_click(self, status):
+        self._mackie_host_control.keypress_click(status)
+
+
+    def keypress_solo(self, status):
+        self._mackie_host_control.keypress_solo(status)
+
+
+    def keypress_rewind(self, status):
+        self._mackie_host_control.keypress_rewind(status)
+
+
+    def keypress_fast_forward(self, status):
+        self._mackie_host_control.keypress_fast_forward(status)
+
+
+    def keypress_stop(self, status):
+        self._mackie_host_control.keypress_stop(status)
+
+
+    def keypress_play(self, status):
+        self._mackie_host_control.keypress_play(status)
+
+
+    def keypress_record(self, status):
+        self._mackie_host_control.keypress_record(status)
+
+
+    def keypress_cursor_up(self, status):
+        self._mackie_host_control.keypress_cursor_up(status)
+
+
+    def keypress_cursor_down(self, status):
+        self._mackie_host_control.keypress_cursor_down(status)
+
+
+    def keypress_cursor_left(self, status):
+        self._mackie_host_control.keypress_cursor_left(status)
+
+
+    def keypress_cursor_right(self, status):
+        self._mackie_host_control.keypress_cursor_right(status)
+
+
+    def keypress_zoom(self, status):
+        self._mackie_host_control.keypress_zoom(status)
+
+
+    def keypress_scrub(self, status):
+        self._mackie_host_control.keypress_scrub(status)
+
+
+    def keypress_user_switch(self, switch_number, status):
+        self._mackie_host_control.keypress_user_switch(switch_number, status)
+
+
+    def keypress_channel_fader_touch(self, channel, status):
+        self._mackie_host_control.keypress_channel_fader_touch(channel, status)
+
+
+    def keypress_master_fader_touch(self, status):
+        self._mackie_host_control.keypress_master_fader_touch(status)
 
 
     # --- Mackie Control Unit commands ---
