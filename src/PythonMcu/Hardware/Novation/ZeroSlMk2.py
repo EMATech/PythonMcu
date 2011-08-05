@@ -100,7 +100,9 @@ class ZeroSlMk2(MidiControllerTemplate):
         self.display_timecode_available = False
         self.meter_bridge_available = False
 
-        self._lcd_strings = ['', '']
+        self._lcd_strings = [ \
+            '                                                                        ', \
+            '                                                                        ']
         self._menu_string = ''
 
         self._vpot_modes = \
@@ -176,16 +178,22 @@ class ZeroSlMk2(MidiControllerTemplate):
         self._set_lcd(2, 'Mackie Host Control:    connected.')
 
 
-    def register_control(self, mcu_command, midi_control):
-        midi_control_change = 'cc%d' % midi_control
+    def register_control(self, mcu_command, midi_switch, midi_led = None):
+        midi_switch_cc = 'cc%d' % midi_switch
 
-        self.interconnector.register_control(mcu_command, midi_control_change)
+        if midi_led:
+            midi_led_cc = 'cc%d' % midi_led
+        else:
+            midi_led_cc = midi_switch_cc
+
+        self.interconnector.register_control( \
+            mcu_command, midi_switch_cc, midi_led_cc)
 
 
-    def withdraw_control(self, midi_control):
-        midi_control_change = 'cc%d' % midi_control
+    def withdraw_control(self, midi_switch):
+        midi_switch_cc = 'cc%d' % midi_switch
 
-        self.interconnector.withdraw_control(midi_control_change)
+        self.interconnector.withdraw_control(midi_switch_cc)
 
 
     def withdraw_all_controls(self):
@@ -329,7 +337,7 @@ class ZeroSlMk2(MidiControllerTemplate):
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3:
                 'self.change_mode_utility(%d & 0x01)',
             self._MIDI_CC_BUTTON_MODE_TRANSPORT:
-                'self._keypress_mode_transport(%d & 0x01)',
+                'self.change_mode_transport(%d & 0x01)',
             }
 
         if status == (MidiConnection.CONTROL_CHANGE + \
@@ -359,46 +367,6 @@ class ZeroSlMk2(MidiControllerTemplate):
             for byte in message:
                 message_string.append('%02X' % byte)
             self._log(' '.join(message_string))
-
-
-    def _keypress_mode_transport(self, status):
-        if status > 0:
-            self._mode_other = self._MODE_OTHER_TRANSPORT
-
-            menu_strings = \
-                ('Click', 'Solo', 'Marker', 'Nudge', \
-                 'SMPTE/Bt', '', 'Drop', 'Replace')
-            self._set_menu_string(menu_strings)
-
-            # self._set_led( \
-            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, self._led_status['REWIND'])
-            # self._set_led( \
-            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, self._led_status['FAST_FORWARD'])
-            # self._set_led( \
-            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, self._led_status['STOP'])
-            # self._set_led( \
-            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, self._led_status['PLAY'])
-            # self._set_led( \
-            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, self._led_status['CYCLE'])
-            # self._set_led( \
-            #     self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, self._led_status['RECORD'])
-        else:
-            self._mode_other = self._MODE_OTHER_OFF
-
-            self._clear_menu_string()
-
-            self._set_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 0)
-            self._set_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
-            self._set_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 0)
-            self._set_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 0)
-            self._set_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4, 0)
-            self._set_led( \
-                self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5, 0)
 
 
     def set_display_7seg(self, position, character_code):
@@ -704,6 +672,74 @@ class ZeroSlMk2(MidiControllerTemplate):
                 self._MIDI_CC_ENCODER_LIGHTS + id, self._vpot_positions[id])
 
 
+    def change_mode_transport(self, status):
+        # leave other modes as is in order to return to the old one!
+
+        if status > 0:
+            self._mode_other = self._MODE_OTHER_TRANSPORT
+
+            menu_strings = \
+                ('Click', 'Solo', 'Marker', 'Nudge', \
+                 'SMPTE/Bt', '', 'Drop', 'Replace')
+            self._set_menu_string(menu_strings)
+
+            self.register_control( \
+                'rewind', self._MIDI_CC_BUTTON_REWIND, \
+                    self._MIDI_CC_BUTTONS_RIGHT_BOTTOM)
+            self.register_control( \
+                'fast_forward', self._MIDI_CC_BUTTON_FAST_FORWARD, \
+                    self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1)
+            self.register_control( \
+                'stop', self._MIDI_CC_BUTTON_STOP, \
+                    self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2)
+            self.register_control( \
+                'play', self._MIDI_CC_BUTTON_PLAY, \
+                    self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3)
+            self.register_control( \
+                'cycle', self._MIDI_CC_BUTTON_CYCLE, \
+                    self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4)
+            self.register_control( \
+                'record', self._MIDI_CC_BUTTON_RECORD, \
+                    self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5)
+
+            self.register_control( \
+                'click', \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
+            self.register_control( \
+                'solo', \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1)
+            self.register_control( \
+                'marker', \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2)
+            self.register_control( \
+                'nudge', \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3)
+            self.register_control( \
+                'smpte_beats', \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4)
+
+            self.withdraw_control(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5)
+
+            self.register_control( \
+                'drop', \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6)
+            self.register_control( \
+                'replace', \
+                    self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
+        else:
+            self._mode_other = self._MODE_OTHER_OFF
+
+            self.withdraw_control(self._MIDI_CC_BUTTON_REWIND)
+            self.withdraw_control(self._MIDI_CC_BUTTON_FAST_FORWARD)
+            self.withdraw_control(self._MIDI_CC_BUTTON_STOP)
+            self.withdraw_control(self._MIDI_CC_BUTTON_PLAY)
+            self.withdraw_control(self._MIDI_CC_BUTTON_CYCLE)
+            self.withdraw_control(self._MIDI_CC_BUTTON_RECORD)
+
+            self._clear_menu_string()
+            self._restore_previous_mode()
+
+
     def change_mode_bank(self, status):
         # leave other modes as is in order to return to the old one!
 
@@ -892,36 +928,6 @@ class ZeroSlMk2(MidiControllerTemplate):
         if controller_type == 'cc':
             MidiControllerTemplate.send_midi_control_change( \
                 self, self._MIDI_DEVICE_CHANNEL, controller_id, led_status)
-
-
-    # def set_led_cycle(self, status):
-    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
-    #         self._keypress_mode_transport(1)
-
-
-    # def set_led_rewind(self, status):
-    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
-    #         self._keypress_mode_transport(1)
-
-
-    # def set_led_fast_forward(self, status):
-    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
-    #         self._keypress_mode_transport(1)
-
-
-    # def set_led_stop(self, status):
-    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
-    #         self._keypress_mode_transport(1)
-
-
-    # def set_led_play(self, status):
-    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
-    #         self._keypress_mode_transport(1)
-
-
-    # def set_led_record(self, status):
-    #     if self._mode_other == self._MODE_OTHER_TRANSPORT:
-    #         self._keypress_mode_transport(1)
 
 
     # def set_led_relay_click(self, status):

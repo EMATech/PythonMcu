@@ -142,6 +142,7 @@ class McuInterconnector(object):
         'scrub',
         'shift',
         'smpte',
+        'smpte_beats',
         'solo',
         'stop',
         'user_switch_1',
@@ -194,25 +195,32 @@ class McuInterconnector(object):
         self._mackie_host_control.process_midi_input()
 
 
-    def register_control(self, mcu_command, midi_control):
-        self.withdraw_control(midi_control)
+    def register_control(self, mcu_command, midi_switch, midi_led):
+        self.withdraw_control(midi_switch)
 
-        self._led__hardware_to_mcu[midi_control] = mcu_command
-        self._led__mcu_to_hardware[mcu_command]['midi_control'] = midi_control
+        self._led__hardware_to_mcu[midi_switch] = mcu_command
+        self._led__mcu_to_hardware[mcu_command]['midi_switch'] = midi_switch
+        self._led__mcu_to_hardware[mcu_command]['midi_led'] = midi_led
 
         self._update_led(mcu_command)
 
 
-    def withdraw_control(self, midi_control):
-        if midi_control in self._led__hardware_to_mcu:
-            mcu_command = self._led__hardware_to_mcu[midi_control]
-            del self._led__hardware_to_mcu[midi_control]
-            self._led__mcu_to_hardware[mcu_command]['midi_control'] = None
+    def withdraw_control(self, midi_switch):
+        if midi_switch in self._led__hardware_to_mcu:
+            mcu_command = self._led__hardware_to_mcu[midi_switch]
+            midi_led = self._led__mcu_to_hardware[mcu_command]['midi_led']
+            self._hardware_controller.set_led(midi_led, 0)
+
+            del self._led__hardware_to_mcu[midi_switch]
+            self._led__mcu_to_hardware[mcu_command]['midi_switch'] = None
+            self._led__mcu_to_hardware[mcu_command]['midi_led'] = None
 
 
     def withdraw_all_controls(self):
-        for midi_control in self._led__hardware_to_mcu.keys():
-            self._hardware_controller.set_led(midi_control, 0)
+        for midi_switch in self._led__hardware_to_mcu.keys():
+            mcu_command = self._led__hardware_to_mcu[midi_switch]
+            midi_led = self._led__mcu_to_hardware[mcu_command]['midi_led']
+            self._hardware_controller.set_led(midi_led, 0)
 
         self._led__hardware_to_mcu = {}
         self._led__mcu_to_hardware = {}
@@ -220,16 +228,17 @@ class McuInterconnector(object):
         for command in self._MCU_COMMANDS:
             self._led__mcu_to_hardware[command] = \
             {
-                'midi_control': None,
+                'midi_switch': None,
+                'midi_led': None,
                 'value': 0
             }
 
 
     def _update_led(self, mcu_command):
-        if self._led__mcu_to_hardware[mcu_command]['midi_control'] is not None:
+        if self._led__mcu_to_hardware[mcu_command]['midi_switch'] is not None:
             status = self._led__mcu_to_hardware[mcu_command]['value']
             self._hardware_controller.set_led( \
-                self._led__mcu_to_hardware[mcu_command]['midi_control'], status)
+                self._led__mcu_to_hardware[mcu_command]['midi_led'], status)
 
 
     def keypress(self, internal_id, status):
@@ -243,10 +252,11 @@ class McuInterconnector(object):
 
 
     def _set_led(self, mcu_command, status):
-        if self._led__mcu_to_hardware[mcu_command]['midi_control'] is not None:
-            if self._led__mcu_to_hardware[mcu_command]['value'] != status:
-                self._led__mcu_to_hardware[mcu_command]['value'] = status
+        if self._led__mcu_to_hardware[mcu_command]['value'] != status:
+            self._led__mcu_to_hardware[mcu_command]['value'] = status
 
+            if self._led__mcu_to_hardware[mcu_command]['midi_switch'] \
+                    is not None:
                 self._update_led(mcu_command)
 
 
