@@ -134,9 +134,26 @@ class MackieHostControl:
     def set_hardware_controller(self, controller):
         self._hardware_controller = controller
 
+        self._display_lcd_available = \
+            self._hardware_controller.has_display_lcd()
+        self._automated_faders_available = \
+            self._hardware_controller.has_automated_faders()
+        self._display_7seg_available = \
+            self._hardware_controller.has_display_7seg()
+        self._display_timecode_available = \
+            self._hardware_controller.has_display_timecode()
+        self._meter_bridge_available = \
+            self._hardware_controller.has_meter_bridge()
+
 
     def unset_hardware_controller(self):
         self._hardware_controller = None
+
+        self._display_lcd_available = False
+        self._automated_faders_available = False
+        self._display_7seg_available = False
+        self._display_timecode_available = False
+        self._meter_bridge_available = False
 
 
     def connect(self):
@@ -171,7 +188,7 @@ class MackieHostControl:
     def receive_midi(self, status, message):
         if status == MidiConnection.SYSTEM_MESSAGE:
             if message[0:6] == [0xF0, 0x00, 0x00, 0x66, 0x14, 0x12]:
-                if self._hardware_controller.has_display_lcd():
+                if self._display_lcd_available:
                     lcd_position = message[6] - 1
                     temp_string = message[7:-1]
 
@@ -196,7 +213,7 @@ class MackieHostControl:
                         self._lcd_strings[1] = line_2
                         self._hardware_controller.update_lcd(2, line_2)
         elif status == MidiConnection.PITCH_WHEEL_CHANGE:
-            if self._hardware_controller.has_automated_faders():
+            if self._automated_faders_available:
                 fader_id = message[0] & 0x0F
                 fader_position = (message[1] + (message[2] << 7)) >> 4
                 self._hardware_controller.fader_moved(fader_id, fader_position)
@@ -220,14 +237,14 @@ class MackieHostControl:
             position = message[1] & 0x0F
             character_code = message[2]
             if (position < 10):
-                if self._hardware_controller.has_display_timecode():
+                if self._display_timecode_available:
                     self._hardware_controller.set_display_timecode( \
                         position, character_code)
-            elif self._hardware_controller.has_display_7seg():
+            elif self._display_7seg_available:
                 self._hardware_controller.set_display_7seg( \
                     position, character_code)
         elif status == MidiConnection.CHANNEL_PRESSURE:
-            if self._hardware_controller.has_meter_bridge():
+            if self._meter_bridge_available:
                 meter_id = (message[1] & 0x70) >> 4
                 meter_level = message[1] & 0x0F
                 self._hardware_controller.set_peak_level(meter_id, meter_level)

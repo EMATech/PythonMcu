@@ -94,7 +94,7 @@ class ZeroSlMk2(MidiControllerTemplate):
     def __init__(self, midi_input, midi_output):
         MidiControllerTemplate.__init__(self, midi_input, midi_output)
 
-        self.display_available = True
+        self.display_lcd_available = True
         self.automated_faders_available = False
         self.display_7seg_available = False
         self.display_timecode_available = False
