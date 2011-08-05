@@ -121,7 +121,7 @@ class MackieHostControl:
     _LED_RELAY_CLICK = 0x76
 
 
-    def __init__(self, midi_input, midi_output):
+    def __init__(self, midi_input, midi_output, mcu_model_id):
         self._log('Opening MIDI ports...')
         self._midi = MidiConnection(self.receive_midi, midi_input, midi_output)
         self.unset_hardware_controller()
@@ -129,6 +129,14 @@ class MackieHostControl:
         # LCD has 2 rows with 56 characters each, fill with spaces
         self._lcd_characters = [' '] * 56 * 2
         self._lcd_strings = ['', '']
+
+        # Mackie Control model IDs:
+        # * 0x10: Logic Control
+        # * 0x11: Logic Control Extension
+        # * 0x14: seems to be Mackie Control
+        #
+        # Ableton Live 8 needs 0x14 in order to write to the LCD!
+        self._mcu_model_id = mcu_model_id
 
 
     def _log(self, message):
@@ -199,7 +207,8 @@ class MackieHostControl:
 
     def receive_midi(self, status, message):
         if status == MidiConnection.SYSTEM_MESSAGE:
-            if message[0:6] == [0xF0, 0x00, 0x00, 0x66, 0x14, 0x12]:
+            if message[0:6] == \
+                    [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id, 0x12]:
                 if self._display_lcd_available:
                     lcd_position = message[6] - 1
                     temp_string = message[7:-1]
