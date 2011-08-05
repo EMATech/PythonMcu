@@ -510,35 +510,35 @@ class MackieHostControl:
 
 
     def keypress_function_channel_1(self, status):
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION)
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION)
 
 
     def keypress_function_channel_2(self, status):
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 1)
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + 1)
 
 
     def keypress_function_channel_3(self, status):
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 2)
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + 2)
 
 
     def keypress_function_channel_4(self, status):
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 3)
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + 3)
 
 
     def keypress_function_channel_5(self, status):
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 4)
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + 4)
 
 
     def keypress_function_channel_6(self, status):
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 5)
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + 5)
 
 
     def keypress_function_channel_7(self, status):
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 6)
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + 6)
 
 
     def keypress_function_channel_8(self, status):
-        self._key_pressed(status, self._LED_SWITCH_CHANNEL_FUNCTION + 7)
+        self._key_pressed(status, self._SWITCH_CHANNEL_FUNCTION + 7)
 
 
     def keypress_assignment_track(self, status):

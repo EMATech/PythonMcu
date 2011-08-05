@@ -105,7 +105,7 @@ class McuInterconnector(object):
         'automation_write',
         'beats',
         'click',
-        'command',
+        'command_alt',
         'control',
         'cursor_down',
         'cursor_left',
@@ -113,9 +113,21 @@ class McuInterconnector(object):
         'cursor_up',
         'cycle',
         'drop',
+        'fader_banks_bank_left',
+        'fader_banks_bank_right',
+        'fader_banks_channel_left',
+        'fader_banks_channel_right',
         'fast_forward',
         'flip',
         'global_view',
+        'global_view_audio_instruments',
+        'global_view_audio_tracks',
+        'global_view_aux',
+        'global_view_busses',
+        'global_view_inputs',
+        'global_view_midi_tracks',
+        'global_view_outputs',
+        'global_view_user',
         'group',
         'marker',
         'name_value',
@@ -132,10 +144,15 @@ class McuInterconnector(object):
         'smpte',
         'solo',
         'stop',
+        'user_switch_1',
+        'user_switch_2',
+        'utilities_cancel',
+        'utilities_enter',
         'utilities_save',
         'utilities_undo',
         'zoom',
     ]
+
 
     def __init__(self, mackie_host_control, hardware_controller):
         self._mackie_host_control = mackie_host_control
@@ -149,7 +166,7 @@ class McuInterconnector(object):
         self._led__hardware_to_mcu = {}
         self._led__mcu_to_hardware = {}
 
-        self.unlink_all_controls()
+        self.withdraw_all_controls()
 
 
     def _log(self, message):
@@ -177,19 +194,23 @@ class McuInterconnector(object):
         self._mackie_host_control.process_midi_input()
 
 
-    def link_control(self, mcu_command, midi_control):
+    def register_control(self, mcu_command, midi_control):
+        self.withdraw_control(midi_control)
+
         self._led__hardware_to_mcu[midi_control] = mcu_command
         self._led__mcu_to_hardware[mcu_command]['midi_control'] = midi_control
 
         self._update_led(mcu_command)
 
 
-    def unlink_control(self, mcu_command, midi_control):
-        del self._led__hardware_to_mcu[midi_control]
-        self._led__mcu_to_hardware[mcu_command]['midi_control'] = None
+    def withdraw_control(self, midi_control):
+        if midi_control in self._led__hardware_to_mcu:
+            mcu_command = self._led__hardware_to_mcu[midi_control]
+            del self._led__hardware_to_mcu[midi_control]
+            self._led__mcu_to_hardware[mcu_command]['midi_control'] = None
 
 
-    def unlink_all_controls(self):
+    def withdraw_all_controls(self):
         for midi_control in self._led__hardware_to_mcu.keys():
             self._hardware_controller.set_led(midi_control, 0)
 
