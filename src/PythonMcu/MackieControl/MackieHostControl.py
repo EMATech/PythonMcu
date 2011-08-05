@@ -135,7 +135,7 @@ class MackieHostControl:
         print '[Mackie Host Control  ]  ' + message
 
 
-    # --- Initialisation ---
+    # --- initialisation ---
 
     def set_hardware_controller(self, controller):
         self._hardware_controller = controller
@@ -279,7 +279,7 @@ class MackieHostControl:
         self._midi.send_sysex(header, data)
 
 
-    # --- commands from Hardware Control ---
+    # --- commands from hardware control ---
 
     def move_vpot(self, midi_channel, vpot_id, direction, number_of_ticks):
         vpot_movement = number_of_ticks
@@ -815,7 +815,7 @@ class MackieHostControl:
         self._key_pressed(status, self._SWITCH_MASTER_FADER_TOUCH)
 
 
-    # --- commands from Mackie Control Host ---
+    # --- commands from Mackie Control host ---
 
     def _set_led(self, id, status):
         selector = {

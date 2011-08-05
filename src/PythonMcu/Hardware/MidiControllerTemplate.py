@@ -69,6 +69,12 @@ class MidiControllerTemplate(object):
             self.display_timecode_characters.append(' ')
 
 
+    def _log(self, message):
+        print '[Controller Template]  ' + message
+
+
+    # --- initialisation ---
+
     def set_interconnector(self, host):
         self.interconnector = host
 
@@ -81,18 +87,16 @@ class MidiControllerTemplate(object):
         self._log('Opening MIDI ports...')
 
 
-    def host_connected(self):
-        self._log('Mackie Host Control connected...')
-
-
     def disconnect(self):
         self.midi.disconnect()
         self._log('Disconnected.')
 
 
-    def _log(self, message):
-        print '[Controller Template]  ' + message
+    def host_connected(self):
+        self._log('Mackie Host Control connected...')
 
+
+    # --- abilities of hardware controller ---
 
     def has_display_7seg(self):
         return self.display_7seg_available
@@ -113,6 +117,8 @@ class MidiControllerTemplate(object):
     def has_meter_bridge(self):
         return self.meter_bridge_available
 
+
+    # --- MIDI processing ---
 
     def process_midi_input(self):
         self.midi.process_input_buffer()
@@ -139,18 +145,50 @@ class MidiControllerTemplate(object):
         self.midi.send_sysex(header, data)
 
 
-    def fader_moved(self, fader_id, fader_position):
-        self._log('Hardware fader #%d NOT moved to position %04d.' % \
-                      (fader_id, fader_position))
+    # --- registration of MIDI controls ---
 
-
-    def set_peak_level(self, meter_id, meter_level):
-        if meter_level == 0x0F:
-            self._log('Meter #%d overload NOT cleared.' % meter_id)
-        elif meter_level == 0x0F:
-            self._log('Meter #%d NOT set to overload.' % meter_id)
+    def register_control(self, mcu_command, midi_switch, midi_led = None):
+        if midi_led:
+            self.interconnector.register_control( \
+                mcu_command, midi_switch, midi_led)
         else:
-            self._log('Meter #%d NOT set to %03d%%.' % (meter_id, meter_level * 10))
+            self.interconnector.register_control( \
+                mcu_command, midi_switch, midi_switch)
+
+
+    def withdraw_control(self, midi_switch):
+        self.interconnector.withdraw_control(midi_switch_cc)
+
+
+    def withdraw_all_controls(self):
+        self.interconnector.withdraw_all_controls()
+
+
+    # --- handling of Mackie Control commands ---
+
+    def set_lcd(self, position, new_string):
+        """
+        send string of maximum 72 bytes to controller LCD
+
+        position 1: top row
+        position 2: bottom row
+        """
+        pass
+
+
+    def set_led(self, internal_id, led_status):
+        pass
+
+
+    def set_display_7seg(self, position, character_code):
+        character = self._decode_7seg_character(character_code)
+        position = 23 - (position * 2)
+
+        self.display_7seg_characters[position - 1] = character[0]
+        self.display_7seg_characters[position] = character[1]
+
+        string_7seg = ''.join(self.display_7seg_characters)
+        self._log('7 segment display NOT set to "%s".' % string_7seg)
 
 
     def _decode_7seg_character(self, character_code):
@@ -164,17 +202,6 @@ class MidiControllerTemplate(object):
             return (chr(character_code + 0x40), dot)
         else:
             return (chr(character_code), dot)
-
-
-    def set_display_7seg(self, position, character_code):
-        character = self._decode_7seg_character(character_code)
-        position = 23 - (position * 2)
-
-        self.display_7seg_characters[position - 1] = character[0]
-        self.display_7seg_characters[position] = character[1]
-
-        string_7seg = ''.join(self.display_7seg_characters)
-        self._log('7 segment display NOT set to "%s".' % string_7seg)
 
 
     def set_display_timecode(self, position, character_code):
@@ -193,20 +220,22 @@ class MidiControllerTemplate(object):
             self._log('timecode display NOT set to "%s".' % string_timecode)
 
 
-    def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, vpot_position):
+    def set_peak_level(self, meter_id, meter_level):
+        if meter_level == 0x0F:
+            self._log('Meter #%d overload NOT cleared.' % meter_id)
+        elif meter_level == 0x0F:
+            self._log('Meter #%d NOT set to overload.' % meter_id)
+        else:
+            self._log('Meter #%d NOT set to %03d%%.' % \
+                          (meter_id, meter_level * 10))
+
+
+    def fader_moved(self, fader_id, fader_position):
+        self._log('Hardware fader #%d NOT moved to position %04d.' % \
+                      (fader_id, fader_position))
+
+
+    def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, \
+                              vpot_position):
         self._log('V-Pot #%d LED ring NOT set to position %02d (mode %d).' % \
                       (vpot_id, vpot_position, vpot_mode))
-
-
-    def set_lcd(self, position, new_string):
-        """
-        send string of maximum 72 bytes to controller LCD
-
-        position 1: top row
-        position 2: bottom row
-        """
-        pass
-
-
-    def set_led(self, internal_id, led_status):
-        pass

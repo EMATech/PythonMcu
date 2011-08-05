@@ -174,7 +174,7 @@ class McuInterconnector(object):
         print '[MCU Interconnector   ]  ' + message
 
 
-    # --- MCU Interconnector commands ---
+    # --- initialisation ---
 
     def connect(self):
         self._hardware_controller.connect()
@@ -194,6 +194,8 @@ class McuInterconnector(object):
         self._hardware_controller.process_midi_input()
         self._mackie_host_control.process_midi_input()
 
+
+    # --- registration of MIDI controls ---
 
     def register_control(self, mcu_command, midi_switch, midi_led):
         self.withdraw_control(midi_switch)
@@ -234,16 +236,12 @@ class McuInterconnector(object):
             }
 
 
-    def _update_led(self, mcu_command):
-        if self._led__mcu_to_hardware[mcu_command]['midi_switch'] is not None:
-            status = self._led__mcu_to_hardware[mcu_command]['value']
-            self._hardware_controller.set_led( \
-                self._led__mcu_to_hardware[mcu_command]['midi_led'], status)
-
+    # --- MCU Interconnector commands ---
 
     def keypress(self, internal_id, status):
         if internal_id in self._led__hardware_to_mcu:
-            command = 'self._mackie_host_control.keypress_%s(%d)' % (self._led__hardware_to_mcu[internal_id], status)
+            command = 'self._mackie_host_control.keypress_%s(%d)' % \
+                (self._led__hardware_to_mcu[internal_id], status)
 
             eval(command)
             return True
@@ -260,7 +258,14 @@ class McuInterconnector(object):
                 self._update_led(mcu_command)
 
 
-    # --- Hardware Controller commands ---
+    def _update_led(self, mcu_command):
+        if self._led__mcu_to_hardware[mcu_command]['midi_switch'] is not None:
+            status = self._led__mcu_to_hardware[mcu_command]['value']
+            self._hardware_controller.set_led( \
+                self._led__mcu_to_hardware[mcu_command]['midi_led'], status)
+
+
+    # --- hardware controller commands ---
 
     def has_display_7seg(self):
         return self._hardware_controller.has_display_7seg()
@@ -282,6 +287,14 @@ class McuInterconnector(object):
         return self._hardware_controller.has_meter_bridge()
 
 
+    def move_fader(self, fader_id, fader_value):
+        self._mackie_host_control.move_fader(fader_id, fader_value)
+
+
+    def move_fader_7bit(self, fader_id, fader_value):
+        self._mackie_host_control.move_fader_7bit(fader_id, fader_value)
+
+
     def move_vpot(self, midi_channel, vpot_id, direction, number_of_ticks):
         self._mackie_host_control.move_vpot( \
             midi_channel, vpot_id, direction, number_of_ticks)
@@ -289,13 +302,6 @@ class McuInterconnector(object):
     def move_vpot_raw(self, midi_channel, vpot_id, vpot_movement):
         self._mackie_host_control.move_vpot_raw( \
             midi_channel, vpot_id, vpot_movement)
-
-    def move_fader(self, fader_id, fader_value):
-        self._mackie_host_control.move_fader(fader_id, fader_value)
-
-
-    def move_fader_7bit(self, fader_id, fader_value):
-        self._mackie_host_control.move_fader_7bit(fader_id, fader_value)
 
 
     # --- Mackie Control Unit commands ---
