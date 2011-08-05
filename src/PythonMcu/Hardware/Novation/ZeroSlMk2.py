@@ -125,35 +125,9 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         self.enter_ableton_mode()
 
-        self.register_control( \
-            'shift', self._MIDI_CC_BUTTONS_RIGHT_TOP)
-        self.register_control( \
-            'control', self._MIDI_CC_BUTTONS_RIGHT_TOP + 1)
-        self.register_control( \
-            'command_alt', self._MIDI_CC_BUTTONS_RIGHT_TOP + 2)
-        self.register_control( \
-            'option', self._MIDI_CC_BUTTONS_RIGHT_TOP + 3)
-        self.register_control( \
-            'cursor_left', self._MIDI_CC_BUTTONS_RIGHT_TOP + 4)
-        self.register_control( \
-            'cursor_right', self._MIDI_CC_BUTTONS_RIGHT_TOP + 5)
-        self.register_control( \
-            'cursor_down', self._MIDI_CC_BUTTONS_RIGHT_TOP + 6)
-        self.register_control( \
-            'cursor_up', self._MIDI_CC_BUTTONS_RIGHT_TOP + 7)
-
-        self.register_control( \
-            'name_value', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4)
-        self.register_control( \
-            'flip', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5)
-        self.register_control( \
-            'scrub', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6)
-        self.register_control( \
-            'zoom', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7)
-
-
         # select "track" mode ("Mute" + "Solo")
-        self.change_mode_track(2)
+        self._mode_track = self._MODE_TRACK_MUTE_SOLO
+        self._restore_previous_mode()
 
         self._set_lcd(1, 'Novation Zero SL MkII:  initialised.')
 
@@ -652,16 +626,40 @@ class ZeroSlMk2(MidiControllerTemplate):
             else:
                 self.change_mode_edit(2)
 
+        self.register_control( \
+            'shift', self._MIDI_CC_BUTTONS_RIGHT_TOP)
+        self.register_control( \
+            'control', self._MIDI_CC_BUTTONS_RIGHT_TOP + 1)
+        self.register_control( \
+            'command_alt', self._MIDI_CC_BUTTONS_RIGHT_TOP + 2)
+        self.register_control( \
+            'option', self._MIDI_CC_BUTTONS_RIGHT_TOP + 3)
+        self.register_control( \
+            'cursor_left', self._MIDI_CC_BUTTONS_RIGHT_TOP + 4)
+        self.register_control( \
+            'cursor_right', self._MIDI_CC_BUTTONS_RIGHT_TOP + 5)
+        self.register_control( \
+            'cursor_down', self._MIDI_CC_BUTTONS_RIGHT_TOP + 6)
+        self.register_control( \
+            'cursor_up', self._MIDI_CC_BUTTONS_RIGHT_TOP + 7)
 
-    # def _restore_leds(self):
-    #     self.set_led_flip(self._led_status['FLIP'])
-    #     self.set_led_scrub(self._led_status['SCRUB'])
-    #     self.set_led_zoom(self._led_status['ZOOM'])
-    #
-    #     self.set_led_relay_click(self._led_status['RELAY_CLICK'])
-    #     self.set_led_rude_solo(self._led_status['RUDE_SOLO'])
-    #     self.set_led_beats(self._led_status['BEATS'])
-    #     self.set_led_smpte(self._led_status['SMPTE'])
+        self.register_control( \
+            'name_value', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 4)
+        self.register_control( \
+            'flip', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 5)
+        self.register_control( \
+            'scrub', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 6)
+        self.register_control( \
+            'zoom', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7)
+
+        self.register_control( \
+            'relay_click', self._MIDI_CC_LED_AUTOMAP_LEARN)
+        self.register_control( \
+            'rude_solo', self._MIDI_CC_LED_AUTOMAP_VIEW)
+        self.register_control( \
+            'beats', self._MIDI_CC_LED_AUTOMAP_USER)
+        self.register_control( \
+            'smpte', self._MIDI_CC_LED_AUTOMAP_FX)
 
 
     def _restore_vpots(self):
@@ -928,22 +926,6 @@ class ZeroSlMk2(MidiControllerTemplate):
         if controller_type == 'cc':
             MidiControllerTemplate.send_midi_control_change( \
                 self, self._MIDI_DEVICE_CHANNEL, controller_id, led_status)
-
-
-    # def set_led_relay_click(self, status):
-    #     self._set_led(self._MIDI_CC_LED_AUTOMAP_LEARN, status)
-
-
-    # def set_led_rude_solo(self, status):
-    #     self._set_led(self._MIDI_CC_LED_AUTOMAP_VIEW, status)
-
-
-    # def set_led_beats(self, status):
-    #     self._set_led(self._MIDI_CC_LED_AUTOMAP_USER, status)
-
-
-    # def set_led_smpte(self, status):
-    #     self._set_led(self._MIDI_CC_LED_AUTOMAP_FX, status)
 
 
 if __name__ == "__main__":
