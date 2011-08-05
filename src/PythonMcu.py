@@ -24,11 +24,15 @@ Thank you for using free software!
 
 """
 
-MIDI_IN_CONTROL = 'ZeRO MkII: Port 2'
-MIDI_OUT_CONTROL = 'ZeRO MkII: Port 2'
+from PythonMcu.Hardware.Novation import *
+from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
+from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
+from Settings import *
 
-MIDI_IN_SEQUENCER = 'In From MIDI Yoke:  2'
-MIDI_OUT_SEQUENCER = 'Out To MIDI Yoke:  1'
+import threading
+import sys
+import time
+
 
 # Mackie Control model IDs:
 # * 0x10: Logic Control
@@ -36,17 +40,31 @@ MIDI_OUT_SEQUENCER = 'Out To MIDI Yoke:  1'
 # * 0x14: seems to be Mackie Control
 #
 # Ableton Live 8 needs 0x14 in order to write to the LCD, so let's use this
-MCU_MODEL_ID = 0x14
+MCU_MODEL_ID = int(settings.get('Python MCU', 'MCU Model ID', False), 16)
 
+MIDI_IN_CONTROL = settings.get('Python MCU', 'MIDI Input (Control)', False)
+MIDI_OUT_CONTROL = settings.get('Python MCU', 'MIDI Output (Control)', False)
 
-from PythonMcu.Hardware.Novation import *
-from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
-from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
+MIDI_IN_SEQUENCER = settings.get('Python MCU', 'MIDI Input (Sequencer)', False)
+MIDI_OUT_SEQUENCER = settings.get('Python MCU', 'MIDI Output (Sequencer)', \
+                                      False)
 
-import threading
-import sys
-import time
-
+print
+print settings.get_description(True)
+print
+print settings.get_copyrights()
+print
+print settings.get_license(True)
+print
+print
+print 'Settings'
+print '========'
+print 'MCU Model ID:             0x%x' % MCU_MODEL_ID
+print 'MIDI Input (Control):     "%s"' % MIDI_IN_CONTROL
+print 'MIDI Output (Control):    "%s"' % MIDI_OUT_CONTROL
+print 'MIDI Input (Sequencer):   "%s"' % MIDI_IN_SEQUENCER
+print 'MIDI Output (Sequencer):  "%s"' % MIDI_OUT_SEQUENCER
+print
 
 print
 print 'Starting application...'
