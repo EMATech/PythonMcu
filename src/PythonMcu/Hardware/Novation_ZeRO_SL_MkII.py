@@ -34,7 +34,7 @@ from PythonMcu.Hardware.MidiControllerTemplate import MidiControllerTemplate
 from PythonMcu.Midi.MidiConnection import MidiConnection
 
 
-class ZeroSlMk2(MidiControllerTemplate):
+class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
     # Novation Digital Music System
     MIDI_MANUFACTURER_ID = [0x00, 0x20, 0x29]
 
@@ -173,6 +173,10 @@ class ZeroSlMk2(MidiControllerTemplate):
 
         self.send_midi_sysex([0x02, 0x02, 0x05])
         self.send_midi_sysex([0x01, 0x00])
+
+        # clear all LEDs and switch off "transport" mode
+        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
+        self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
 
 
     # --- MIDI processing ---

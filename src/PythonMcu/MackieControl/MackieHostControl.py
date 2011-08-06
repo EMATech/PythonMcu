@@ -132,8 +132,9 @@ class MackieHostControl:
 
         # Mackie Control model IDs:
         # * 0x10: Logic Control
-        # * 0x11: Logic Control Extension
-        # * 0x14: seems to be Mackie Control
+        # * 0x11: Logic Control XT
+        # * 0x14: Mackie Control
+        # * 0x15: Mackie Control XT
         #
         # Ableton Live 8 needs 0x14 in order to write to the LCD!
         self._mcu_model_id = mcu_model_id

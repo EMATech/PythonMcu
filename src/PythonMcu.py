@@ -24,7 +24,7 @@ Thank you for using free software!
 
 """
 
-from PythonMcu.Hardware.Novation import *
+from PythonMcu.Hardware import *
 from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
 from Settings import *
@@ -36,18 +36,27 @@ import time
 
 # Mackie Control model IDs:
 # * 0x10: Logic Control
-# * 0x11: Logic Control Extension
-# * 0x14: seems to be Mackie Control
+# * 0x11: Logic Control XT
+# * 0x14: Mackie Control
+# * 0x15: Mackie Control XT
 #
 # Ableton Live 8 needs 0x14 in order to write to the LCD, so let's use this
-MCU_MODEL_ID = int(settings.get('Python MCU', 'MCU Model ID', False), 16)
+HARDWARE_CONTROLLER = settings.get( \
+    'Python MCU', 'Hardware controller', False)
 
-MIDI_IN_CONTROL = settings.get('Python MCU', 'MIDI Input (Control)', False)
-MIDI_OUT_CONTROL = settings.get('Python MCU', 'MIDI Output (Control)', False)
+MCU_MODEL_ID = int(settings.get( \
+        'Python MCU', 'MCU Model ID', False), 16)
 
-MIDI_IN_SEQUENCER = settings.get('Python MCU', 'MIDI Input (Sequencer)', False)
-MIDI_OUT_SEQUENCER = settings.get('Python MCU', 'MIDI Output (Sequencer)', \
-                                      False)
+MIDI_IN_CONTROLLER = settings.get( \
+    'Python MCU', 'MIDI input (controller)', False)
+MIDI_OUT_CONTROLLER = settings.get( \
+    'Python MCU', 'MIDI output (controller)', False)
+
+MIDI_IN_SEQUENCER = settings.get( \
+    'Python MCU', 'MIDI input (sequencer)', False)
+MIDI_OUT_SEQUENCER = settings.get( \
+    'Python MCU', 'MIDI output (sequencer)', False)
+
 
 print
 print settings.get_description(True)
@@ -59,11 +68,14 @@ print
 print
 print 'Settings'
 print '========'
-print 'MCU Model ID:             0x%x' % MCU_MODEL_ID
-print 'MIDI Input (Control):     "%s"' % MIDI_IN_CONTROL
-print 'MIDI Output (Control):    "%s"' % MIDI_OUT_CONTROL
-print 'MIDI Input (Sequencer):   "%s"' % MIDI_IN_SEQUENCER
-print 'MIDI Output (Sequencer):  "%s"' % MIDI_OUT_SEQUENCER
+print 'Python version:            %d.%d.%d' % sys.version_info[:3]
+print
+print 'Hardware controller:       %s' % HARDWARE_CONTROLLER.replace('_', ' ')
+print 'MCU model ID:              0x%x' % MCU_MODEL_ID
+print 'MIDI input (controller):   %s' % MIDI_IN_CONTROLLER
+print 'MIDI output (controller):  %s' % MIDI_OUT_CONTROLLER
+print 'MIDI input (sequencer):    %s' % MIDI_IN_SEQUENCER
+print 'MIDI output (sequencer):   %s' % MIDI_OUT_SEQUENCER
 print
 
 print
@@ -71,7 +83,10 @@ print 'Starting application...'
 print
 
 try:
-    midi_controller = ZeroSlMk2.ZeroSlMk2(MIDI_IN_CONTROL, MIDI_OUT_CONTROL)
+    eval_controller_init = '%s.%s(MIDI_IN_CONTROLLER, MIDI_OUT_CONTROLLER)' % \
+        (HARDWARE_CONTROLLER, HARDWARE_CONTROLLER)
+    midi_controller = eval(eval_controller_init)
+
     mackie_host_control = MackieHostControl( \
         MIDI_IN_SEQUENCER, MIDI_OUT_SEQUENCER, MCU_MODEL_ID)
 
