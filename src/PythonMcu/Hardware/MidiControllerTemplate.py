@@ -145,6 +145,16 @@ class MidiControllerTemplate(object):
         self.midi.send_sysex(header, data)
 
 
+    @staticmethod
+    def get_preferred_midi_input():
+        return ''
+
+
+    @staticmethod
+    def get_preferred_midi_output():
+        return ''
+
+
     # --- registration of MIDI controls ---
 
     def register_control(self, mcu_command, midi_switch, midi_led = None):

@@ -299,6 +299,16 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self, self._MIDI_DEVICE_CHANNEL, cc_number, cc_value)
 
 
+    @staticmethod
+    def get_preferred_midi_input():
+        return 'ZeRO MkII: Port 2'
+
+
+    @staticmethod
+    def get_preferred_midi_output():
+        return 'ZeRO MkII: Port 2'
+
+
     # --- registration of MIDI controls ---
 
     def register_control(self, mcu_command, midi_switch, midi_led = None):

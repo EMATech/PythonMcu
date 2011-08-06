@@ -36,25 +36,40 @@ import time
 
 configuration = ApplicationSettings()
 
-controller_midi_input_default = 'ZeRO MkII: Port 2'
-controller_midi_output_default = 'ZeRO MkII: Port 2'
+# initialise defaults for MCU and hardware control
 emulated_mcu_model_default = 'Mackie Control'
 hardware_controller_default = 'Novation ZeRO SL MkII'
-sequencer_midi_input_default = 'In From MIDI Yoke:  2'
-sequencer_midi_output_default = 'Out To MIDI Yoke:  1'
 
-
+# retrieve user configuration for MCU and hardware control
+EMULATED_MCU_MODEL = configuration.get_option( \
+    'Python MCU', 'emulated_mcu_model', emulated_mcu_model_default)
 HARDWARE_CONTROLLER = configuration.get_option( \
     'Python MCU', 'hardware_controller', hardware_controller_default)
 
-EMULATED_MCU_MODEL = configuration.get_option( \
-    'Python MCU', 'emulated_mcu_model', emulated_mcu_model_default)
+# the hardware controller class name is simply the controller's
+# manufacturer and name with all the spaces converted to underscores
+HARDWARE_CONTROLLER_CLASS = HARDWARE_CONTROLLER.replace(' ', '_')
 
+
+# get preferred MIDI connections for hardware control
+eval_controller_midi_input = \
+    '{0!s}.{0!s}.get_preferred_midi_input()'.format(HARDWARE_CONTROLLER_CLASS)
+eval_controller_midi_output = \
+    '{0!s}.{0!s}.get_preferred_midi_output()'.format(HARDWARE_CONTROLLER_CLASS)
+
+# initialise MIDI connection defaults for MCU and hardware control
+controller_midi_input_default = eval(eval_controller_midi_input)
+controller_midi_output_default = eval(eval_controller_midi_output)
+sequencer_midi_input_default = 'In From MIDI Yoke:  2'
+sequencer_midi_output_default = 'Out To MIDI Yoke:  1'
+
+# retrieve user configuration for MIDI connection of hardware control
 CONTROLLER_MIDI_INPUT = configuration.get_option( \
     'Python MCU', 'controller_midi_input', controller_midi_input_default)
 CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
     'Python MCU', 'controller_midi_output', controller_midi_output_default)
 
+# retrieve user configuration for MIDI connection of MCU
 SEQUENCER_MIDI_INPUT = configuration.get_option( \
     'Python MCU', 'sequencer_midi_input', sequencer_midi_input_default)
 SEQUENCER_MIDI_OUTPUT = configuration.get_option( \
@@ -62,11 +77,7 @@ SEQUENCER_MIDI_OUTPUT = configuration.get_option( \
 
 
 print
-print configuration.get_description(True)
-print
-print configuration.get_copyrights()
-print
-print configuration.get_license(True)
+print configuration.get_full_description()
 print
 print
 print 'Settings'
@@ -114,7 +125,7 @@ else:
 try:
     eval_controller_init = \
         '{0!s}.{0!s}(CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT)'.format( \
-        HARDWARE_CONTROLLER.replace(' ', '_'))
+        HARDWARE_CONTROLLER_CLASS)
     midi_controller = eval(eval_controller_init)
 
     mackie_host_control = MackieHostControl( \
