@@ -34,6 +34,8 @@ import sys
 import time
 
 
+settings = ApplicationSettings()
+
 HARDWARE_CONTROLLER = settings.get_option( \
     'Python MCU', 'hardware_controller', False)
 

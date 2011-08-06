@@ -53,15 +53,16 @@ class ApplicationAbout:
 
         """
         self._about = { \
-            'about_incarnation':  self._INCARNATION,
-            'application':        'PythonMcu',
-            'cmd_line':           'PythonMcu.py',
-            'description':        _('Mackie Host Controller written in Python'),
-            'version':            '1.01',
-            'authors':            'Martin Zuther',
-            'copyright_years':    '2011',
-            'license_short':      _('GPL version 3 (or later)'),
-            'license_long':       """This program is free software: you can redistribute it and/or modify
+            'about_class_incarnation':  self._INCARNATION,
+            'application':              'PythonMcu',
+            'cmd_line':                 'PythonMcu.py',
+            'description':              _('Mackie Host Controller written in Python'),
+            'version':                  '1.01',
+            'authors':                  'Martin Zuther',
+            'copyright_years':          '2011',
+            'license_short':            _('GPL version 3 (or later)'),
+            'license_long': \
+"""This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -145,7 +146,8 @@ Thank you for using free software!"""
         """Return application license as string.
 
         Keyword arguments:
-        long -- Boolean indication whether to output long version of description
+        long -- Boolean indication whether to output long version of
+                license
 
         Return value:
         Formatted string containing application license
@@ -161,7 +163,8 @@ Thank you for using free software!"""
         """Return application description as string.
 
         Keyword arguments:
-        long -- Boolean indication whether to output long version of description
+        long -- Boolean indication whether to output long version of
+                description
 
         Return value:
         Formatted string containing application description
@@ -202,4 +205,7 @@ if __name__ == "__main__":
         print '  ' + line
 
     # wait for key press
+    print
+    print
+    print '  Press any key ...',
     raw_input()

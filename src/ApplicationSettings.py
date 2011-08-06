@@ -25,30 +25,54 @@ Thank you for using free software!
 """
 
 import ConfigParser
+import os
 import types
 
 import ApplicationAbout
 
 
 class SortedDict(dict):
+    """Subclass of "dict" which automatically sorts keys.
+
+    """
     def keys(self):
+        """Return a sorted copy of the dictionary’s list of keys
+
+        Keyword arguments:
+        None
+
+        Return value:
+        List containing a sorted copy of the dictionary’s list of keys
+
+        """
         keys = dict.keys(self)
         keys.sort()
         return keys
 
     def items(self):
+        """Return a sorted copy of the dictionary’s (key, value) pairs.
+
+        Keyword arguments:
+        None
+
+        Return value:
+        List containing a sorted copy of the dictionary’s (key, value)
+        pairs
+
+        """
         items = dict.items(self)
         items.sort()
         return items
 
 
 class ApplicationSettings:
-    """Store user and application settings in one place and make them available.
+    """Store user settings and application information in one place
+       and make them available.
 
        Incarnation #6.
     """
     def __init__(self):
-        """Initialise user settings and application information.
+        """Initialise user configuration and application information.
 
         Keyword arguments:
         None
@@ -57,17 +81,26 @@ class ApplicationSettings:
         None
 
         """
+        # initialise application information
         self._about = ApplicationAbout.ApplicationAbout()
-        assert self.get_application_information('about_incarnation') == 2
 
+        # ascertain compatibility with the class "ApplicationAbout"
+        assert self.get_application_information( \
+            'about_class_incarnation') == 2
+
+        # this variable is used to check whether the user
+        # configuration has changed and is in need of saving
+        self._configuration_changed = False
+
+        # initialise and load user configuration
         self._configuration = ConfigParser.RawConfigParser( \
             dict_type = SortedDict)
-        self._configuration_changed = False
         self.load_configuration()
 
 
     def __repr__(self):
-        """Return all the contents of the configuration file as string.
+        """Return application information and user configuration file
+        as string.
 
         Keyword arguments:
         None
@@ -76,13 +109,15 @@ class ApplicationSettings:
         Formatted string containing all options from the configuration file
 
         """
+        # get application information ...
         output = str(self._about)
 
+        # ... and append user configuration
         output += '\n\n\nConfiguration file\n=================='
-        # sort and output sections
+        # append sorted sections
         for section in self.get_sections():
             output += '\n[%s]\n' % section
-            # sort and output options
+            # append sorted options
             for item in self.get_items(section):
                 output += '%s: %s\n' % (item[0], item[1])
 
@@ -91,7 +126,7 @@ class ApplicationSettings:
 
 
     def load_configuration(self, force=False):
-        """Load configuration file to memory.
+        """Load user configuration file into memory.
 
         Keyword arguments:
         force -- Boolean stating whether a changed configuration
@@ -104,16 +139,30 @@ class ApplicationSettings:
         """
         # configuration has changed and needs saving first
         if self.has_changed() and not force:
+            # signal failure
             return False
         # read application settings from configuration file
         else:
-            self._configuration_changed = False
-            self._configuration.read(self._about.get('config_file_path'))
+            # retrieve location of configuration file
+            file_name = self.get_application_information('config_file_path')
+
+            # if configuration file exists, load it
+            if os.path.isfile(file_name):
+                self._configuration.read(file_name)
+
+                # configuration has just been loaded, so mark as clean
+                self._configuration_changed = False
+            else:
+                # configuration file does not exist, so mark
+                # configuration as dirty
+                self._configuration_changed = True
+
+            # signal success
             return True
 
 
     def save_configuration(self):
-        """Save configuration file.
+        """Save user configuration to file.
 
         Keyword arguments:
         None
@@ -122,26 +171,36 @@ class ApplicationSettings:
         None
 
         """
-        # configuration needs saving
+        # cycle sections ...
+        for section in self.get_sections():
+            # ... and remove empty sections
+            if not self.get_options(section):
+                self.remove_section(section)
+
+        # if configuration is dirty ...
         if self.has_changed():
-            f = open(self._about.get('config_file_path'), 'w+')
+            # ... open, truncate and save configuration file
+            f = open(self.get_application_information('config_file_path'), 'w+')
             self._configuration.write(f)
+
+            # finally, close configuration file
             f.close()
 
+            # configuration has just been saved, so mark as clean
             self._configuration_changed = False
 
 
     def has_changed(self):
-        """Query whether configuration has changed.
+        """Query whether user configuration has changed.
 
         Keyword arguments:
         None
 
         Return value:
-        None
+        Boolean value stating whether the user configuration has
+        changed
 
         """
-        # configuration needs saving
         return self._configuration_changed
 
 
@@ -155,9 +214,10 @@ class ApplicationSettings:
         None
 
         """
+        # add section if it does not already exist
         if not self._configuration.has_section(section):
-            # we don't need to save empty sections, so do not change
-            # "self._configuration_changed" here
+            # there's no need to save an empty section, so do NOT mark
+            # configuration as dirty here
             self._configuration.add_section(section)
 
 
@@ -171,9 +231,12 @@ class ApplicationSettings:
         None
 
         """
+        # remove section if it does exist
         if self._configuration.has_section(section):
-            self._configuration_changed = True
             self._configuration.remove_section(section)
+
+            # mark configuration as dirty
+            self._configuration_changed = True
 
 
     def get_sections(self):
@@ -186,19 +249,21 @@ class ApplicationSettings:
         List containing all section names
 
         """
+        # retrieve and sort sections
         sections = self._configuration.sections()
         sections.sort()
 
-        # move section 'default' to the top
+        # if section 'default' exists, move it to the top
         if 'default' in sections:
             item = sections.pop(sections.index('default'))
             sections.insert(0, item)
 
+        # finally, return sections
         return sections
 
 
     def get_option(self, section, option, default = None):
-        """Get an application option.
+        """Get an configuration option.
 
         Keyword arguments:
         section -- string that specifies the section to be queried
@@ -207,92 +272,109 @@ class ApplicationSettings:
                    not exist (or is an empty string)
 
         Return value:
-        String containing the specified application option (or the
+        String containing the specified configuration option (or the
         default value)
 
         """
-        try:
-            value = self._configuration.get(section, option)
-            if value:
-                return value
-            else:
+        # if section or option does not exist, store and return
+        # default value
+        if not self._configuration.has_option(section, option):
+            self.set_option(section, option, default)
+            return default
+        # otherwise retrieve current value
+        else:
+            current_value = self._configuration.get(section, option)
+
+            # if current value is an empty string, store and return
+            # default value
+            if not current_value:
+                self.set_option(section, option, default)
                 return default
-        except ConfigParser.NoSectionError:
-            return default
-        except ConfigParser.NoOptionError:
-            return default
+            # otherwise return current value
+            else:
+                return current_value
 
 
-    def set_option(self, section, option, value):
-        """Set an application option (and adds it if necessary).
+    def set_option(self, section, option, current_value):
+        """Set (and possibly create) a configuration option.
 
         Keyword arguments:
         section -- string that specifies the section to be changed; if
                    the section does not exist, it will be created
-        option -- string that specifies the option to be queried
-        value -- string that specifies the value to be set
+        option -- string that specifies the option to be changed
+        current_value -- string that specifies the value to be set
 
         Return value:
         None
 
         """
-
+        # if section or option does not exist, add the section
         if not self._configuration.has_option(section, option):
             self.add_section(section)
 
+            # set configuration option
+            self._configuration.set(section, option, current_value)
+
+            # mark configuration as dirty
             self._configuration_changed = True
-            self._configuration.set(section, option, value)
 
 
     def remove_option(self, section, option):
-        """Remove a section.
+        """Remove a configuration option.
 
         Keyword arguments:
         section -- string that specifies the section to be removed
-        option -- string that specifies the option to be queried
+        option -- string that specifies the option to be removed
 
         Return value:
         None
 
         """
+        # if section and option do exist, remove the option
         if self._configuration.has_option(section, option):
-            self._configuration_changed = True
             self._configuration.remove_option(section, option)
+
+            # mark configuration as dirty
+            self._configuration_changed = True
 
 
     def get_options(self, section):
-        """Get all application option names of a section
+        """Get all option names of a section
 
         Keyword arguments:
         section -- string that specifies the section to be queried
 
         Return value:
-        list containing application option names of the given section
-        (or None is the section doesn't exist)
+        List containing all option names of the given section (or
+        "None" in case the section doesn't exist)
 
         """
+        # if the section doesn't exist, return "None"
         if not self._configuration.has_section(section):
             return None
 
+        # retrieve, sort and return option names
         options = self._configuration.options(section)
         options.sort()
         return options
 
 
     def get_items(self, section):
-        """Get all application options of a section
+        """Get all configuration items of a section
 
         Keyword arguments:
         section -- string that specifies the section to be queried
 
         Return value:
-        list containing application option names of the given section
-        (or None is the section doesn't exist)
+        List containing all items of the given section (or "None" in
+        case the section doesn't exist)
 
         """
+        # if the section doesn't exist, return "None"
         if section not in self.get_sections():
             return None
 
+        # retrieve, sort and return option items
         items = self._configuration.items(section)
         items.sort()
         return items
@@ -305,7 +387,7 @@ class ApplicationSettings:
         information -- application information to query
 
         Return value:
-        Formatted string containing application information (or None
+        Formatted string containing application information (or "None"
         for invalid queries)
 
         """
@@ -329,7 +411,8 @@ class ApplicationSettings:
         """Return application license as string.
 
         Keyword arguments:
-        long -- Boolean indication whether to output long version of description
+        long -- Boolean indication whether to output long version of
+                license
 
         Return value:
         Formatted string containing application license
@@ -342,7 +425,8 @@ class ApplicationSettings:
         """Return application description as string.
 
         Keyword arguments:
-        long -- Boolean indication whether to output long version of description
+        long -- Boolean indication whether to output long version of
+                description
 
         Return value:
         Formatted string containing application description
@@ -361,32 +445,16 @@ class ApplicationSettings:
         return self._about.get_full_description()
 
 
-# make everything available ("from Settings import *")
-settings = ApplicationSettings()
-
 if __name__ == "__main__":
+    settings = ApplicationSettings()
+
     output = settings.get_full_description() + '\n\n\n' + str(settings) + '\n'
 
     print
     for line in output.split('\n'):
         print '  ' + line
 
-
-    print
-    print settings.get_option('Python MCU', 'test')
-    print settings.get_option('Python MCU', 'test', 'default')
-    settings.set_option('Python MCU', 'test', 'done')
-    settings.set_option('Python MCU', 'test2', 'done2')
-    print settings.get_option('Python MCU', 'test', 'default')
-
-    print settings.get_items('Python MCU')
-    print settings.get_options('Python MCU')
-    print settings.get_sections()
-
-    print
-    print settings.load_configuration()
-    print settings.save_configuration()
-    print settings.load_configuration()
-
     # wait for key press
-    #raw_input()
+    print
+    print '  Press any key ...',
+    raw_input()
