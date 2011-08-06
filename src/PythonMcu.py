@@ -34,31 +34,39 @@ import sys
 import time
 
 
-settings = ApplicationSettings()
+configuration = ApplicationSettings()
 
-HARDWARE_CONTROLLER = settings.get_option( \
-    'Python MCU', 'hardware_controller', False)
+controller_midi_input_default = 'ZeRO MkII: Port 2'
+controller_midi_output_default = 'ZeRO MkII: Port 2'
+emulated_mcu_model_default = 'Mackie Control'
+hardware_controller_default = 'Novation ZeRO SL MkII'
+sequencer_midi_input_default = 'In From MIDI Yoke:  2'
+sequencer_midi_output_default = 'Out To MIDI Yoke:  1'
 
-EMULATED_MCU_MODEL = settings.get_option( \
-    'Python MCU', 'emulated_mcu_model', False)
 
-MIDI_IN_CONTROLLER = settings.get_option( \
-    'Python MCU', 'controller_midi_input', False)
-MIDI_OUT_CONTROLLER = settings.get_option( \
-    'Python MCU', 'controller_midi_output', False)
+HARDWARE_CONTROLLER = configuration.get_option( \
+    'Python MCU', 'hardware_controller', hardware_controller_default)
 
-MIDI_IN_SEQUENCER = settings.get_option( \
-    'Python MCU', 'sequencer_midi_input', False)
-MIDI_OUT_SEQUENCER = settings.get_option( \
-    'Python MCU', 'sequencer_midi_output', False)
+EMULATED_MCU_MODEL = configuration.get_option( \
+    'Python MCU', 'emulated_mcu_model', emulated_mcu_model_default)
+
+CONTROLLER_MIDI_INPUT = configuration.get_option( \
+    'Python MCU', 'controller_midi_input', controller_midi_input_default)
+CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
+    'Python MCU', 'controller_midi_output', controller_midi_output_default)
+
+SEQUENCER_MIDI_INPUT = configuration.get_option( \
+    'Python MCU', 'sequencer_midi_input', sequencer_midi_input_default)
+SEQUENCER_MIDI_OUTPUT = configuration.get_option( \
+    'Python MCU', 'sequencer_midi_output', sequencer_midi_output_default)
 
 
 print
-print settings.get_description(True)
+print configuration.get_description(True)
 print
-print settings.get_copyrights()
+print configuration.get_copyrights()
 print
-print settings.get_license(True)
+print configuration.get_license(True)
 print
 print
 print 'Settings'
@@ -66,13 +74,18 @@ print '========'
 print 'Python version:          %d.%d.%d' % sys.version_info[:3]
 print
 print 'Hardware controller:     %s' % HARDWARE_CONTROLLER
-print 'Controller MIDI input:   %s' % MIDI_IN_CONTROLLER
-print 'Controller MIDI output:  %s' % MIDI_OUT_CONTROLLER
+print 'Controller MIDI input:   %s' % CONTROLLER_MIDI_INPUT
+print 'Controller MIDI output:  %s' % CONTROLLER_MIDI_OUTPUT
 print
 print 'Emulated MCU model:      %s' % EMULATED_MCU_MODEL
-print 'Sequencer MIDI input:    %s' % MIDI_IN_SEQUENCER
-print 'Sequencer MIDI output:   %s' % MIDI_OUT_SEQUENCER
+print 'Sequencer MIDI input:    %s' % SEQUENCER_MIDI_INPUT
+print 'Sequencer MIDI output:   %s' % SEQUENCER_MIDI_OUTPUT
 print
+
+if configuration.has_changed():
+    print
+    print 'Saving configuration file ...'
+    configuration.save_configuration()
 
 print
 print 'Starting application...'
@@ -100,12 +113,12 @@ else:
 
 try:
     eval_controller_init = \
-        '{0!s}.{0!s}(MIDI_IN_CONTROLLER, MIDI_OUT_CONTROLLER)'.format( \
+        '{0!s}.{0!s}(CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT)'.format( \
         HARDWARE_CONTROLLER.replace(' ', '_'))
     midi_controller = eval(eval_controller_init)
 
     mackie_host_control = MackieHostControl( \
-        MIDI_IN_SEQUENCER, MIDI_OUT_SEQUENCER, MCU_MODEL_ID)
+        SEQUENCER_MIDI_INPUT, SEQUENCER_MIDI_OUTPUT, MCU_MODEL_ID)
 
     # the "interconnector" is the brain of this application -- it
     # interconnects Mackie Control Host and MIDI controller while
