@@ -27,35 +27,28 @@ Thank you for using free software!
 from PythonMcu.Hardware import *
 from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
-from Settings import *
+from ApplicationSettings import *
 
 import threading
 import sys
 import time
 
 
-# Mackie Control model IDs:
-# * 0x10: Logic Control
-# * 0x11: Logic Control XT
-# * 0x14: Mackie Control
-# * 0x15: Mackie Control XT
-#
-# Ableton Live 8 needs 0x14 in order to write to the LCD, so let's use this
-HARDWARE_CONTROLLER = settings.get( \
-    'Python MCU', 'Hardware controller', False)
+HARDWARE_CONTROLLER = settings.get_option( \
+    'Python MCU', 'hardware_controller', False)
 
-MCU_MODEL_ID = int(settings.get( \
-        'Python MCU', 'MCU Model ID', False), 16)
+EMULATED_MCU_MODEL = settings.get_option( \
+    'Python MCU', 'emulated_mcu_model', False)
 
-MIDI_IN_CONTROLLER = settings.get( \
-    'Python MCU', 'MIDI input (controller)', False)
-MIDI_OUT_CONTROLLER = settings.get( \
-    'Python MCU', 'MIDI output (controller)', False)
+MIDI_IN_CONTROLLER = settings.get_option( \
+    'Python MCU', 'controller_midi_input', False)
+MIDI_OUT_CONTROLLER = settings.get_option( \
+    'Python MCU', 'controller_midi_output', False)
 
-MIDI_IN_SEQUENCER = settings.get( \
-    'Python MCU', 'MIDI input (sequencer)', False)
-MIDI_OUT_SEQUENCER = settings.get( \
-    'Python MCU', 'MIDI output (sequencer)', False)
+MIDI_IN_SEQUENCER = settings.get_option( \
+    'Python MCU', 'sequencer_midi_input', False)
+MIDI_OUT_SEQUENCER = settings.get_option( \
+    'Python MCU', 'sequencer_midi_output', False)
 
 
 print
@@ -68,23 +61,45 @@ print
 print
 print 'Settings'
 print '========'
-print 'Python version:            %d.%d.%d' % sys.version_info[:3]
+print 'Python version:          %d.%d.%d' % sys.version_info[:3]
 print
-print 'Hardware controller:       %s' % HARDWARE_CONTROLLER.replace('_', ' ')
-print 'MCU model ID:              0x%x' % MCU_MODEL_ID
-print 'MIDI input (controller):   %s' % MIDI_IN_CONTROLLER
-print 'MIDI output (controller):  %s' % MIDI_OUT_CONTROLLER
-print 'MIDI input (sequencer):    %s' % MIDI_IN_SEQUENCER
-print 'MIDI output (sequencer):   %s' % MIDI_OUT_SEQUENCER
+print 'Hardware controller:     %s' % HARDWARE_CONTROLLER
+print 'Controller MIDI input:   %s' % MIDI_IN_CONTROLLER
+print 'Controller MIDI output:  %s' % MIDI_OUT_CONTROLLER
+print
+print 'Emulated MCU model:      %s' % EMULATED_MCU_MODEL
+print 'Sequencer MIDI input:    %s' % MIDI_IN_SEQUENCER
+print 'Sequencer MIDI output:   %s' % MIDI_OUT_SEQUENCER
 print
 
 print
 print 'Starting application...'
 print
 
+
+# Mackie Control model IDs:
+# * 0x10: Logic Control
+# * 0x11: Logic Control XT
+# * 0x14: Mackie Control
+# * 0x15: Mackie Control XT
+#
+# Ableton Live 8 needs 0x14 in order to write to the LCD!
+if EMULATED_MCU_MODEL == 'Logic Control':
+    MCU_MODEL_ID = 0x10
+elif EMULATED_MCU_MODEL == 'Logic Control XT':
+    MCU_MODEL_ID = 0x11
+elif EMULATED_MCU_MODEL == 'Mackie Control':
+    MCU_MODEL_ID = 0x14
+elif EMULATED_MCU_MODEL == 'Mackie Control XT':
+    MCU_MODEL_ID = 0x15
+else:
+    assert(False)
+
+
 try:
-    eval_controller_init = '%s.%s(MIDI_IN_CONTROLLER, MIDI_OUT_CONTROLLER)' % \
-        (HARDWARE_CONTROLLER, HARDWARE_CONTROLLER)
+    eval_controller_init = \
+        '{0!s}.{0!s}(MIDI_IN_CONTROLLER, MIDI_OUT_CONTROLLER)'.format( \
+        HARDWARE_CONTROLLER.replace(' ', '_'))
     midi_controller = eval(eval_controller_init)
 
     mackie_host_control = MackieHostControl( \
