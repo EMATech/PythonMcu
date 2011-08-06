@@ -37,7 +37,7 @@ import time
 configuration = ApplicationSettings()
 
 # initialise defaults for MCU and hardware control
-emulated_mcu_model_default = 'Mackie Control'
+emulated_mcu_model_default = MackieHostControl.get_preferred_mcu_model()
 hardware_controller_default = 'Novation ZeRO SL MkII'
 
 # retrieve user configuration for MCU and hardware control
@@ -45,6 +45,9 @@ EMULATED_MCU_MODEL = configuration.get_option( \
     'Python MCU', 'emulated_mcu_model', emulated_mcu_model_default)
 HARDWARE_CONTROLLER = configuration.get_option( \
     'Python MCU', 'hardware_controller', hardware_controller_default)
+
+# calculate MCU model ID from its name
+MCU_MODEL_ID = MackieHostControl.get_mcu_id_from_model(EMULATED_MCU_MODEL)
 
 # the hardware controller class name is simply the controller's
 # manufacturer and name with all the spaces converted to underscores
@@ -58,22 +61,22 @@ eval_controller_midi_output = \
     '{0!s}.{0!s}.get_preferred_midi_output()'.format(HARDWARE_CONTROLLER_CLASS)
 
 # initialise MIDI connection defaults for MCU and hardware control
+sequencer_midi_input_default = MackieHostControl.get_preferred_midi_input()
+sequencer_midi_output_default = MackieHostControl.get_preferred_midi_output()
 controller_midi_input_default = eval(eval_controller_midi_input)
 controller_midi_output_default = eval(eval_controller_midi_output)
-sequencer_midi_input_default = 'In From MIDI Yoke:  2'
-sequencer_midi_output_default = 'Out To MIDI Yoke:  1'
-
-# retrieve user configuration for MIDI connection of hardware control
-CONTROLLER_MIDI_INPUT = configuration.get_option( \
-    'Python MCU', 'controller_midi_input', controller_midi_input_default)
-CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
-    'Python MCU', 'controller_midi_output', controller_midi_output_default)
 
 # retrieve user configuration for MIDI connection of MCU
 SEQUENCER_MIDI_INPUT = configuration.get_option( \
     'Python MCU', 'sequencer_midi_input', sequencer_midi_input_default)
 SEQUENCER_MIDI_OUTPUT = configuration.get_option( \
     'Python MCU', 'sequencer_midi_output', sequencer_midi_output_default)
+
+# retrieve user configuration for MIDI connection of hardware control
+CONTROLLER_MIDI_INPUT = configuration.get_option( \
+    'Python MCU', 'controller_midi_input', controller_midi_input_default)
+CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
+    'Python MCU', 'controller_midi_output', controller_midi_output_default)
 
 
 print
@@ -84,13 +87,13 @@ print 'Settings'
 print '========'
 print 'Python version:          %d.%d.%d' % sys.version_info[:3]
 print
-print 'Hardware controller:     %s' % HARDWARE_CONTROLLER
-print 'Controller MIDI input:   %s' % CONTROLLER_MIDI_INPUT
-print 'Controller MIDI output:  %s' % CONTROLLER_MIDI_OUTPUT
-print
 print 'Emulated MCU model:      %s' % EMULATED_MCU_MODEL
 print 'Sequencer MIDI input:    %s' % SEQUENCER_MIDI_INPUT
 print 'Sequencer MIDI output:   %s' % SEQUENCER_MIDI_OUTPUT
+print
+print 'Hardware controller:     %s' % HARDWARE_CONTROLLER
+print 'Controller MIDI input:   %s' % CONTROLLER_MIDI_INPUT
+print 'Controller MIDI output:  %s' % CONTROLLER_MIDI_OUTPUT
 print
 
 if configuration.has_changed():
@@ -101,25 +104,6 @@ if configuration.has_changed():
 print
 print 'Starting application...'
 print
-
-
-# Mackie Control model IDs:
-# * 0x10: Logic Control
-# * 0x11: Logic Control XT
-# * 0x14: Mackie Control
-# * 0x15: Mackie Control XT
-#
-# Ableton Live 8 needs 0x14 in order to write to the LCD!
-if EMULATED_MCU_MODEL == 'Logic Control':
-    MCU_MODEL_ID = 0x10
-elif EMULATED_MCU_MODEL == 'Logic Control XT':
-    MCU_MODEL_ID = 0x11
-elif EMULATED_MCU_MODEL == 'Mackie Control':
-    MCU_MODEL_ID = 0x14
-elif EMULATED_MCU_MODEL == 'Mackie Control XT':
-    MCU_MODEL_ID = 0x15
-else:
-    assert(False)
 
 
 try:

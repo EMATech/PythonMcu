@@ -200,6 +200,57 @@ class MackieHostControl:
         self._log('Disconnected.')
 
 
+    # --- static methods ---
+
+    @staticmethod
+    def get_mcu_model_from_id(id):
+        if id == 0x10:
+            return 'Logic Control'
+        elif id == 0x11:
+            return 'Logic Control XT'
+        elif id == 0x14:
+            return 'Mackie Control'
+        elif id == 0x15:
+            return 'Mackie Control XT'
+        else:
+            return None
+
+
+    @staticmethod
+    def get_mcu_id_from_model(model):
+        if model == 'Logic Control':
+            return 0x10
+        elif model == 'Logic Control XT':
+            return 0x11
+        elif model == 'Mackie Control':
+            return 0x14
+        elif model == 'Mackie Control XT':
+            return 0x15
+        else:
+            return None
+
+
+    @staticmethod
+    def get_preferred_mcu_model():
+        return 'Mackie Control'
+
+
+    @staticmethod
+    def get_preferred_mcu_model_id():
+        return MackieHostControl.get_mcu_id_from_model( \
+            MackieHostControl.get_preferred_mcu_model())
+
+
+    @staticmethod
+    def get_preferred_midi_input():
+        return 'In From MIDI Yoke:  2'
+
+
+    @staticmethod
+    def get_preferred_midi_output():
+        return 'Out To MIDI Yoke:  1'
+
+
     # --- MIDI processing ---
 
     def process_midi_input(self):
