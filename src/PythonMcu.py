@@ -36,6 +36,9 @@ import time
 
 configuration = ApplicationSettings()
 
+# get version number of "Python MCU"
+PYTHON_MCU_VERSION = configuration.get_application_information('version')
+
 # initialise defaults for MCU and hardware control
 emulated_mcu_model_default = MackieHostControl.get_preferred_mcu_model()
 hardware_controller_default = 'Novation ZeRO SL MkII'
@@ -46,8 +49,22 @@ EMULATED_MCU_MODEL = configuration.get_option( \
 HARDWARE_CONTROLLER = configuration.get_option( \
     'Python MCU', 'hardware_controller', hardware_controller_default)
 
+
 # calculate MCU model ID from its name
 MCU_MODEL_ID = MackieHostControl.get_mcu_id_from_model(EMULATED_MCU_MODEL)
+
+# Logic Control units use MCU challenge-response by default, ...
+if MCU_MODEL_ID in [0x10, 0x11]:
+    use_challenge_response_default = True
+# while Mackie Control Units don't seem to use it
+else:
+    use_challenge_response_default = False
+
+if configuration.get_option('Python MCU', 'use_challenge_response', \
+                                use_challenge_response_default) == 'True':
+    USE_CHALLENGE_RESPONSE = True
+else:
+    USE_CHALLENGE_RESPONSE = False
 
 # the hardware controller class name is simply the controller's
 # manufacturer and name with all the spaces converted to underscores
@@ -78,7 +95,6 @@ CONTROLLER_MIDI_INPUT = configuration.get_option( \
 CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
     'Python MCU', 'controller_midi_output', controller_midi_output_default)
 
-
 print
 print configuration.get_full_description()
 print
@@ -88,6 +104,7 @@ print '========'
 print 'Python version:          %d.%d.%d' % sys.version_info[:3]
 print
 print 'Emulated MCU model:      %s' % EMULATED_MCU_MODEL
+print 'Use challenge-response:  %s' % USE_CHALLENGE_RESPONSE
 print 'Sequencer MIDI input:    %s' % SEQUENCER_MIDI_INPUT
 print 'Sequencer MIDI output:   %s' % SEQUENCER_MIDI_OUTPUT
 print
@@ -113,7 +130,8 @@ try:
     midi_controller = eval(eval_controller_init)
 
     mackie_host_control = MackieHostControl( \
-        SEQUENCER_MIDI_INPUT, SEQUENCER_MIDI_OUTPUT, MCU_MODEL_ID)
+        MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, PYTHON_MCU_VERSION, \
+            SEQUENCER_MIDI_INPUT, SEQUENCER_MIDI_OUTPUT)
 
     # the "interconnector" is the brain of this application -- it
     # interconnects Mackie Control Host and MIDI controller while

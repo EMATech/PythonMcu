@@ -126,7 +126,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         MidiControllerTemplate.connect(self)
         self._is_connected = True
 
-        self._set_lcd(1, 'Novation Zero SL MkII:  initialising...')
+        self._set_lcd(1, 'Novation ZeRO SL MkII:  initialising...')
         self._set_lcd(2, 'Mackie Host Control:    connecting...')
 
         self._enter_ableton_mode()
@@ -135,7 +135,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         self._mode_track = self._MODE_TRACK_MUTE_SOLO
         self._restore_previous_mode()
 
-        self._set_lcd(1, 'Novation Zero SL MkII:  initialised.')
+        self._set_lcd(1, 'Novation ZeRO SL MkII:  initialised.')
 
         self._log('Connected.')
 
@@ -145,7 +145,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
         self.withdraw_all_controls()
 
-        self._set_lcd(1, 'Novation Zero SL MkII:  disconnecting...')
+        self._set_lcd(1, 'Novation ZeRO SL MkII:  disconnecting...')
         self._set_lcd(2, '')
 
         self._leave_ableton_mode()
@@ -154,8 +154,18 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         MidiControllerTemplate.disconnect(self)
 
 
-    def host_connected(self):
-        self._set_lcd(2, 'Mackie Host Control:    connected.')
+    def go_online(self):
+        MidiControllerTemplate.go_online(self)
+
+        self._set_lcd(1, 'Novation ZeRO SL MkII:  initialised.')
+        self._set_lcd(2, 'Mackie Host Control:    online.')
+
+
+    def go_offline(self):
+        MidiControllerTemplate.go_offline(self)
+
+        self._set_lcd(1, 'Novation ZeRO SL MkII:  initialised.')
+        self._set_lcd(2, 'Mackie Host Control:    offline.')
 
 
     def _enter_ableton_mode(self):
@@ -462,6 +472,10 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
         self._set_led(self._MIDI_CC_ENCODER_MODE + id, vpot_mode)
         self._set_led(self._MIDI_CC_ENCODER_LIGHTS + id, position)
+
+
+    def all_leds_off(self):
+        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
 
 
     # --- mode handling ---

@@ -186,8 +186,12 @@ class McuInterconnector(object):
         self._hardware_controller.disconnect()
 
 
-    def host_connected(self):
-        self._hardware_controller.host_connected()
+    def go_online(self):
+        self._hardware_controller.go_online()
+
+
+    def go_offline(self):
+        self._hardware_controller.go_offline()
 
 
     def process_midi_input(self):
@@ -492,3 +496,11 @@ class McuInterconnector(object):
 
     def set_led_relay_click(self, status):
         self._set_led('relay_click', status)
+
+
+    def faders_to_minimum(self):
+        self._hardware_controller.faders_to_minimum()
+
+
+    def all_leds_off(self):
+        self._hardware_controller.all_leds_off()

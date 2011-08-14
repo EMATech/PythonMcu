@@ -92,8 +92,12 @@ class MidiControllerTemplate(object):
         self._log('Disconnected.')
 
 
-    def host_connected(self):
-        self._log('Mackie Host Control connected...')
+    def go_online(self):
+        self._log('Mackie Host Control went online...')
+
+
+    def go_offline(self):
+        self._log('Mackie Host Control went offline...')
 
 
     # --- abilities of hardware controller ---
@@ -249,3 +253,11 @@ class MidiControllerTemplate(object):
                               vpot_position):
         self._log('V-Pot #%d LED ring NOT set to position %02d (mode %d).' % \
                       (vpot_id, vpot_position, vpot_mode))
+
+
+    def faders_to_minimum(self):
+        self._log('Hardware faders NOT set to minimum.')
+
+
+    def all_leds_off(self):
+        self._log('Hardware LEDs NOT set to "off".')
