@@ -91,8 +91,9 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
     _MODE_OTHER_UTILITY = 5
 
 
-    def __init__(self, midi_input, midi_output):
-        MidiControllerTemplate.__init__(self, midi_input, midi_output)
+    def __init__(self, midi_input, midi_output, callback_log):
+        MidiControllerTemplate.__init__( \
+            self, midi_input, midi_output, callback_log)
 
         self.display_lcd_available = True
         self.automated_faders_available = False
@@ -117,7 +118,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
 
     def _log(self, message):
-        print '[Novation ZeRO SL MkII]  ' + message
+        self.callback_log('[Novation ZeRO SL MkII]  ' + message)
 
 
     # --- initialisation ---

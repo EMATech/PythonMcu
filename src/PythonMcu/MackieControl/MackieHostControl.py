@@ -122,9 +122,12 @@ class MackieHostControl:
 
 
     def __init__(self, mcu_model_id, use_challenge_response_connection, \
-                     version_number, midi_input, midi_output):
+                     version_number, midi_input, midi_output, callback_log):
+        self._callback_log = callback_log
+
         self._log('Opening MIDI ports...')
-        self._midi = MidiConnection(self.receive_midi, midi_input, midi_output)
+        self._midi = MidiConnection( \
+            callback_log, self.receive_midi, midi_input, midi_output)
         self.unset_hardware_controller()
 
         # LCD has 2 rows with 56 characters each, fill with spaces
@@ -167,7 +170,7 @@ class MackieHostControl:
 
 
     def _log(self, message):
-        print '[Mackie Host Control  ]  ' + message
+        self._callback_log('[Mackie Host Control  ]  ' + message)
 
 
     # --- initialisation ---
@@ -370,10 +373,11 @@ class MackieHostControl:
                     sysex_message.extend(self._version_number_bytes)
                     self.send_midi_sysex(sysex_message)
                 else:
-                    print 'status %02X: ' % status,
+                    output = 'status %02X: ' % status
                     for byte in message:
-                        print '%02X' % byte,
-                    print
+                        output += '%02X ' % byte
+
+                    self._log(output.strip())
         elif status == MidiConnection.SYSTEM_MESSAGE and message[0:5] == \
                 [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
             if message[5] == 0x12:
@@ -450,10 +454,11 @@ class MackieHostControl:
                 meter_level = message[1] & 0x0F
                 self._hardware_controller.set_peak_level(meter_id, meter_level)
         else:
-            print 'status %02X: ' % status,
+            output = 'status %02X: ' % status
             for byte in message:
-                print '%02X' % byte,
-            print
+                output += '%02X ' % byte
+
+            self._log(output.strip())
 
 
     def send_midi_control_change(self, midi_channel, cc_number, cc_value):

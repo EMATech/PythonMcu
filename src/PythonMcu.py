@@ -34,6 +34,10 @@ import sys
 import time
 
 
+def callback_log(message):
+    print message
+
+
 configuration = ApplicationSettings()
 
 # get version number of "Python MCU"
@@ -95,60 +99,59 @@ CONTROLLER_MIDI_INPUT = configuration.get_option( \
 CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
     'Python MCU', 'controller_midi_output', controller_midi_output_default)
 
-print
-print configuration.get_full_description()
-print
-print
-print 'Settings'
-print '========'
-print 'Python version:          %d.%d.%d' % sys.version_info[:3]
-print
-print 'Emulated MCU model:      %s' % EMULATED_MCU_MODEL
-print 'Use challenge-response:  %s' % USE_CHALLENGE_RESPONSE
-print 'Sequencer MIDI input:    %s' % SEQUENCER_MIDI_INPUT
-print 'Sequencer MIDI output:   %s' % SEQUENCER_MIDI_OUTPUT
-print
-print 'Hardware controller:     %s' % HARDWARE_CONTROLLER
-print 'Controller MIDI input:   %s' % CONTROLLER_MIDI_INPUT
-print 'Controller MIDI output:  %s' % CONTROLLER_MIDI_OUTPUT
-print
+callback_log('')
+callback_log(configuration.get_full_description())
+callback_log('')
+callback_log('')
+callback_log('Settings')
+callback_log('========')
+callback_log('Python version:          %d.%d.%d' % sys.version_info[:3])
+callback_log('')
+callback_log('Emulated MCU model:      %s' % EMULATED_MCU_MODEL)
+callback_log('Use challenge-response:  %s' % USE_CHALLENGE_RESPONSE)
+callback_log('Sequencer MIDI input:    %s' % SEQUENCER_MIDI_INPUT)
+callback_log('Sequencer MIDI output:   %s' % SEQUENCER_MIDI_OUTPUT)
+callback_log('')
+callback_log('Hardware controller:     %s' % HARDWARE_CONTROLLER)
+callback_log('Controller MIDI input:   %s' % CONTROLLER_MIDI_INPUT)
+callback_log('Controller MIDI output:  %s' % CONTROLLER_MIDI_OUTPUT)
+callback_log('')
 
 if configuration.has_changed():
-    print
-    print 'Saving configuration file ...'
+    callback_log('')
+    callback_log('Saving configuration file ...')
     configuration.save_configuration()
 
-print
-print 'Starting application...'
-print
+callback_log('')
+callback_log('Starting application...')
+callback_log('')
 
 
 try:
     eval_controller_init = \
-        '{0!s}.{0!s}(CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT)'.format( \
-        HARDWARE_CONTROLLER_CLASS)
+        '{0!s}.{0!s}(CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT, callback_log)'.format(HARDWARE_CONTROLLER_CLASS)
     midi_controller = eval(eval_controller_init)
 
     mackie_host_control = MackieHostControl( \
         MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, PYTHON_MCU_VERSION, \
-            SEQUENCER_MIDI_INPUT, SEQUENCER_MIDI_OUTPUT)
+            SEQUENCER_MIDI_INPUT, SEQUENCER_MIDI_OUTPUT, callback_log)
 
     # the "interconnector" is the brain of this application -- it
     # interconnects Mackie Control Host and MIDI controller while
     # handling the complete MIDI translation between those two
-    interconnector = McuInterconnector(mackie_host_control, midi_controller)
+    interconnector = McuInterconnector( \
+        mackie_host_control, midi_controller, callback_log)
     interconnector.connect()
 
-    print
     while True:
         interconnector.process_midi_input()
 
         time.sleep(0.01)
 except KeyboardInterrupt:
-    print
+    callback_log('')
 
     interconnector.disconnect()
 
-    print
-    print 'Exiting application...'
-    print
+    callback_log('')
+    callback_log('Exiting application...')
+    callback_log('')

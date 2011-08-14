@@ -50,8 +50,11 @@ class MidiControllerTemplate(object):
         0x7F: 'on'
         }
 
-    def __init__(self, midi_input, midi_output):
-        self.midi = MidiConnection(self.receive_midi, midi_input, midi_output)
+    def __init__(self, midi_input, midi_output, callback_log):
+        self.callback_log = callback_log
+
+        self.midi = MidiConnection( \
+            self.callback_log, self.receive_midi, midi_input, midi_output)
         self.unset_interconnector()
 
         self.display_lcd_available = True
@@ -70,7 +73,7 @@ class MidiControllerTemplate(object):
 
 
     def _log(self, message):
-        print '[Controller Template]  ' + message
+        self.callback_log('[Controller Template]  ' + message)
 
 
     # --- initialisation ---

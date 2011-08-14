@@ -155,7 +155,9 @@ class McuInterconnector(object):
     ]
 
 
-    def __init__(self, mackie_host_control, hardware_controller):
+    def __init__(self, mackie_host_control, hardware_controller, callback_log):
+        self._callback_log = callback_log
+
         self._mackie_host_control = mackie_host_control
         self._hardware_controller = hardware_controller
 
@@ -171,7 +173,7 @@ class McuInterconnector(object):
 
 
     def _log(self, message):
-        print '[MCU Interconnector   ]  ' + message
+        self._log_message('[MCU Interconnector   ]  ' + message)
 
 
     # --- initialisation ---

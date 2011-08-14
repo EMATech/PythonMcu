@@ -42,7 +42,10 @@ class MidiConnection:
     SYSTEM_MESSAGE = 0xF0
 
 
-    def __init__(self, callback, midi_input=None, midi_output=None):
+    def __init__(self, callback_log, callback, \
+                     midi_input=None, midi_output=None):
+        self._callback_log = callback_log
+
         pygame.midi.init()
 
         self._callback = callback
@@ -62,7 +65,7 @@ class MidiConnection:
 
 
     def _log(self, message):
-        print '[MIDI Connection      ]  ' + message
+        self._callback_log('[MIDI Connection      ]  ' + message)
 
 
     def _init_input(self, device_name):
@@ -228,6 +231,9 @@ class MidiConnection:
 if __name__ == "__main__":
     import time
 
+    def callback_log(message):
+        print message
+
     def callback_midi_in(status_byte, message):
         print 'status %02X: ' % status_byte,
         for byte in message:
@@ -237,7 +243,8 @@ if __name__ == "__main__":
     midi_input = 'In From MIDI Yoke:  2'
     midi_output = 'Out To MIDI Yoke:  1'
 
-    midi_connection = MidiConnection(callback_midi_in, midi_input, midi_output)
+    midi_connection = MidiConnection( \
+        callback_log, callback_midi_in, midi_input, midi_output)
 
     midi_connection.send_control_change(0, 0x07, 0x80)
     midi_connection.send_sysex([0x01, 0x02], [0x11, 0x12, 0x13])
