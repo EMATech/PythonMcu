@@ -27,7 +27,7 @@ Thank you for using free software!
 from PythonMcu.Hardware import *
 from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
-from ApplicationSettings import *
+from PythonMcu.Tools.ApplicationSettings import *
 
 import threading
 import sys
