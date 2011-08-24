@@ -31,7 +31,10 @@ if __name__ == "__main__":
     # allow "PythonMcu" package imports when executing this module
     sys.path.append('../../')
 
+from PythonMcu.Hardware import *
+from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 from PythonMcu.Midi.MidiConnection import MidiConnection
+from PythonMcu.Tools.ApplicationSettings import *
 
 
 class McuInterconnector(object):
@@ -155,11 +158,26 @@ class McuInterconnector(object):
     ]
 
 
-    def __init__(self, mackie_host_control, hardware_controller, callback_log):
+    def __init__(self, mcu_model_id, use_challenge_response, \
+                     sequencer_midi_input, sequencer_midi_output, \
+                     hardware_controller_class, controller_midi_input, \
+                     controller_midi_output, callback_log):
         self._callback_log = callback_log
 
-        self._mackie_host_control = mackie_host_control
-        self._hardware_controller = hardware_controller
+        eval_controller_init = \
+            '%(cc)s.%(cc)s("%(midi_in)s", "%(midi_out)s", callback_log)' % \
+            {'cc': hardware_controller_class, \
+                 'midi_in': controller_midi_input, \
+                 'midi_out': controller_midi_output}
+        self._hardware_controller = eval(eval_controller_init)
+
+        # get "Python MCU" version number
+        python_mcu_version = \
+            ApplicationSettings().get_application_information('version')
+
+        self._mackie_host_control = MackieHostControl( \
+            mcu_model_id, use_challenge_response, python_mcu_version, \
+                sequencer_midi_input, sequencer_midi_output, callback_log)
 
         # set this here so the hardware controller can notify the user
         # about the connection process

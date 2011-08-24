@@ -40,9 +40,6 @@ def callback_log(message):
 
 configuration = ApplicationSettings()
 
-# get version number of "Python MCU"
-PYTHON_MCU_VERSION = configuration.get_application_information('version')
-
 # initialise defaults for MCU and hardware control
 emulated_mcu_model_default = MackieHostControl.get_preferred_mcu_model()
 hardware_controller_default = 'Novation ZeRO SL MkII'
@@ -102,6 +99,7 @@ CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
 callback_log('')
 callback_log(configuration.get_full_description())
 callback_log('')
+
 callback_log('')
 callback_log('Settings')
 callback_log('========')
@@ -128,22 +126,13 @@ callback_log('')
 
 
 try:
-    eval_controller_init = \
-        '%(cc)s.%(cc)s("%(midi_in)s", "%(midi_out)s", callback_log)' % \
-        {'cc': HARDWARE_CONTROLLER_CLASS, \
-             'midi_in': CONTROLLER_MIDI_INPUT, \
-             'midi_out': CONTROLLER_MIDI_OUTPUT}
-    midi_controller = eval(eval_controller_init)
-
-    mackie_host_control = MackieHostControl( \
-        MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, PYTHON_MCU_VERSION, \
-            SEQUENCER_MIDI_INPUT, SEQUENCER_MIDI_OUTPUT, callback_log)
-
     # the "interconnector" is the brain of this application -- it
     # interconnects Mackie Control Host and MIDI controller while
     # handling the complete MIDI translation between those two
     interconnector = McuInterconnector( \
-        mackie_host_control, midi_controller, callback_log)
+        MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, SEQUENCER_MIDI_INPUT, \
+            SEQUENCER_MIDI_OUTPUT, HARDWARE_CONTROLLER_CLASS, \
+            CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT, callback_log)
     interconnector.connect()
 
     while True:
