@@ -129,7 +129,10 @@ callback_log('')
 
 try:
     eval_controller_init = \
-        '{0!s}.{0!s}(CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT, callback_log)'.format(HARDWARE_CONTROLLER_CLASS)
+        '%(cc)s.%(cc)s("%(midi_in)s", "%(midi_out)s", callback_log)' % \
+        {'cc': HARDWARE_CONTROLLER_CLASS, \
+             'midi_in': CONTROLLER_MIDI_INPUT, \
+             'midi_out': CONTROLLER_MIDI_OUTPUT}
     midi_controller = eval(eval_controller_init)
 
     mackie_host_control = MackieHostControl( \

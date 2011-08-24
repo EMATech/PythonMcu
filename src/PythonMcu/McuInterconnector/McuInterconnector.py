@@ -184,6 +184,8 @@ class McuInterconnector(object):
 
 
     def disconnect(self):
+        self.withdraw_all_controls()
+
         self._mackie_host_control.disconnect()
         self._hardware_controller.disconnect()
 
