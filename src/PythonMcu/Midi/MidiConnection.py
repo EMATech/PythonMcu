@@ -27,6 +27,8 @@ Thank you for using free software!
 import pygame.midi
 import types
 
+pygame.midi.init()
+
 
 class MidiConnection:
     __module__ = __name__
@@ -41,13 +43,11 @@ class MidiConnection:
     PITCH_WHEEL_CHANGE = 0xE0
     SYSTEM_MESSAGE = 0xF0
 
+    # --- initialisation ---
 
     def __init__(self, callback_log, callback, \
                      midi_input=None, midi_output=None):
         self._callback_log = callback_log
-
-        pygame.midi.init()
-
         self._callback = callback
 
         self._midi_input = self._init_input(midi_input)
@@ -97,6 +97,34 @@ class MidiConnection:
         self._log('MIDI Out \'%s\' not found.\n' % device_name)
         return None
 
+
+    # --- static methods ---
+
+    @staticmethod
+    def get_midi_inputs():
+        midi_inputs = []
+
+        for id in range(pygame.midi.get_count()):
+            device = pygame.midi.get_device_info(id)
+            if device[2] == 1:
+                midi_inputs.append(device[1])
+
+        return midi_inputs
+
+
+    @staticmethod
+    def get_midi_outputs():
+        midi_outputs = []
+
+        for id in range(pygame.midi.get_count()):
+            device = pygame.midi.get_device_info(id)
+            if device[3] == 1:
+                midi_outputs.append(device[1])
+
+        return midi_outputs
+
+
+    # --- MIDI processing ---
 
     def buffer_is_empty(self, use_callback=True):
         return not self._midi_input.poll()

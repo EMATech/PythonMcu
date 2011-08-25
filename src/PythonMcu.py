@@ -27,6 +27,7 @@ Thank you for using free software!
 from PythonMcu.Hardware import *
 from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
+from PythonMcu.Midi.MidiConnection import MidiConnection
 from PythonMcu.Tools.ApplicationSettings import *
 
 import sys
@@ -34,11 +35,6 @@ import sys
 from PySide.QtCore import *
 from PySide.QtGui import *
 
-import pygame.midi
-
-pygame.midi.init()
-midi_inputs = []
-midi_outputs = []
 
 def callback_log(message):
     print message
@@ -133,13 +129,6 @@ callback_log('Starting application...')
 callback_log('')
 
 
-for id in range(pygame.midi.get_count()):
-    device = pygame.midi.get_device_info(id)
-    if device[2] == 1:
-        midi_inputs.append(device[1])
-    if device[3] == 1:
-        midi_outputs.append(device[1])
-
 class PythonMcu(QFrame):
     def __init__(self, parent=None):
         super(PythonMcu, self).__init__(parent)
@@ -204,11 +193,11 @@ class PythonMcu(QFrame):
         self._create_combo_box( \
             self.grid_layout_mcu, \
                 self.mcu_midi_input, 1, 'MIDI In:', \
-                midi_inputs, SEQUENCER_MIDI_INPUT)
+                MidiConnection.get_midi_inputs(), SEQUENCER_MIDI_INPUT)
 
         self._create_combo_box(self.grid_layout_mcu,  \
             self.mcu_midi_output, 2, 'MIDI Out:', \
-                midi_outputs, SEQUENCER_MIDI_OUTPUT)
+                MidiConnection.get_midi_outputs(), SEQUENCER_MIDI_OUTPUT)
 
 
         self._create_combo_box(self.grid_layout_controller, \
@@ -218,11 +207,11 @@ class PythonMcu(QFrame):
 
         self._create_combo_box(self.grid_layout_controller, \
             self.controller_midi_input, 4, 'MIDI In:', \
-                midi_inputs, CONTROLLER_MIDI_INPUT)
+                MidiConnection.get_midi_inputs(), CONTROLLER_MIDI_INPUT)
 
         self._create_combo_box(self.grid_layout_controller, \
             self.controller_midi_output, 5, 'MIDI Out:', \
-                midi_outputs, CONTROLLER_MIDI_OUTPUT)
+                MidiConnection.get_midi_outputs(), CONTROLLER_MIDI_OUTPUT)
 
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
