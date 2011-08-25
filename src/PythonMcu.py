@@ -29,16 +29,25 @@ from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
 from PythonMcu.Tools.ApplicationSettings import *
 
-import threading
 import sys
-import time
 
+from PySide.QtCore import *
+from PySide.QtGui import *
+
+import pygame.midi
+
+pygame.midi.init()
+midi_inputs = []
+midi_outputs = []
 
 def callback_log(message):
     print message
 
 
 configuration = ApplicationSettings()
+
+# get version number of "Python MCU"
+PYTHON_MCU_VERSION = configuration.get_application_information('version')
 
 # initialise defaults for MCU and hardware control
 emulated_mcu_model_default = MackieHostControl.get_preferred_mcu_model()
@@ -99,7 +108,6 @@ CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
 callback_log('')
 callback_log(configuration.get_full_description())
 callback_log('')
-
 callback_log('')
 callback_log('Settings')
 callback_log('========')
@@ -125,25 +133,156 @@ callback_log('Starting application...')
 callback_log('')
 
 
-try:
-    # the "interconnector" is the brain of this application -- it
-    # interconnects Mackie Control Host and MIDI controller while
-    # handling the complete MIDI translation between those two
-    interconnector = McuInterconnector( \
-        MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, SEQUENCER_MIDI_INPUT, \
-            SEQUENCER_MIDI_OUTPUT, HARDWARE_CONTROLLER_CLASS, \
-            CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT, callback_log)
-    interconnector.connect()
+for id in range(pygame.midi.get_count()):
+    device = pygame.midi.get_device_info(id)
+    if device[2] == 1:
+        midi_inputs.append(device[1])
+    if device[3] == 1:
+        midi_outputs.append(device[1])
 
-    while True:
-        interconnector.process_midi_input()
+class PythonMcu(QFrame):
+    def __init__(self, parent=None):
+        super(PythonMcu, self).__init__(parent)
 
-        time.sleep(0.01)
-except KeyboardInterrupt:
-    callback_log('')
+        self._timer = None
+        self._interconnector = None
 
-    interconnector.disconnect()
+        icon = self.style().standardIcon(QStyle.SP_TitleBarMenuButton)
+        self.setWindowIcon(icon)
 
-    callback_log('')
-    callback_log('Exiting application...')
-    callback_log('')
+        mcu_model_ids = ['Logic Control', 'Logic Control XT', \
+                              'Mackie Control', 'Mackie Control XT']
+
+        hardware_controllers = ['Novation ZeRO SL MkII']
+
+        self.mcu_model_id = None
+        self.mcu_midi_input = None
+        self.mcu_midi_output = None
+
+        self.hardware_controller = None
+        self.controller_midi_input = None
+        self.controller_midi_output = None
+
+        self.button_start = QPushButton('Start')
+        self.button_close = QPushButton('Close')
+
+        self.setWindowTitle('Python MCU ' + PYTHON_MCU_VERSION)
+
+        # Create layout and add widgets
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.frame_mcu = QFrame()
+        self.frame_mcu.setFrameStyle(QFrame.StyledPanel)
+        self.frame_mcu.setFrameShadow(QFrame.Plain)
+        self.layout.addWidget(self.frame_mcu)
+        self.grid_layout_mcu = QGridLayout()
+        self.frame_mcu.setLayout(self.grid_layout_mcu)
+
+        self.frame_controller = QFrame()
+        self.frame_controller.setFrameStyle(QFrame.StyledPanel)
+        self.frame_controller.setFrameShadow(QFrame.Plain)
+        self.layout.addWidget(self.frame_controller)
+        self.grid_layout_controller = QGridLayout()
+        self.frame_controller.setLayout(self.grid_layout_controller)
+
+        self.bottom_layout = QHBoxLayout()
+        self.layout.addLayout(self.bottom_layout)
+
+        self.bottom_layout.addWidget(self.button_start)
+        self.bottom_layout.addWidget(self.button_close)
+
+        # Add button signal to greetings slot
+        self.button_start.clicked.connect(self.start_interconnector)
+        self.button_close.clicked.connect(self.close_interconnector)
+
+
+        self._create_combo_box(self.grid_layout_mcu, \
+            self.mcu_model_id, 0, 'MCU model:', \
+                mcu_model_ids, EMULATED_MCU_MODEL)
+
+        self._create_combo_box( \
+            self.grid_layout_mcu, \
+                self.mcu_midi_input, 1, 'MIDI In:', \
+                midi_inputs, SEQUENCER_MIDI_INPUT)
+
+        self._create_combo_box(self.grid_layout_mcu,  \
+            self.mcu_midi_output, 2, 'MIDI Out:', \
+                midi_outputs, SEQUENCER_MIDI_OUTPUT)
+
+
+        self._create_combo_box(self.grid_layout_controller, \
+            self.hardware_controller, 3, 'Controller:', \
+                hardware_controllers, HARDWARE_CONTROLLER)
+
+
+        self._create_combo_box(self.grid_layout_controller, \
+            self.controller_midi_input, 4, 'MIDI In:', \
+                midi_inputs, CONTROLLER_MIDI_INPUT)
+
+        self._create_combo_box(self.grid_layout_controller, \
+            self.controller_midi_output, 5, 'MIDI Out:', \
+                midi_outputs, CONTROLLER_MIDI_OUTPUT)
+
+        self._timer = QTimer(self)
+        self._timer.setInterval(1000)
+        self._timer.timeout.connect(self.update_display)
+
+
+    def _create_combo_box( \
+            self, layout, widget, pos, label_text, choices, selection):
+        label = QLabel(None)
+        label.setText(label_text)
+        layout.addWidget(label, pos, 0)
+
+        widget = QComboBox()
+        layout.addWidget(widget, pos, 1)
+
+        choices.sort()
+        widget.addItems(choices)
+
+        current_index = widget.findText(selection)
+        widget.setCurrentIndex(current_index)
+
+
+    def update_display(self):
+        self._interconnector.process_midi_input()
+
+
+    def start_interconnector(self):
+        # the "interconnector" is the brain of this application -- it
+        # interconnects Mackie Control Host and MIDI controller while
+        # handling the complete MIDI translation between those two
+        self._interconnector = McuInterconnector( \
+            MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, SEQUENCER_MIDI_INPUT, \
+                SEQUENCER_MIDI_OUTPUT, HARDWARE_CONTROLLER_CLASS, \
+                CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT, \
+                callback_log)
+        self._interconnector.connect()
+
+        self._timer.start()
+
+
+    def close_interconnector(self):
+        if self._interconnector:
+            callback_log('')
+            self._timer.stop()
+            self._interconnector.disconnect()
+            callback_log('')
+
+        callback_log('Exiting application...')
+        callback_log('')
+
+        self.close()
+
+
+if __name__ == '__main__':
+    # Create the Qt Application
+    app = QApplication(sys.argv)
+
+    # Create and show the form
+    python_mcu = PythonMcu()
+    python_mcu.show()
+
+    # Run the main Qt loop
+    sys.exit(app.exec_())
