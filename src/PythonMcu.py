@@ -48,12 +48,15 @@ PYTHON_MCU_VERSION = configuration.get_application_information('version')
 # initialise defaults for MCU and hardware control
 emulated_mcu_model_default = MackieHostControl.get_preferred_mcu_model()
 hardware_controller_default = 'Novation ZeRO SL MkII'
+midi_latency_default = '1'
 
 # retrieve user configuration for MCU and hardware control
 EMULATED_MCU_MODEL = configuration.get_option( \
     'Python MCU', 'emulated_mcu_model', emulated_mcu_model_default)
 HARDWARE_CONTROLLER = configuration.get_option( \
     'Python MCU', 'hardware_controller', hardware_controller_default)
+MIDI_LATENCY = configuration.get_option( \
+    'Python MCU', 'midi_latency', midi_latency_default)
 
 
 # calculate MCU model ID from its name
@@ -101,37 +104,15 @@ CONTROLLER_MIDI_INPUT = configuration.get_option( \
 CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
     'Python MCU', 'controller_midi_output', controller_midi_output_default)
 
-callback_log('')
-callback_log(configuration.get_full_description())
-callback_log('')
-callback_log('')
-callback_log('Settings')
-callback_log('========')
-callback_log('Python version:          %d.%d.%d' % sys.version_info[:3])
-callback_log('')
-callback_log('Emulated MCU model:      %s' % EMULATED_MCU_MODEL)
-callback_log('Use challenge-response:  %s' % USE_CHALLENGE_RESPONSE)
-callback_log('Sequencer MIDI input:    %s' % SEQUENCER_MIDI_INPUT)
-callback_log('Sequencer MIDI output:   %s' % SEQUENCER_MIDI_OUTPUT)
-callback_log('')
-callback_log('Hardware controller:     %s' % HARDWARE_CONTROLLER)
-callback_log('Controller MIDI input:   %s' % CONTROLLER_MIDI_INPUT)
-callback_log('Controller MIDI output:  %s' % CONTROLLER_MIDI_OUTPUT)
-callback_log('')
-
-if configuration.has_changed():
-    callback_log('')
-    callback_log('Saving configuration file ...')
-    configuration.save_configuration()
-
-callback_log('')
-callback_log('Starting application...')
-callback_log('')
-
 
 class PythonMcu(QFrame):
     def __init__(self, parent=None):
         super(PythonMcu, self).__init__(parent)
+
+        callback_log('')
+        callback_log(configuration.get_full_description())
+        callback_log('')
+        callback_log('')
 
         self._timer = None
         self._interconnector = None
@@ -152,8 +133,9 @@ class PythonMcu(QFrame):
         self.controller_midi_input = None
         self.controller_midi_output = None
 
-        self.button_start = QPushButton('Start')
+        self.button_start_stop = QPushButton('Start')
         self.button_close = QPushButton('Close')
+        self.button_license = QPushButton('License')
 
         self.setWindowTitle('Python MCU ' + PYTHON_MCU_VERSION)
 
@@ -178,12 +160,14 @@ class PythonMcu(QFrame):
         self.bottom_layout = QHBoxLayout()
         self.layout.addLayout(self.bottom_layout)
 
-        self.bottom_layout.addWidget(self.button_start)
+        self.bottom_layout.addWidget(self.button_start_stop)
         self.bottom_layout.addWidget(self.button_close)
+        self.bottom_layout.addWidget(self.button_license)
 
         # Add button signal to greetings slot
-        self.button_start.clicked.connect(self.start_interconnector)
-        self.button_close.clicked.connect(self.close_interconnector)
+        self.button_start_stop.clicked.connect(self.interconnector_start_stop)
+        self.button_close.clicked.connect(self.close_application)
+        self.button_license.clicked.connect(self.display_license)
 
 
         self._create_combo_box(self.grid_layout_mcu, \
@@ -214,8 +198,8 @@ class PythonMcu(QFrame):
                 MidiConnection.get_midi_outputs(), CONTROLLER_MIDI_OUTPUT)
 
         self._timer = QTimer(self)
-        self._timer.setInterval(1000)
-        self._timer.timeout.connect(self.update_display)
+        self._timer.setInterval(int(MIDI_LATENCY))
+        self._timer.timeout.connect(self.process_midi_input)
 
 
     def _create_combo_box( \
@@ -234,30 +218,74 @@ class PythonMcu(QFrame):
         widget.setCurrentIndex(current_index)
 
 
-    def update_display(self):
+    def process_midi_input(self):
         self._interconnector.process_midi_input()
 
 
-    def start_interconnector(self):
-        # the "interconnector" is the brain of this application -- it
-        # interconnects Mackie Control Host and MIDI controller while
-        # handling the complete MIDI translation between those two
-        self._interconnector = McuInterconnector( \
-            MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, SEQUENCER_MIDI_INPUT, \
-                SEQUENCER_MIDI_OUTPUT, HARDWARE_CONTROLLER_CLASS, \
-                CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT, \
-                callback_log)
-        self._interconnector.connect()
-
-        self._timer.start()
+    def display_license(self):
+        pass
 
 
-    def close_interconnector(self):
-        if self._interconnector:
+    def interconnector_start_stop(self):
+        if not self._interconnector:
+            self.button_start_stop.setText('Stop')
+
+            callback_log('Settings')
+            callback_log('========')
+            callback_log('Python version:          %d.%d.%d' % sys.version_info[:3])
             callback_log('')
+            callback_log('Emulated MCU model:      %s' % EMULATED_MCU_MODEL)
+            callback_log('Use challenge-response:  %s' % USE_CHALLENGE_RESPONSE)
+            callback_log('Sequencer MIDI input:    %s' % SEQUENCER_MIDI_INPUT)
+            callback_log('Sequencer MIDI output:   %s' % SEQUENCER_MIDI_OUTPUT)
+            callback_log('')
+            callback_log('Hardware controller:     %s' % HARDWARE_CONTROLLER)
+            callback_log('Controller MIDI input:   %s' % CONTROLLER_MIDI_INPUT)
+            callback_log('Controller MIDI output:  %s' % CONTROLLER_MIDI_OUTPUT)
+            callback_log('')
+            callback_log('MIDI latency:            %s ms' % MIDI_LATENCY)
+            callback_log('')
+            callback_log('')
+
+            if configuration.has_changed():
+                callback_log('Saving configuration file ...')
+                configuration.save_configuration()
+
+            callback_log('Starting MCU emulation...')
+            callback_log('')
+
+            # the "interconnector" is the brain of this application -- it
+            # interconnects Mackie Control Host and MIDI controller while
+            # handling the complete MIDI translation between those two
+            self._interconnector = McuInterconnector( \
+                MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, SEQUENCER_MIDI_INPUT, \
+                    SEQUENCER_MIDI_OUTPUT, HARDWARE_CONTROLLER_CLASS, \
+                    CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT, \
+                    callback_log)
+            self._interconnector.connect()
+
+            self._timer.start()
+        else:
+            self.button_start_stop.setText('Start')
+            self._interconnector_stop()
+
+
+    def _interconnector_stop(self):
             self._timer.stop()
-            self._interconnector.disconnect()
+
             callback_log('')
+            callback_log('Stopping MCU emulation...')
+            callback_log('')
+
+            self._interconnector.disconnect()
+            self._interconnector = None
+
+            callback_log('')
+
+
+    def close_application(self):
+        if self._interconnector:
+            self._interconnector_stop()
 
         callback_log('Exiting application...')
         callback_log('')

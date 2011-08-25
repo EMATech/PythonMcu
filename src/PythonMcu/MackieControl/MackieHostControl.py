@@ -122,12 +122,15 @@ class MackieHostControl:
 
 
     def __init__(self, mcu_model_id, use_challenge_response_connection, \
-                     version_number, midi_input, midi_output, callback_log):
+                     version_number, midi_input_name, midi_output_name, \
+                     callback_log):
         self._callback_log = callback_log
 
-        self._log('Opening MIDI ports...')
-        self._midi = MidiConnection( \
-            callback_log, self.receive_midi, midi_input, midi_output)
+        self._log('Initialising MIDI ports...')
+        self._midi_input_name = midi_input_name
+        self._midi_output_name = midi_output_name
+        self._midi = MidiConnection(callback_log, self.receive_midi)
+
         self.unset_hardware_controller()
 
         # LCD has 2 rows with 56 characters each, fill with spaces
@@ -201,6 +204,9 @@ class MackieHostControl:
 
 
     def connect(self):
+        self._log('Opening MIDI ports...')
+        self._midi.connect(self._midi_input_name, self._midi_output_name)
+
         if self._use_challenge_response_connection:
             self._log('Sending "Host Connection Query"...')
 
@@ -226,8 +232,9 @@ class MackieHostControl:
 
     def disconnect(self):
         self._log('Disconnecting...')
-
         self.go_offline()
+
+        self._log('Closing MIDI ports...')
         self._midi.disconnect()
 
 

@@ -45,22 +45,31 @@ class MidiConnection:
 
     # --- initialisation ---
 
-    def __init__(self, callback_log, callback, \
-                     midi_input=None, midi_output=None):
+    def __init__(self, callback_log, callback):
         self._callback_log = callback_log
         self._callback = callback
 
-        self._midi_input = self._init_input(midi_input)
-        self._midi_output = self._init_output(midi_output)
+        self._midi_input_name = None
+        self._midi_output_name = None
+
+
+    def connect(self, midi_input_name=None, midi_output_name=None):
+        self._midi_input_name = midi_input_name
+        if self._midi_input_name:
+            self._midi_input = self._init_input(self._midi_input_name)
+
+        self._midi_output_name = midi_output_name
+        if self._midi_output_name:
+            self._midi_output = self._init_output(self._midi_output_name)
 
 
     def disconnect(self):
         if self._midi_input:
-            self._log('Closing MIDI input...')
+            self._log('Closing MIDI input "%s"...' % self._midi_input_name)
             self._midi_input.close()
 
         if self._midi_output:
-            self._log('Closing MIDI output...')
+            self._log('Closing MIDI output "%s"...' % self._midi_output_name)
             self._midi_output.close()
 
 
@@ -271,8 +280,8 @@ if __name__ == "__main__":
     midi_input = 'In From MIDI Yoke:  2'
     midi_output = 'Out To MIDI Yoke:  1'
 
-    midi_connection = MidiConnection( \
-        callback_log, callback_midi_in, midi_input, midi_output)
+    midi_connection = MidiConnection(callback_log, callback_midi_in)
+    midi_connection.connect(midi_input, midi_output)
 
     midi_connection.send_control_change(0, 0x07, 0x80)
     midi_connection.send_sysex([0x01, 0x02], [0x11, 0x12, 0x13])
