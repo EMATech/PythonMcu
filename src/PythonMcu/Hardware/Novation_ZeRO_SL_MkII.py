@@ -117,6 +117,12 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         self._mode_automap = False
 
 
+    @staticmethod
+    def get_usage_hint():
+        return 'Connect the controller\'s USB port to your computer ' + \
+            'and switch to preset #32 (Ableton Live Automap).'
+
+
     def _log(self, message):
         self.callback_log('[Novation ZeRO SL MkII]  ' + message)
 

@@ -75,6 +75,11 @@ class MidiControllerTemplate(object):
             self.display_timecode_characters.append(' ')
 
 
+    @staticmethod
+    def get_usage_hint():
+        return ''
+
+
     def _log(self, message):
         self.callback_log('[Controller Template]  ' + message)
 

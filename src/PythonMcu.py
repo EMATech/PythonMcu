@@ -51,6 +51,14 @@ class PythonMcu(QFrame):
     def __init__(self, parent=None):
         super(PythonMcu, self).__init__(parent)
 
+        # must be defined before reading the configuration file!
+        self._edit_usage_hint = QTextEdit()
+        self._edit_usage_hint.setReadOnly(True)
+
+        font = QFont()
+        font.setStyleHint(QFont.Monospace, QFont.PreferAntialias)
+        self._edit_usage_hint.setFontFamily(font.defaultFamily())
+
         self._read_configuration()
 
         self._timer = None
@@ -131,6 +139,9 @@ class PythonMcu(QFrame):
             self.grid_layout_controller, self._controller_midi_output, \
                 'MIDI Out:', MidiConnection.get_midi_outputs())
 
+        self.grid_layout_controller.addWidget( \
+            self._edit_usage_hint, self.grid_layout_controller.rowCount(), \
+                0, 1, 2)
 
         self._timer = QTimer(self)
         self._timer.setInterval(int(self._midi_latency))
@@ -241,6 +252,11 @@ class PythonMcu(QFrame):
 
         controller_midi_input_default = eval(eval_controller_midi_input)
         controller_midi_output_default = eval(eval_controller_midi_output)
+
+        # show controller's usage hint
+        usage_hint = '{0!s}.{0!s}.get_usage_hint()'.format( \
+            self._hardware_controller_class)
+        self._edit_usage_hint.setText(eval(usage_hint))
 
         return (controller_midi_input_default, controller_midi_output_default)
 
