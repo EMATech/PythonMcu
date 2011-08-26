@@ -25,4 +25,7 @@ Thank you for using free software!
 """
 
 
-__all__ = ["Novation_ZeRO_SL_MkII"]
+__all__ = [ \
+    'Novation_ZeRO_SL_MkII', \
+    'Novation_ZeRO_SL_MkII_MIDI'
+]

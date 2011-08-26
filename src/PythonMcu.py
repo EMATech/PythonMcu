@@ -62,7 +62,10 @@ class PythonMcu(QFrame):
         mcu_model_ids = ['Logic Control', 'Logic Control XT', \
                               'Mackie Control', 'Mackie Control XT']
 
-        hardware_controllers = ['Novation ZeRO SL MkII']
+        hardware_controllers = [ \
+            'Novation ZeRO SL MkII', \
+            'Novation ZeRO SL MkII (MIDI)'
+        ]
 
         # get version number of "Python MCU"
         version = configuration.get_application_information('version')
@@ -91,6 +94,7 @@ class PythonMcu(QFrame):
 
         self.button_start_stop = QPushButton('Start')
         self.bottom_layout.addWidget(self.button_start_stop)
+        self.button_start_stop.setDefault(True)
         self.button_start_stop.clicked.connect(self.interconnector_start_stop)
 
         self.button_close = QPushButton('Close')
@@ -134,12 +138,12 @@ class PythonMcu(QFrame):
 
 
     def _read_configuration(self):
-        # initialise defaults for MCU and hardware control
+        # initialise defaults for MCU and hardware controller
         emulated_mcu_model_default = MackieHostControl.get_preferred_mcu_model()
         hardware_controller_default = 'Novation ZeRO SL MkII'
         midi_latency_default = '1'
 
-        # retrieve user configuration for MCU and hardware control
+        # retrieve user configuration for MCU and hardware controller
         self._emulated_mcu_model = configuration.get_option( \
             'Python MCU', 'emulated_mcu_model', emulated_mcu_model_default)
         self._hardware_controller = configuration.get_option( \
@@ -165,31 +169,18 @@ class PythonMcu(QFrame):
         else:
             self._use_challenge_response = False
 
-        # the hardware controller class name is simply the
-        # controller's manufacturer and name with all the spaces
-        # converted to underscores
-        self._hardware_controller_class = \
-            self._hardware_controller.replace(' ', '_')
+        # get preferred MIDI ports for hardware controller
+        (controller_midi_input_default, controller_midi_output_default) = \
+            self._initialise_hardware_controller()
 
-        # get preferred MIDI connections for hardware control
-        eval_controller_midi_input = \
-            '{0!s}.{0!s}.get_preferred_midi_input()'.format( \
-            self._hardware_controller_class)
-        eval_controller_midi_output = \
-            '{0!s}.{0!s}.get_preferred_midi_output()'.format( \
-            self._hardware_controller_class)
-
-        # initialise MIDI connection defaults for MCU and hardware
-        # control
+        # initialise MIDI port defaults for MCU and hardware
+        # controller
         sequencer_midi_input_default = \
             MackieHostControl.get_preferred_midi_input()
         sequencer_midi_output_default = \
             MackieHostControl.get_preferred_midi_output()
 
-        controller_midi_input_default = eval(eval_controller_midi_input)
-        controller_midi_output_default = eval(eval_controller_midi_output)
-
-        # retrieve user configuration for MIDI connection of MCU
+        # retrieve user configuration for MCU's MIDI ports
         self._sequencer_midi_input = configuration.get_option( \
             'Python MCU', 'sequencer_midi_input', \
                 sequencer_midi_input_default)
@@ -197,7 +188,8 @@ class PythonMcu(QFrame):
             'Python MCU', 'sequencer_midi_output', \
                 sequencer_midi_output_default)
 
-        # retrieve user configuration for MIDI connection of hardware control
+        # retrieve user configuration for hardware controller's MIDI
+        # ports
         self._controller_midi_input = configuration.get_option( \
             'Python MCU', 'controller_midi_input', \
                 controller_midi_input_default)
@@ -226,6 +218,33 @@ class PythonMcu(QFrame):
         return widget
 
 
+    def _initialise_hardware_controller(self):
+        # the hardware controller's class name is simply the
+        # controller's manufacturer and name with all spaces converted
+        # to underscores and all brackets removed
+        self._hardware_controller_class = \
+            self._hardware_controller.replace(' ', '_')
+        self._hardware_controller_class = \
+            self._hardware_controller_class.replace('(', '').replace(')', '')
+        self._hardware_controller_class = \
+            self._hardware_controller_class.replace('[', '').replace(']', '')
+        self._hardware_controller_class = \
+            self._hardware_controller_class.replace('{', '').replace('}', '')
+
+        # get hardware controller's preferred MIDI ports
+        eval_controller_midi_input = \
+            '{0!s}.{0!s}.get_preferred_midi_input()'.format( \
+            self._hardware_controller_class)
+        eval_controller_midi_output = \
+            '{0!s}.{0!s}.get_preferred_midi_output()'.format( \
+            self._hardware_controller_class)
+
+        controller_midi_input_default = eval(eval_controller_midi_input)
+        controller_midi_output_default = eval(eval_controller_midi_output)
+
+        return (controller_midi_input_default, controller_midi_output_default)
+
+
     def combobox_item_selected(self, selected_text):
         widget = self.sender()
 
@@ -250,8 +269,18 @@ class PythonMcu(QFrame):
             'Python MCU', 'hardware_controller', \
                 self._hardware_controller)
 
-            # TODO: get preferred MIDI connections for hardware
-            # control
+            # get preferred MIDI ports for hardware controller
+            (controller_midi_input_default, controller_midi_output_default) = \
+                self._initialise_hardware_controller()
+
+            # update hardware controller's MIDI ports in GUI
+            current_index = self._combo_controller_midi_input.findText( \
+                controller_midi_input_default)
+            self._combo_controller_midi_input.setCurrentIndex(current_index)
+
+            current_index = self._combo_controller_midi_output.findText( \
+                controller_midi_output_default)
+            self._combo_controller_midi_output.setCurrentIndex(current_index)
         elif widget == self._combo_controller_midi_input:
             self._controller_midi_input = selected_text
             configuration.set_option( \

@@ -133,6 +133,28 @@ class MidiConnection:
         return midi_outputs
 
 
+    @staticmethod
+    def get_default_midi_input():
+        device_id = pygame.midi.get_default_input_id()
+
+        if device_id < 0:
+            return None
+        else:
+            device = pygame.midi.get_device_info(device_id)
+            return device[1]
+
+
+    @staticmethod
+    def get_default_midi_output():
+        device_id = pygame.midi.get_default_output_id()
+
+        if device_id < 0:
+            return None
+        else:
+            device = pygame.midi.get_device_info(device_id)
+            return device[1]
+
+
     # --- MIDI processing ---
 
     def buffer_is_empty(self, use_callback=True):
