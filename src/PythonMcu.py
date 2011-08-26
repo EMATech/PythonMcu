@@ -56,7 +56,7 @@ class PythonMcu(QFrame):
         self._edit_usage_hint.setReadOnly(True)
 
         font = QFont()
-        font.setStyleHint(QFont.Monospace, QFont.PreferAntialias)
+        font.setStyleHint(QFont.TypeWriter, QFont.PreferAntialias)
         self._edit_usage_hint.setFontFamily(font.defaultFamily())
 
         self._read_configuration()
