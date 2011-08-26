@@ -312,11 +312,11 @@ class ApplicationSettings:
         if not self._configuration.has_option(section, option):
             self.add_section(section)
 
-            # set configuration option
-            self._configuration.set(section, option, current_value)
+        # set configuration option
+        self._configuration.set(section, option, current_value)
 
-            # mark configuration as dirty
-            self._configuration_changed = True
+        # mark configuration as dirty
+        self._configuration_changed = True
 
 
     def remove_option(self, section, option):
