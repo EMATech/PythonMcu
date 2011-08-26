@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -30,89 +31,27 @@ from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
 from PythonMcu.Midi.MidiConnection import MidiConnection
 from PythonMcu.Tools.ApplicationSettings import *
 
+import platform
 import sys
 
+import pygame.version
+import PySide
 from PySide.QtCore import *
 from PySide.QtGui import *
+
+
+configuration = ApplicationSettings()
 
 
 def callback_log(message):
     print message
 
 
-configuration = ApplicationSettings()
-
-# get version number of "Python MCU"
-PYTHON_MCU_VERSION = configuration.get_application_information('version')
-
-# initialise defaults for MCU and hardware control
-emulated_mcu_model_default = MackieHostControl.get_preferred_mcu_model()
-hardware_controller_default = 'Novation ZeRO SL MkII'
-midi_latency_default = '1'
-
-# retrieve user configuration for MCU and hardware control
-EMULATED_MCU_MODEL = configuration.get_option( \
-    'Python MCU', 'emulated_mcu_model', emulated_mcu_model_default)
-HARDWARE_CONTROLLER = configuration.get_option( \
-    'Python MCU', 'hardware_controller', hardware_controller_default)
-MIDI_LATENCY = configuration.get_option( \
-    'Python MCU', 'midi_latency', midi_latency_default)
-
-
-# calculate MCU model ID from its name
-MCU_MODEL_ID = MackieHostControl.get_mcu_id_from_model(EMULATED_MCU_MODEL)
-
-# Logic Control units use MCU challenge-response by default, ...
-if MCU_MODEL_ID in [0x10, 0x11]:
-    use_challenge_response_default = True
-# while Mackie Control Units don't seem to use it
-else:
-    use_challenge_response_default = False
-
-if configuration.get_option('Python MCU', 'use_challenge_response', \
-                                use_challenge_response_default) == 'True':
-    USE_CHALLENGE_RESPONSE = True
-else:
-    USE_CHALLENGE_RESPONSE = False
-
-# the hardware controller class name is simply the controller's
-# manufacturer and name with all the spaces converted to underscores
-HARDWARE_CONTROLLER_CLASS = HARDWARE_CONTROLLER.replace(' ', '_')
-
-
-# get preferred MIDI connections for hardware control
-eval_controller_midi_input = \
-    '{0!s}.{0!s}.get_preferred_midi_input()'.format(HARDWARE_CONTROLLER_CLASS)
-eval_controller_midi_output = \
-    '{0!s}.{0!s}.get_preferred_midi_output()'.format(HARDWARE_CONTROLLER_CLASS)
-
-# initialise MIDI connection defaults for MCU and hardware control
-sequencer_midi_input_default = MackieHostControl.get_preferred_midi_input()
-sequencer_midi_output_default = MackieHostControl.get_preferred_midi_output()
-controller_midi_input_default = eval(eval_controller_midi_input)
-controller_midi_output_default = eval(eval_controller_midi_output)
-
-# retrieve user configuration for MIDI connection of MCU
-SEQUENCER_MIDI_INPUT = configuration.get_option( \
-    'Python MCU', 'sequencer_midi_input', sequencer_midi_input_default)
-SEQUENCER_MIDI_OUTPUT = configuration.get_option( \
-    'Python MCU', 'sequencer_midi_output', sequencer_midi_output_default)
-
-# retrieve user configuration for MIDI connection of hardware control
-CONTROLLER_MIDI_INPUT = configuration.get_option( \
-    'Python MCU', 'controller_midi_input', controller_midi_input_default)
-CONTROLLER_MIDI_OUTPUT = configuration.get_option( \
-    'Python MCU', 'controller_midi_output', controller_midi_output_default)
-
-
 class PythonMcu(QFrame):
     def __init__(self, parent=None):
         super(PythonMcu, self).__init__(parent)
 
-        callback_log('')
-        callback_log(configuration.get_full_description())
-        callback_log('')
-        callback_log('')
+        self._read_configuration()
 
         self._timer = None
         self._interconnector = None
@@ -125,21 +64,11 @@ class PythonMcu(QFrame):
 
         hardware_controllers = ['Novation ZeRO SL MkII']
 
-        self.mcu_model_id = None
-        self.mcu_midi_input = None
-        self.mcu_midi_output = None
+        # get version number of "Python MCU"
+        version = configuration.get_application_information('version')
+        self.setWindowTitle('Python MCU ' + version)
 
-        self.hardware_controller = None
-        self.controller_midi_input = None
-        self.controller_midi_output = None
-
-        self.button_start_stop = QPushButton('Start')
-        self.button_close = QPushButton('Close')
-        self.button_license = QPushButton('License')
-
-        self.setWindowTitle('Python MCU ' + PYTHON_MCU_VERSION)
-
-        # Create layout and add widgets
+        # create layouts and add widgets
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
@@ -160,62 +89,181 @@ class PythonMcu(QFrame):
         self.bottom_layout = QHBoxLayout()
         self.layout.addLayout(self.bottom_layout)
 
+        self.button_start_stop = QPushButton('Start')
         self.bottom_layout.addWidget(self.button_start_stop)
-        self.bottom_layout.addWidget(self.button_close)
-        self.bottom_layout.addWidget(self.button_license)
-
-        # Add button signal to greetings slot
         self.button_start_stop.clicked.connect(self.interconnector_start_stop)
+
+        self.button_close = QPushButton('Close')
+        self.bottom_layout.addWidget(self.button_close)
         self.button_close.clicked.connect(self.close_application)
+
+        self.button_license = QPushButton('License')
+        self.bottom_layout.addWidget(self.button_license)
         self.button_license.clicked.connect(self.display_license)
 
 
-        self._create_combo_box(self.grid_layout_mcu, \
-            self.mcu_model_id, 0, 'MCU model:', \
-                mcu_model_ids, EMULATED_MCU_MODEL)
+        self._combo_mcu_model_id = self._create_combo_box( \
+            self.grid_layout_mcu, self._emulated_mcu_model, \
+                'MCU model:', mcu_model_ids)
 
-        self._create_combo_box( \
-            self.grid_layout_mcu, \
-                self.mcu_midi_input, 1, 'MIDI In:', \
-                MidiConnection.get_midi_inputs(), SEQUENCER_MIDI_INPUT)
+        self._combo_mcu_midi_input = self._create_combo_box( \
+            self.grid_layout_mcu, self._sequencer_midi_input, \
+                'MIDI In:', MidiConnection.get_midi_inputs(), )
 
-        self._create_combo_box(self.grid_layout_mcu,  \
-            self.mcu_midi_output, 2, 'MIDI Out:', \
-                MidiConnection.get_midi_outputs(), SEQUENCER_MIDI_OUTPUT)
-
-
-        self._create_combo_box(self.grid_layout_controller, \
-            self.hardware_controller, 3, 'Controller:', \
-                hardware_controllers, HARDWARE_CONTROLLER)
+        self._combo_mcu_midi_output = self._create_combo_box( \
+            self.grid_layout_mcu, self._sequencer_midi_output, \
+                'MIDI Out:', MidiConnection.get_midi_outputs())
 
 
-        self._create_combo_box(self.grid_layout_controller, \
-            self.controller_midi_input, 4, 'MIDI In:', \
-                MidiConnection.get_midi_inputs(), CONTROLLER_MIDI_INPUT)
+        self._combo_hardware_controller = self._create_combo_box( \
+            self.grid_layout_controller, self._hardware_controller, \
+                'Controller:', hardware_controllers)
 
-        self._create_combo_box(self.grid_layout_controller, \
-            self.controller_midi_output, 5, 'MIDI Out:', \
-                MidiConnection.get_midi_outputs(), CONTROLLER_MIDI_OUTPUT)
+        self._combo_controller_midi_input = self._create_combo_box( \
+            self.grid_layout_controller, self._controller_midi_input, \
+                'MIDI In:', MidiConnection.get_midi_inputs())
+
+        self._combo_controller_midi_output = self._create_combo_box( \
+            self.grid_layout_controller, self._controller_midi_output, \
+                'MIDI Out:', MidiConnection.get_midi_outputs())
+
 
         self._timer = QTimer(self)
-        self._timer.setInterval(int(MIDI_LATENCY))
+        self._timer.setInterval(int(self._midi_latency))
         self._timer.timeout.connect(self.process_midi_input)
 
 
-    def _create_combo_box( \
-            self, layout, widget, pos, label_text, choices, selection):
+    def _read_configuration(self):
+        # initialise defaults for MCU and hardware control
+        emulated_mcu_model_default = MackieHostControl.get_preferred_mcu_model()
+        hardware_controller_default = 'Novation ZeRO SL MkII'
+        midi_latency_default = '1'
+
+        # retrieve user configuration for MCU and hardware control
+        self._emulated_mcu_model = configuration.get_option( \
+            'Python MCU', 'emulated_mcu_model', emulated_mcu_model_default)
+        self._hardware_controller = configuration.get_option( \
+            'Python MCU', 'hardware_controller', hardware_controller_default)
+        self._midi_latency = configuration.get_option( \
+            'Python MCU', 'midi_latency', midi_latency_default)
+
+        # calculate MCU model ID from its name
+        self._mcu_model_id = MackieHostControl.get_mcu_id_from_model( \
+            self._emulated_mcu_model)
+
+        # Logic Control units use MCU challenge-response by default, ...
+        if self._mcu_model_id in [0x10, 0x11]:
+            use_challenge_response_default = True
+        # whereas Mackie Control Units don't seem to use it
+        else:
+            use_challenge_response_default = False
+
+        if configuration.get_option( \
+            'Python MCU', 'use_challenge_response', \
+                use_challenge_response_default) == 'True':
+            self._use_challenge_response = True
+        else:
+            self._use_challenge_response = False
+
+        # the hardware controller class name is simply the
+        # controller's manufacturer and name with all the spaces
+        # converted to underscores
+        self._hardware_controller_class = \
+            self._hardware_controller.replace(' ', '_')
+
+        # get preferred MIDI connections for hardware control
+        eval_controller_midi_input = \
+            '{0!s}.{0!s}.get_preferred_midi_input()'.format( \
+            self._hardware_controller_class)
+        eval_controller_midi_output = \
+            '{0!s}.{0!s}.get_preferred_midi_output()'.format( \
+            self._hardware_controller_class)
+
+        # initialise MIDI connection defaults for MCU and hardware
+        # control
+        sequencer_midi_input_default = \
+            MackieHostControl.get_preferred_midi_input()
+        sequencer_midi_output_default = \
+            MackieHostControl.get_preferred_midi_output()
+
+        controller_midi_input_default = eval(eval_controller_midi_input)
+        controller_midi_output_default = eval(eval_controller_midi_output)
+
+        # retrieve user configuration for MIDI connection of MCU
+        self._sequencer_midi_input = configuration.get_option( \
+            'Python MCU', 'sequencer_midi_input', \
+                sequencer_midi_input_default)
+        self._sequencer_midi_output = configuration.get_option( \
+            'Python MCU', 'sequencer_midi_output', \
+                sequencer_midi_output_default)
+
+        # retrieve user configuration for MIDI connection of hardware control
+        self._controller_midi_input = configuration.get_option( \
+            'Python MCU', 'controller_midi_input', \
+                controller_midi_input_default)
+        self._controller_midi_output = configuration.get_option( \
+            'Python MCU', 'controller_midi_output', \
+                controller_midi_output_default)
+
+
+    def _create_combo_box(self, layout, selection, label_text, choices):
+        row = layout.rowCount()
+
         label = QLabel(None)
         label.setText(label_text)
-        layout.addWidget(label, pos, 0)
+        layout.addWidget(label, row, 0)
 
         widget = QComboBox()
-        layout.addWidget(widget, pos, 1)
+        layout.addWidget(widget, row, 1)
 
         choices.sort()
         widget.addItems(choices)
 
         current_index = widget.findText(selection)
         widget.setCurrentIndex(current_index)
+        widget.currentIndexChanged.connect(self.combobox_item_selected)
+
+        return widget
+
+
+    def combobox_item_selected(self, selected_text):
+        widget = self.sender()
+
+        if widget == self._combo_mcu_model_id:
+            self._emulated_mcu_model = selected_text
+            configuration.set_option( \
+                'Python MCU', 'emulated_mcu_model', \
+                    self._emulated_mcu_model)
+        elif widget == self._combo_mcu_midi_input:
+            self._sequencer_midi_input = selected_text
+            configuration.set_option( \
+                'Python MCU', 'sequencer_midi_input', \
+                    self._sequencer_midi_input)
+        elif widget == self._combo_mcu_midi_output:
+            self._sequencer_midi_output = selected_text
+            configuration.set_option( \
+                'Python MCU', 'sequencer_midi_output', \
+                    self._sequencer_midi_output)
+        elif widget == self._combo_hardware_controller:
+            self._hardware_controller = selected_text
+            configuration.set_option( \
+            'Python MCU', 'hardware_controller', \
+                self._hardware_controller)
+
+            # TODO: get preferred MIDI connections for hardware
+            # control
+        elif widget == self._combo_controller_midi_input:
+            self._controller_midi_input = selected_text
+            configuration.set_option( \
+                'Python MCU', 'controller_midi_input', \
+                    self._controller_midi_input)
+        elif widget == self._combo_controller_midi_output:
+            self._controller_midi_output = selected_text
+            configuration.set_option( \
+                'Python MCU', 'controller_midi_output', \
+                    self._controller_midi_output)
+        else:
+            callback_log('QComboBox not handled ("%s").' % selected_text)
 
 
     def process_midi_input(self):
@@ -232,18 +280,24 @@ class PythonMcu(QFrame):
 
             callback_log('Settings')
             callback_log('========')
-            callback_log('Python version:          %d.%d.%d' % sys.version_info[:3])
+            callback_log('Emulated MCU model:      %s' % \
+                             self._emulated_mcu_model)
+            callback_log('Use challenge-response:  %s' % \
+                             self._use_challenge_response)
+            callback_log('Sequencer MIDI input:    %s' % \
+                             self._sequencer_midi_input)
+            callback_log('Sequencer MIDI output:   %s' % \
+                             self._sequencer_midi_output)
             callback_log('')
-            callback_log('Emulated MCU model:      %s' % EMULATED_MCU_MODEL)
-            callback_log('Use challenge-response:  %s' % USE_CHALLENGE_RESPONSE)
-            callback_log('Sequencer MIDI input:    %s' % SEQUENCER_MIDI_INPUT)
-            callback_log('Sequencer MIDI output:   %s' % SEQUENCER_MIDI_OUTPUT)
+            callback_log('Hardware controller:     %s' % \
+                             self._hardware_controller)
+            callback_log('Controller MIDI input:   %s' % \
+                             self._controller_midi_input)
+            callback_log('Controller MIDI output:  %s' % \
+                             self._controller_midi_output)
             callback_log('')
-            callback_log('Hardware controller:     %s' % HARDWARE_CONTROLLER)
-            callback_log('Controller MIDI input:   %s' % CONTROLLER_MIDI_INPUT)
-            callback_log('Controller MIDI output:  %s' % CONTROLLER_MIDI_OUTPUT)
-            callback_log('')
-            callback_log('MIDI latency:            %s ms' % MIDI_LATENCY)
+            callback_log('MIDI latency:            %s ms' % \
+                             self._midi_latency)
             callback_log('')
             callback_log('')
 
@@ -258,9 +312,13 @@ class PythonMcu(QFrame):
             # interconnects Mackie Control Host and MIDI controller while
             # handling the complete MIDI translation between those two
             self._interconnector = McuInterconnector( \
-                MCU_MODEL_ID, USE_CHALLENGE_RESPONSE, SEQUENCER_MIDI_INPUT, \
-                    SEQUENCER_MIDI_OUTPUT, HARDWARE_CONTROLLER_CLASS, \
-                    CONTROLLER_MIDI_INPUT, CONTROLLER_MIDI_OUTPUT, \
+                self._mcu_model_id, \
+                    self._use_challenge_response, \
+                    self._sequencer_midi_input, \
+                    self._sequencer_midi_output, \
+                    self._hardware_controller_class, \
+                    self._controller_midi_input, \
+                    self._controller_midi_output, \
                     callback_log)
             self._interconnector.connect()
 
@@ -284,16 +342,31 @@ class PythonMcu(QFrame):
 
 
     def close_application(self):
+        self.close()
+
+
+    def closeEvent(self, event):
         if self._interconnector:
             self._interconnector_stop()
 
         callback_log('Exiting application...')
         callback_log('')
 
-        self.close()
-
 
 if __name__ == '__main__':
+    callback_log('')
+    callback_log(configuration.get_full_description())
+    callback_log('')
+    callback_log('')
+    callback_log('Version numbers')
+    callback_log('===============')
+    callback_log('Python:  %s (%s)' % (platform.python_version(), \
+                                           platform.python_implementation()))
+    callback_log('PySide:  %s' % PySide.__version__)
+    callback_log('pygame:  %s' % pygame.version.ver)
+    callback_log('')
+    callback_log('')
+
     # Create the Qt Application
     app = QApplication(sys.argv)
 
