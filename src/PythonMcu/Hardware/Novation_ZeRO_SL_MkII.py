@@ -24,6 +24,7 @@ Thank you for using free software!
 
 """
 
+import os
 import sys
 
 if __name__ == "__main__":
@@ -318,12 +319,18 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
     @staticmethod
     def get_preferred_midi_input():
-        return 'ZeRO MkII: Port 2'
+        if os.name == 'nt':
+            return 'ZeRO MkII: Port 2'
+        else:
+            return 'ZeRO MkII MIDI 2'
 
 
     @staticmethod
     def get_preferred_midi_output():
-        return 'ZeRO MkII: Port 2'
+        if os.name == 'nt':
+            return 'ZeRO MkII: Port 2'
+        else:
+            return 'ZeRO MkII MIDI 2'
 
 
     # --- registration of MIDI controls ---
