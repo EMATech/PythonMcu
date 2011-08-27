@@ -85,38 +85,35 @@ class PythonMcu(QFrame):
 
         self.frame_mcu = QFrame()
         self.frame_mcu.setFrameStyle(QFrame.StyledPanel)
-        self.frame_mcu.setFrameShadow(QFrame.Plain)
+        self.frame_mcu.setFrameShadow(QFrame.Raised)
         self.layout.addWidget(self.frame_mcu)
         self.grid_layout_mcu = QGridLayout()
         self.frame_mcu.setLayout(self.grid_layout_mcu)
 
         self.frame_controller = QFrame()
         self.frame_controller.setFrameStyle(QFrame.StyledPanel)
-        self.frame_controller.setFrameShadow(QFrame.Plain)
+        self.frame_controller.setFrameShadow(QFrame.Raised)
         self.layout.addWidget(self.frame_controller)
         self.grid_layout_controller = QGridLayout()
         self.frame_controller.setLayout(self.grid_layout_controller)
-
-        self.bottom_layout = QHBoxLayout()
-        self.layout.addLayout(self.bottom_layout)
-
-        self.button_start_stop = QPushButton('Start')
-        self.bottom_layout.addWidget(self.button_start_stop)
-        self.button_start_stop.setDefault(True)
-        self.button_start_stop.clicked.connect(self.interconnector_start_stop)
-
-        self.button_close = QPushButton('Close')
-        self.bottom_layout.addWidget(self.button_close)
-        self.button_close.clicked.connect(self.close_application)
-
-        self.button_license = QPushButton('License')
-        self.bottom_layout.addWidget(self.button_license)
-        self.button_license.clicked.connect(self.display_license)
 
 
         self._combo_mcu_model_id = self._create_combo_box( \
             self.grid_layout_mcu, self._emulated_mcu_model, \
                 'MCU model:', mcu_model_ids)
+
+        self._checkbox_use_challenge_response = QCheckBox()
+        self._checkbox_use_challenge_response.setText('Use ch&allenge response')
+
+        if self._use_challenge_response:
+            self._checkbox_use_challenge_response.setCheckState(Qt.Checked)
+        else:
+            self._checkbox_use_challenge_response.setCheckState(Qt.Unchecked)
+
+        self.grid_layout_mcu.addWidget(self._checkbox_use_challenge_response, \
+                                           self.grid_layout_mcu.rowCount(), 1)
+        self._checkbox_use_challenge_response.stateChanged.connect( \
+            (self.checkbox_state_changed))
 
         self._combo_mcu_midi_input = self._create_combo_box( \
             self.grid_layout_mcu, self._sequencer_midi_input, \
@@ -142,6 +139,22 @@ class PythonMcu(QFrame):
         self.grid_layout_controller.addWidget( \
             self._edit_usage_hint, self.grid_layout_controller.rowCount(), \
                 0, 1, 2)
+
+        self.bottom_layout = QHBoxLayout()
+        self.layout.addLayout(self.bottom_layout)
+
+        self.button_start_stop = QPushButton('&Start')
+        self.bottom_layout.addWidget(self.button_start_stop)
+        self.button_start_stop.setDefault(True)
+        self.button_start_stop.clicked.connect(self.interconnector_start_stop)
+
+        self.button_close = QPushButton('&Close')
+        self.bottom_layout.addWidget(self.button_close)
+        self.button_close.clicked.connect(self.close_application)
+
+        self.button_license = QPushButton('&License')
+        self.bottom_layout.addWidget(self.button_license)
+        self.button_license.clicked.connect(self.display_license)
 
         self._timer = QTimer(self)
         self._timer.setInterval(int(self._midi_latency))
@@ -269,6 +282,13 @@ class PythonMcu(QFrame):
             configuration.set_option( \
                 'Python MCU', 'emulated_mcu_model', \
                     self._emulated_mcu_model)
+
+            if self._emulated_mcu_model.startswith('Logic'):
+                self._checkbox_use_challenge_response.setCheckState(Qt.Checked)
+            else:
+                self._checkbox_use_challenge_response.setCheckState( \
+                    Qt.Unchecked)
+
         elif widget == self._combo_mcu_midi_input:
             self._sequencer_midi_input = selected_text
             configuration.set_option( \
@@ -311,6 +331,19 @@ class PythonMcu(QFrame):
             callback_log('QComboBox not handled ("%s").' % selected_text)
 
 
+    def checkbox_state_changed(self, state):
+        widget = self.sender()
+
+        if widget == self._checkbox_use_challenge_response:
+            self._use_challenge_response = widget.isChecked()
+
+            configuration.set_option( \
+            'Python MCU', 'use_challenge_response', \
+                self._use_challenge_response)
+        else:
+            callback_log('QCheckBox not handled ("%d").' % state)
+
+
     def process_midi_input(self):
         self._interconnector.process_midi_input()
 
@@ -321,7 +354,7 @@ class PythonMcu(QFrame):
 
     def interconnector_start_stop(self):
         if not self._interconnector:
-            self.button_start_stop.setText('Stop')
+            self.button_start_stop.setText('&Stop')
 
             callback_log('Settings')
             callback_log('========')
@@ -369,7 +402,7 @@ class PythonMcu(QFrame):
 
             self._timer.start()
         else:
-            self.button_start_stop.setText('Start')
+            self.button_start_stop.setText('&Start')
             self._interconnector_stop()
 
 
