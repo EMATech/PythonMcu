@@ -24,9 +24,10 @@ Thank you for using free software!
 
 """
 
+import os
+import sys
 import time
 import types
-import sys
 
 if __name__ == "__main__":
     # allow "PythonMcu" package imports when executing this module
@@ -322,12 +323,18 @@ class MackieHostControl:
 
     @staticmethod
     def get_preferred_midi_input():
-        return 'In From MIDI Yoke:  2'
+        if os.name == 'nt':
+            return 'In From MIDI Yoke:  2'
+        else:
+            return 'mcu'
 
 
     @staticmethod
     def get_preferred_midi_output():
-        return 'Out To MIDI Yoke:  1'
+        if os.name == 'nt':
+            return 'Out To MIDI Yoke:  1'
+        else:
+            return 'mcu'
 
 
     # --- MIDI processing ---
