@@ -81,7 +81,7 @@ Thank you for using free software!"""
         # set path to configuration file
         if os.name == 'nt':
             self._about['config_file_path'] = \
-                os.path.expanduser('~/PythonMcu.conf')
+                os.path.expanduser('~/_python_mcu')
         else:
             self._about['config_file_path'] = \
                 os.path.expanduser('~/.python_mcu')
