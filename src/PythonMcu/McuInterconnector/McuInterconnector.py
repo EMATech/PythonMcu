@@ -157,8 +157,8 @@ class McuInterconnector(object):
     ]
 
 
-    def __init__(self, mcu_model_id, use_challenge_response, \
-                     sequencer_midi_input, sequencer_midi_output, \
+    def __init__(self, mcu_model_id, mcu_connection, \
+                     mcu_midi_input, mcu_midi_output, \
                      hardware_controller_class, controller_midi_input, \
                      controller_midi_output, callback_log):
         self._callback_log = callback_log
@@ -172,11 +172,10 @@ class McuInterconnector(object):
 
         # get "Python MCU" version number
         python_mcu_version = ApplicationConfiguration().get_version(False)
-        print python_mcu_version
 
         self._mackie_host_control = MackieHostControl( \
-            mcu_model_id, use_challenge_response, python_mcu_version, \
-                sequencer_midi_input, sequencer_midi_output, callback_log)
+            mcu_model_id, mcu_connection, python_mcu_version, \
+                mcu_midi_input, mcu_midi_output, callback_log)
 
         # set this here so the hardware controller can notify the user
         # about the connection process
@@ -381,6 +380,11 @@ class McuInterconnector(object):
     def set_led_channel_select(self, channel, status):
         # channel: 0 - 7
         self._set_led('select_channel_%d' % (channel + 1), status)
+
+
+    def set_led_channel_vselect(self, channel, status):
+        # channel: 0 - 7
+        self._set_led('vselect_channel_%d' % (channel + 1), status)
 
 
     def set_led_assignment_track(self, status):

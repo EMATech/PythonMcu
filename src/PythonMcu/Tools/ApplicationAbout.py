@@ -56,7 +56,7 @@ class ApplicationAbout:
             'application':              'PythonMcu',
             'cmd_line':                 'PythonMcu.py',
             'description':              _('Mackie Host Controller written in Python'),
-            'version':                  '1.06',
+            'version':                  '1.07',
             'authors':                  'Martin Zuther',
             'contributors':             '',
             'copyright_years':          '2011',
@@ -1484,10 +1484,10 @@ first, please read
         # set path to configuration file
         if os.name == 'nt':
             self._about['config_file_path'] = \
-                os.path.expanduser('~/_python_mcu')
+                os.path.expanduser(os.path.join('~', '_python_mcu'))
         else:
             self._about['config_file_path'] = \
-                os.path.expanduser('~/.python_mcu')
+                os.path.expanduser(os.path.join('~', '.python_mcu'))
 
 
     def __repr__(self):
@@ -1506,7 +1506,12 @@ first, please read
         keys.sort()
 
         for setting in keys:
-            output += '[%s]\n%s\n\n' % (setting, self._about[setting])
+            if setting in ('license_plain', 'license_html'):
+                short_setting = '\n'.join(self._about[setting].split('\n')[:5])
+                short_setting += '\n[...]'
+                output += '[%s]\n%s\n\n' % (setting, short_setting)
+            else:
+                output += '[%s]\n%s\n\n' % (setting, self._about[setting])
         output = output.strip('\n')
 
         # dump the whole thing

@@ -39,6 +39,10 @@ class MackieHostControl:
     __module__ = __name__
     __doc__ = 'Python wrapper for Mackie Host Control'
 
+    ASSUME_SUCCESSFUL_CONNECTION = 'Assume successful connection'
+    CHALLENGE_RESPONSE = 'Challenge / Response'
+    WAIT_FOR_MIDI_DATA = 'Wait for MIDI data'
+
     SWITCH_RELEASED = 0
     SWITCH_PRESSED = 1
     SWITCH_PRESSED_RELEASED = 2
@@ -51,7 +55,7 @@ class MackieHostControl:
 
     _LED_SWITCH_CHANNEL_MUTE = 0x10
     _LED_SWITCH_CHANNEL_SELECT = 0x18
-    _SWITCH_CHANNEL_VSELECT = 0x20
+    _LED_SWITCH_CHANNEL_VSELECT = 0x20
     _LED_SWITCH_ASSIGNMENT_TRACK = 0x28
     _LED_SWITCH_ASSIGNMENT_SEND = 0x29
     _LED_SWITCH_ASSIGNMENT_PAN_SURROUND = 0x2A
@@ -121,9 +125,8 @@ class MackieHostControl:
     _LED_RELAY_CLICK = 0x76
 
 
-    def __init__(self, mcu_model_id, use_challenge_response_connection, \
-                     version_number, midi_input_name, midi_output_name, \
-                     callback_log):
+    def __init__(self, mcu_model_id, mcu_connection, version_number, \
+                     midi_input_name, midi_output_name, callback_log):
         self._callback_log = callback_log
 
         self._log('Initialising MIDI ports...', True)
@@ -146,9 +149,8 @@ class MackieHostControl:
         # * 0x15: Mackie Control XT
         self._mcu_model_id = mcu_model_id
 
-        # use challenge-response for connection
-        self._use_challenge_response_connection = \
-            use_challenge_response_connection
+        # define connection type (among others, challenge-response)
+        self._mcu_connection = mcu_connection
 
         serial_number = '_pyMCU_'
         self._serial_number_bytes = []
@@ -207,25 +209,26 @@ class MackieHostControl:
         self._log('Opening MIDI ports...')
         self._midi.connect(self._midi_input_name, self._midi_output_name)
 
-        if self._use_challenge_response_connection:
+        if self._mcu_connection == self.CHALLENGE_RESPONSE:
             self._log('Sending "Host Connection Query"...', True)
 
             sysex_message = [0x01]
             sysex_message.extend(self._serial_number_bytes)
             sysex_message.extend(self._challenge_bytes)
             self.send_midi_sysex(sysex_message)
+
             return
         else:
-            self._log('Waiting for MIDI input from host...', True)
-
-            # DAW does not support MCU challenge-response connection,
-            # so let's make sure the MIDI input buffer is empty ...
+            # let's make sure the MIDI input buffer is empty
             self._midi.process_input_buffer(use_callback=False)
 
-            # ... and simply wait for some MIDI input from the host
-            # (MIDI data is left in the MIDI buffer)
-            while self._midi.buffer_is_empty():
-                time.sleep(0.1)
+            if self._mcu_connection == self.WAIT_FOR_MIDI_DATA:
+                self._log('Waiting for MIDI input from host...', True)
+
+                # wait for some MIDI input from the host (all data are
+                # left in the MIDI input buffer!)
+                while self._midi.buffer_is_empty():
+                    time.sleep(0.1)
 
             self.go_online()
 
@@ -252,6 +255,13 @@ class MackieHostControl:
 
         if self._hardware_controller:
             self._hardware_controller.go_offline()
+
+        if self._mcu_connection == self.CHALLENGE_RESPONSE:
+            self._log('Sending "Host Connection Error"...')
+
+            sysex_message = [0x04]
+            sysex_message.extend(self._serial_number_bytes)
+            self.send_midi_sysex(sysex_message)
 
         self._log('Offline.', True)
 
@@ -343,130 +353,153 @@ class MackieHostControl:
 
 
     def receive_midi(self, status, message):
-        if self.is_offline():
-            if status == MidiConnection.SYSTEM_MESSAGE and message[0:5] == \
-                    [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
-                if message[5:] == [0x00, 0xF7]:
-                    self._log('Received "Device Query".')
+        if status == MidiConnection.SYSTEM_MESSAGE and message[0:5] == \
+                [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
+            if message[5:] == [0x00, 0xF7]:
+                self._log('Received "Device Query".')
+                self._log('Sending "Host Connection Query"...', True)
+
+                sysex_message = [0x01]
+                sysex_message.extend(self._serial_number_bytes)
+                sysex_message.extend(self._challenge_bytes)
+                self.send_midi_sysex(sysex_message)
+
+                return
+            elif message[5] == 0x02:
+                self._log('Received "Host Connection Reply".')
+                if (message[6:13] == self._serial_number_bytes) and \
+                        (message[13:17] == self._response_bytes):
+                    self._log('Sending "Host Connection Confirmation"...', \
+                                      True)
+
+                    sysex_message = [0x03]
+                    sysex_message.extend(self._serial_number_bytes)
+                    self.send_midi_sysex(sysex_message)
+
+                    self.go_online()
+                else:
+                    self._log('Sending "Host Connection Error"...')
+
+                    sysex_message = [0x04]
+                    sysex_message.extend(self._serial_number_bytes)
+                    self.send_midi_sysex(sysex_message)
+
                     self._log('Sending "Host Connection Query"...', True)
 
                     sysex_message = [0x01]
                     sysex_message.extend(self._serial_number_bytes)
                     sysex_message.extend(self._challenge_bytes)
                     self.send_midi_sysex(sysex_message)
-                elif message[5] == 0x02:
-                    self._log('Received "Host Connection Reply".')
-                    if (message[6:13] == self._serial_number_bytes) and \
-                            (message[13:17] == self._response_bytes):
-                        self._log('Sending "Host Connection Confirmation"...', \
-                                      True)
 
-                        sysex_message = [0x03]
-                        sysex_message.extend(self._serial_number_bytes)
-                        self.send_midi_sysex(sysex_message)
+                return
+            elif message[5:] == [0x13, 0x00, 0x0F7]:
+                self._log('Received "Version Request".')
+                self._log('Sending "Version Reply"...', True)
 
-                        self.go_online()
-                    else:
-                        self._log('Sending "Host Connection Error"...')
+                sysex_message = [0x14]
+                sysex_message.extend(self._version_number_bytes)
+                self.send_midi_sysex(sysex_message)
 
-                        sysex_message = [0x04]
-                        sysex_message.extend(self._serial_number_bytes)
-                        self.send_midi_sysex(sysex_message)
-
-                        self._log('Sending "Host Connection Query"...', True)
-
-                        sysex_message = [0x01]
-                        sysex_message.extend(self._serial_number_bytes)
-                        sysex_message.extend(self._challenge_bytes)
-                        self.send_midi_sysex(sysex_message)
-                elif message[5:] == [0x13, 0x00, 0x0F7]:
-                    self._log('Received "Version Request".')
-                    self._log('Sending "Version Reply"...', True)
-
-                    sysex_message = [0x14]
-                    sysex_message.extend(self._version_number_bytes)
-                    self.send_midi_sysex(sysex_message)
-                else:
-                    output = 'status %02X: ' % status
-                    for byte in message:
-                        output += '%02X ' % byte
-
-                    self._log(output.strip())
-        elif status == MidiConnection.SYSTEM_MESSAGE and message[0:5] == \
-                [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
-            if message[5] == 0x12:
-                if self._display_lcd_available:
-                    lcd_position = message[6] - 1
-                    temp_string = message[7:-1]
-
-                    for hex_code in temp_string:
-                        lcd_position += 1
-                        if lcd_position >= 112:
-                            break
-
-                        # convert illegal characters to asterisk
-                        if (hex_code < 0x20) or (hex_code > 0x7F):
-                            hex_code = 0x2A
-                        self._lcd_characters[lcd_position] = chr(hex_code)
-
-                    line_1 = ''.join(self._lcd_characters[:56])
-                    line_2 = ''.join(self._lcd_characters[56:])
-
-                    if self._lcd_strings[0] != line_1:
-                        self._lcd_strings[0] = line_1
-                        self._hardware_controller.set_lcd(1, line_1)
-
-                    if self._lcd_strings[1] != line_2:
-                        self._lcd_strings[1] = line_2
-                        self._hardware_controller.set_lcd(2, line_2)
+                return
             elif message[5:] == [0x0F, 0x7F, 0x0F7]:
                 self._log('Received "Go Offline".', True)
                 self.go_offline()
+
+                return
             elif message[5:] == [0x61, 0x0F7]:
                 self._log('Received "Faders To Minimum".', True)
                 self.faders_to_minimum()
+
+                return
             elif message[5:] == [0x62, 0x0F7]:
                 self._log('Received "All LEDs Off".', True)
                 self.all_leds_off()
+
+                return
             elif message[5:] == [0x63, 0x0F7]:
                 self._log('Received "Reset".', True)
                 self.reset()
-        elif status == MidiConnection.PITCH_WHEEL_CHANGE:
-            if self._automated_faders_available:
-                fader_id = message[0] & 0x0F
-                fader_position = (message[1] + (message[2] << 7)) >> 4
-                self._hardware_controller.fader_moved(fader_id, fader_position)
-        elif status == MidiConnection.NOTE_ON_EVENT:
-            led_id = message[1]
-            led_status = 0  # off
-            if message[2] == 0x7F:
-                led_status = 1  # on
-            elif message[2] == 0x01:
-                led_status = 2  # flashing
-            self._set_led(led_id, led_status)
-        elif (status == MidiConnection.CONTROL_CHANGE) and \
-                ((message[1] & 0xF0) == 0x30):
-            vpot_id = message[1] & 0x0F
-            vpot_center_led = (message[2] & 0x40) >> 7
-            vpot_mode = (message[2] & 0x30) >> 4
-            vpot_position = message[2] & 0x0F
-            self._hardware_controller.set_vpot_led_ring(vpot_id, vpot_center_led, vpot_mode, vpot_position)
-        elif (status == MidiConnection.CONTROL_CHANGE) and \
-                ((message[1] & 0xF0) == 0x40):
-            position = message[1] & 0x0F
-            character_code = message[2]
-            if (position < 10):
-                if self._display_timecode_available:
-                    self._hardware_controller.set_display_timecode( \
+
+                return
+
+        # do not make this an "elif" clause, otherwise some MIDI SysEx
+        # messages won't get processed!
+        if not self.is_offline():
+            if status == MidiConnection.SYSTEM_MESSAGE and message[0:5] == \
+                    [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
+                if message[5] == 0x12:
+                    if self._display_lcd_available:
+                        lcd_position = message[6] - 1
+                        temp_string = message[7:-1]
+
+                        for hex_code in temp_string:
+                            lcd_position += 1
+                            if lcd_position >= 112:
+                                break
+
+                            # convert illegal characters to asterisk
+                            if (hex_code < 0x20) or (hex_code > 0x7F):
+                                hex_code = 0x2A
+                            self._lcd_characters[lcd_position] = chr(hex_code)
+
+                        line_1 = ''.join(self._lcd_characters[:56])
+                        line_2 = ''.join(self._lcd_characters[56:])
+
+                        if self._lcd_strings[0] != line_1:
+                            self._lcd_strings[0] = line_1
+                            self._hardware_controller.set_lcd(1, line_1)
+
+                        if self._lcd_strings[1] != line_2:
+                            self._lcd_strings[1] = line_2
+                            self._hardware_controller.set_lcd(2, line_2)
+            elif status == MidiConnection.PITCH_WHEEL_CHANGE:
+                if self._automated_faders_available:
+                    fader_id = message[0] & 0x0F
+                    fader_position = (message[1] + (message[2] << 7)) >> 4
+                    self._hardware_controller.fader_moved( \
+                        fader_id, fader_position)
+            elif status == MidiConnection.NOTE_ON_EVENT:
+                led_id = message[1]
+                led_status = 0  # off
+
+                if message[2] == 0x7F:
+                    led_status = 1  # on
+                elif message[2] == 0x01:
+                    led_status = 2  # flashing
+
+                self._set_led(led_id, led_status)
+            elif (status == MidiConnection.CONTROL_CHANGE) and \
+                    ((message[1] & 0xF0) == 0x30):
+                vpot_id = message[1] & 0x0F
+                vpot_center_led = (message[2] & 0x40) >> 7
+                vpot_mode = (message[2] & 0x30) >> 4
+                vpot_position = message[2] & 0x0F
+                self._hardware_controller.set_vpot_led_ring( \
+                    vpot_id, vpot_center_led, vpot_mode, vpot_position)
+            elif (status == MidiConnection.CONTROL_CHANGE) and \
+                    ((message[1] & 0xF0) == 0x40):
+                position = message[1] & 0x0F
+                character_code = message[2]
+
+                if (position < 10):
+                    if self._display_timecode_available:
+                        self._hardware_controller.set_display_timecode( \
+                            position, character_code)
+                elif self._display_7seg_available:
+                    self._hardware_controller.set_display_7seg( \
                         position, character_code)
-            elif self._display_7seg_available:
-                self._hardware_controller.set_display_7seg( \
-                    position, character_code)
-        elif status == MidiConnection.CHANNEL_PRESSURE:
-            if self._meter_bridge_available:
-                meter_id = (message[1] & 0x70) >> 4
-                meter_level = message[1] & 0x0F
-                self._hardware_controller.set_peak_level(meter_id, meter_level)
+            elif status == MidiConnection.CHANNEL_PRESSURE:
+                if self._meter_bridge_available:
+                    meter_id = (message[1] & 0x70) >> 4
+                    meter_level = message[1] & 0x0F
+                    self._hardware_controller.set_peak_level( \
+                        meter_id, meter_level)
+            else:
+                output = 'status %02X: ' % status
+                for byte in message:
+                    output += '%02X ' % byte
+
+                self._log(output.strip())
         else:
             output = 'status %02X: ' % status
             for byte in message:
@@ -697,39 +730,40 @@ class MackieHostControl:
 
     def keypress_vselect_channel(self, channel, status):
         # channel: 1 - 8
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + channel - 1)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT + \
+                              channel - 1)
 
 
     def keypress_vselect_channel_1(self, status):
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT)
 
 
     def keypress_vselect_channel_2(self, status):
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 1)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT + 1)
 
 
     def keypress_vselect_channel_3(self, status):
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 2)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT + 2)
 
 
     def keypress_vselect_channel_4(self, status):
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 3)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT + 3)
 
 
     def keypress_vselect_channel_5(self, status):
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 4)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT + 4)
 
 
     def keypress_vselect_channel_6(self, status):
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 5)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT + 5)
 
 
     def keypress_vselect_channel_7(self, status):
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 6)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT + 6)
 
 
     def keypress_vselect_channel_8(self, status):
-        self._key_pressed(status, self._SWITCH_CHANNEL_VSELECT + 7)
+        self._key_pressed(status, self._LED_SWITCH_CHANNEL_VSELECT + 7)
 
 
     def keypress_function_channel(self, channel, status):
@@ -1114,6 +1148,22 @@ class MackieHostControl:
                 'self._hardware_controller.set_led_channel_select(6, status)',
             self._LED_SWITCH_CHANNEL_SELECT + 7: \
                 'self._hardware_controller.set_led_channel_select(7, status)',
+            self._LED_SWITCH_CHANNEL_VSELECT: \
+                'self._hardware_controller.set_led_channel_vselect(0, status)',
+            self._LED_SWITCH_CHANNEL_VSELECT + 1: \
+                'self._hardware_controller.set_led_channel_vselect(1, status)',
+            self._LED_SWITCH_CHANNEL_VSELECT + 2: \
+                'self._hardware_controller.set_led_channel_vselect(2, status)',
+            self._LED_SWITCH_CHANNEL_VSELECT + 3: \
+                'self._hardware_controller.set_led_channel_vselect(3, status)',
+            self._LED_SWITCH_CHANNEL_VSELECT + 4: \
+                'self._hardware_controller.set_led_channel_vselect(4, status)',
+            self._LED_SWITCH_CHANNEL_VSELECT + 5: \
+                'self._hardware_controller.set_led_channel_vselect(5, status)',
+            self._LED_SWITCH_CHANNEL_VSELECT + 6: \
+                'self._hardware_controller.set_led_channel_vselect(6, status)',
+            self._LED_SWITCH_CHANNEL_VSELECT + 7: \
+                'self._hardware_controller.set_led_channel_vselect(7, status)',
             self._LED_SWITCH_ASSIGNMENT_TRACK: \
                 'self._hardware_controller.set_led_assignment_track(status)',
             self._LED_SWITCH_ASSIGNMENT_SEND: \
