@@ -4,7 +4,6 @@
 PythonMcu
 =========
 Mackie Host Controller written in Python
-
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
 
 This program is free software: you can redistribute it and/or modify

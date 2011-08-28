@@ -4,7 +4,6 @@
 PythonMcu
 =========
 Mackie Host Controller written in Python
-
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
 
 This program is free software: you can redistribute it and/or modify
@@ -34,7 +33,7 @@ if __name__ == "__main__":
 from PythonMcu.Hardware import *
 from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 from PythonMcu.Midi.MidiConnection import MidiConnection
-from PythonMcu.Tools.ApplicationSettings import *
+from PythonMcu.Tools.ApplicationConfiguration import *
 
 
 class McuInterconnector(object):
@@ -172,8 +171,8 @@ class McuInterconnector(object):
         self._hardware_controller = eval(eval_controller_init)
 
         # get "Python MCU" version number
-        python_mcu_version = \
-            ApplicationSettings().get_application_information('version')
+        python_mcu_version = ApplicationConfiguration().get_version(False)
+        print python_mcu_version
 
         self._mackie_host_control = MackieHostControl( \
             mcu_model_id, use_challenge_response, python_mcu_version, \

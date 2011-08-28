@@ -4,7 +4,6 @@
 PythonMcu
 =========
 Mackie Host Controller written in Python
-
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
 
 This program is free software: you can redistribute it and/or modify
@@ -65,7 +64,7 @@ class SortedDict(dict):
         return items
 
 
-class ApplicationSettings:
+class ApplicationConfiguration:
     """Store user settings and application information in one place
        and make them available.
 
@@ -407,18 +406,37 @@ class ApplicationSettings:
         return self._about.get_copyrights()
 
 
-    def get_license(self, long):
-        """Return application license as string.
+    def get_license(self, selection):
+        """Return application license or its terms as string.
+
+        Keyword arguments:
+
+        selection -- String indicating what should be returned:
+                     'selected':  name of license and selected options
+                     'name':      name of license
+                     'short':     shortened license terms as plain text
+                     'plain':     license terms as plain text
+                     'html':      license terms in HTML format
+
+        Return value:
+        Formatted string containing application license or its terms
+
+        """
+        return self._about.get_license(selection)
+
+
+    def get_version(self, long):
+        """Return application version as string.
 
         Keyword arguments:
         long -- Boolean indication whether to output long version of
-                license
+                version
 
         Return value:
-        Formatted string containing application license
+        Formatted string containing application description
 
         """
-        return self._about.get_license(long)
+        return self._about.get_version(long)
 
 
     def get_description(self, long):
@@ -435,20 +453,25 @@ class ApplicationSettings:
         return self._about.get_description(long)
 
 
-    def get_full_description(self):
+    def get_full_description(self, format='plain'):
         """Return full application description as string.
+
+        format -- String indicating format:
+                  'plain':  plain text
+                  'html':   HTML format
 
         Return value:
         Formatted string containing full application description
 
         """
-        return self._about.get_full_description()
+        return self._about.get_full_description(format)
 
 
 if __name__ == "__main__":
-    settings = ApplicationSettings()
+    configuration = ApplicationConfiguration()
 
-    output = settings.get_full_description() + '\n\n\n' + str(settings) + '\n'
+    output = configuration.get_full_description() + '\n\n\n' + \
+        str(configuration) + '\n'
 
     print
     for line in output.split('\n'):

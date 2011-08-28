@@ -5,7 +5,6 @@
 PythonMcu
 =========
 Mackie Host Controller written in Python
-
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
 
 This program is free software: you can redistribute it and/or modify
@@ -29,7 +28,8 @@ from PythonMcu.Hardware import *
 from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
 from PythonMcu.McuInterconnector.McuInterconnector import McuInterconnector
 from PythonMcu.Midi.MidiConnection import MidiConnection
-from PythonMcu.Tools.ApplicationSettings import *
+from PythonMcu.Tools.ApplicationConfiguration import *
+from PythonMcu.Tools.AboutDialog import *
 
 import platform
 import sys
@@ -40,7 +40,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 
 
-configuration = ApplicationSettings()
+configuration = ApplicationConfiguration()
 
 
 class PythonMcu(QFrame):
@@ -97,7 +97,7 @@ class PythonMcu(QFrame):
 
         # get version number of "Python MCU"
         version = configuration.get_application_information('version')
-        self.setWindowTitle('Python MCU ' + version)
+        self.setWindowTitle(configuration.get_version(True))
 
         # create layouts and add widgets
         self.layout = QHBoxLayout()
@@ -177,9 +177,9 @@ class PythonMcu(QFrame):
         self.bottom_layout.addWidget(self.button_close)
         self.button_close.clicked.connect(self.close_application)
 
-        self.button_license = QPushButton('&License')
-        self.bottom_layout.addWidget(self.button_license)
-        self.button_license.clicked.connect(self.display_license)
+        self.button_about = QPushButton('A&bout')
+        self.bottom_layout.addWidget(self.button_about)
+        self.button_about.clicked.connect(self.display_about)
 
         self._timer = QTimer(self)
         self._timer.setInterval(int(self._midi_latency))
@@ -381,8 +381,8 @@ class PythonMcu(QFrame):
         self._interconnector.process_midi_input()
 
 
-    def display_license(self):
-        pass
+    def display_about(self):
+        AboutDialog(self).show()
 
 
     def interconnector_start_stop(self):
