@@ -124,8 +124,8 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             'and switch to preset #32 (Ableton Live Automap).'
 
 
-    def _log(self, message):
-        self.callback_log('[Novation ZeRO SL MkII]  ' + message)
+    def _log(self, message, repaint=False):
+        self.callback_log('[Novation ZeRO SL MkII]  ' + message, repaint)
 
 
     # --- initialisation ---
@@ -145,11 +145,11 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
         self._set_lcd(1, 'Novation ZeRO SL MkII:  initialised.')
 
-        self._log('Connected.')
+        self._log('Connected.', True)
 
 
     def disconnect(self):
-        self._log('Disconnecting...')
+        self._log('Disconnecting...', True)
 
         self.withdraw_all_controls()
 
@@ -177,7 +177,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
 
     def _enter_ableton_mode(self):
-        self._log('Entering "Ableton" mode...')
+        self._log('Entering "Ableton" mode...', True)
 
         self.send_midi_sysex([0x01, 0x01])
 
@@ -187,7 +187,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
 
     def _leave_ableton_mode(self):
-        self._log('Leaving "Ableton" mode...')
+        self._log('Leaving "Ableton" mode...', True)
 
         self.send_midi_sysex([0x02, 0x02, 0x05])
         self.send_midi_sysex([0x01, 0x00])

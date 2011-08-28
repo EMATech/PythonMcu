@@ -53,7 +53,7 @@ class MidiControllerTemplate(object):
     def __init__(self, midi_input_name, midi_output_name, callback_log):
         self.callback_log = callback_log
 
-        self._log('Initialising MIDI ports...')
+        self._log('Initialising MIDI ports...', True)
         self._midi_input_name = midi_input_name
         self._midi_output_name = midi_output_name
         self.midi = MidiConnection(self.callback_log, self.receive_midi)
@@ -80,8 +80,8 @@ class MidiControllerTemplate(object):
         return ''
 
 
-    def _log(self, message):
-        self.callback_log('[Controller Template]  ' + message)
+    def _log(self, message, repaint=False):
+        self.callback_log('[Controller Template]  ' + message, repaint)
 
 
     # --- initialisation ---
@@ -95,22 +95,22 @@ class MidiControllerTemplate(object):
 
 
     def connect(self):
-        self._log('Opening MIDI ports...')
+        self._log('Opening MIDI ports...', True)
         self.midi.connect(self._midi_input_name, self._midi_output_name)
 
 
     def disconnect(self):
         self._log('Closing MIDI ports...')
         self.midi.disconnect()
-        self._log('Disconnected.')
+        self._log('Disconnected.', True)
 
 
     def go_online(self):
-        self._log('Mackie Host Control went online...')
+        self._log('Mackie Host Control went online...', True)
 
 
     def go_offline(self):
-        self._log('Mackie Host Control went offline...')
+        self._log('Mackie Host Control went offline...', True)
 
 
     # --- abilities of hardware controller ---

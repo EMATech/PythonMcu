@@ -74,7 +74,7 @@ class MidiConnection:
 
 
     def _log(self, message):
-        self._callback_log('[MIDI Connection      ]  ' + message)
+        self._callback_log('[MIDI Connection      ]  ' + message, True)
 
 
     def _init_input(self, device_name):

@@ -299,7 +299,10 @@ class PythonMcu(QFrame):
         return (controller_midi_input_default, controller_midi_output_default)
 
 
-    def callback_log(self, message):
+    def callback_log(self, message, repaint=False):
+        if repaint:
+            self._edit_logger.repaint()
+
         print message
         self._edit_logger.appendPlainText(message)
 
@@ -414,7 +417,7 @@ class PythonMcu(QFrame):
                 configuration.save_configuration()
 
             self.callback_log('Starting MCU emulation...')
-            self.callback_log('')
+            self.callback_log('', True)
 
             # the "interconnector" is the brain of this application -- it
             # interconnects Mackie Control Host and MIDI controller while
@@ -446,7 +449,7 @@ class PythonMcu(QFrame):
             self._interconnector.disconnect()
             self._interconnector = None
 
-            self.callback_log('')
+            self.callback_log('', True)
 
 
     def close_application(self):
@@ -458,7 +461,7 @@ class PythonMcu(QFrame):
             self._interconnector_stop()
 
         self.callback_log('Exiting application...')
-        self.callback_log('')
+        self.callback_log('', True)
 
 
 if __name__ == '__main__':

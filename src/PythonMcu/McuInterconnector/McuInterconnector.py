@@ -190,8 +190,8 @@ class McuInterconnector(object):
         self.withdraw_all_controls()
 
 
-    def _log(self, message):
-        self._log_message('[MCU Interconnector   ]  ' + message)
+    def _log(self, message, repaint=False):
+        self._log_message('[MCU Interconnector   ]  ' + message, repaint)
 
 
     # --- initialisation ---

@@ -127,7 +127,7 @@ class MackieHostControl:
                      callback_log):
         self._callback_log = callback_log
 
-        self._log('Initialising MIDI ports...')
+        self._log('Initialising MIDI ports...', True)
         self._midi_input_name = midi_input_name
         self._midi_output_name = midi_output_name
         self._midi = MidiConnection(callback_log, self.receive_midi)
@@ -173,8 +173,8 @@ class MackieHostControl:
             self._version_number_bytes.append(ord(char))
 
 
-    def _log(self, message):
-        self._callback_log('[Mackie Host Control  ]  ' + message)
+    def _log(self, message, repaint=False):
+        self._callback_log('[Mackie Host Control  ]  ' + message, repaint)
 
 
     # --- initialisation ---
@@ -209,7 +209,7 @@ class MackieHostControl:
         self._midi.connect(self._midi_input_name, self._midi_output_name)
 
         if self._use_challenge_response_connection:
-            self._log('Sending "Host Connection Query"...')
+            self._log('Sending "Host Connection Query"...', True)
 
             sysex_message = [0x01]
             sysex_message.extend(self._serial_number_bytes)
@@ -217,7 +217,7 @@ class MackieHostControl:
             self.send_midi_sysex(sysex_message)
             return
         else:
-            self._log('Waiting for MIDI input from host...')
+            self._log('Waiting for MIDI input from host...', True)
 
             # DAW does not support MCU challenge-response connection,
             # so let's make sure the MIDI input buffer is empty ...
@@ -232,10 +232,10 @@ class MackieHostControl:
 
 
     def disconnect(self):
-        self._log('Disconnecting...')
+        self._log('Disconnecting...', True)
         self.go_offline()
 
-        self._log('Closing MIDI ports...')
+        self._log('Closing MIDI ports...', True)
         self._midi.disconnect()
 
 
@@ -245,7 +245,7 @@ class MackieHostControl:
         if self._hardware_controller:
             self._hardware_controller.go_online()
 
-        self._log('Online.')
+        self._log('Online.', True)
 
 
     def go_offline(self):
@@ -254,7 +254,7 @@ class MackieHostControl:
         if self._hardware_controller:
             self._hardware_controller.go_offline()
 
-        self._log('Offline.')
+        self._log('Offline.', True)
 
 
     def is_offline(self):
@@ -349,7 +349,7 @@ class MackieHostControl:
                     [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
                 if message[5:] == [0x00, 0xF7]:
                     self._log('Received "Device Query".')
-                    self._log('Sending "Host Connection Query"...')
+                    self._log('Sending "Host Connection Query"...', True)
 
                     sysex_message = [0x01]
                     sysex_message.extend(self._serial_number_bytes)
@@ -359,7 +359,8 @@ class MackieHostControl:
                     self._log('Received "Host Connection Reply".')
                     if (message[6:13] == self._serial_number_bytes) and \
                             (message[13:17] == self._response_bytes):
-                        self._log('Sending "Host Connection Confirmation"...')
+                        self._log('Sending "Host Connection Confirmation"...', \
+                                      True)
 
                         sysex_message = [0x03]
                         sysex_message.extend(self._serial_number_bytes)
@@ -373,7 +374,7 @@ class MackieHostControl:
                         sysex_message.extend(self._serial_number_bytes)
                         self.send_midi_sysex(sysex_message)
 
-                        self._log('Sending "Host Connection Query"...')
+                        self._log('Sending "Host Connection Query"...', True)
 
                         sysex_message = [0x01]
                         sysex_message.extend(self._serial_number_bytes)
@@ -381,7 +382,7 @@ class MackieHostControl:
                         self.send_midi_sysex(sysex_message)
                 elif message[5:] == [0x13, 0x00, 0x0F7]:
                     self._log('Received "Version Request".')
-                    self._log('Sending "Version Reply"...')
+                    self._log('Sending "Version Reply"...', True)
 
                     sysex_message = [0x14]
                     sysex_message.extend(self._version_number_bytes)
@@ -420,16 +421,16 @@ class MackieHostControl:
                         self._lcd_strings[1] = line_2
                         self._hardware_controller.set_lcd(2, line_2)
             elif message[5:] == [0x0F, 0x7F, 0x0F7]:
-                self._log('Received "Go Offline".')
+                self._log('Received "Go Offline".', True)
                 self.go_offline()
             elif message[5:] == [0x61, 0x0F7]:
-                self._log('Received "Faders To Minimum".')
+                self._log('Received "Faders To Minimum".', True)
                 self.faders_to_minimum()
             elif message[5:] == [0x62, 0x0F7]:
-                self._log('Received "All LEDs Off".')
+                self._log('Received "All LEDs Off".', True)
                 self.all_leds_off()
             elif message[5:] == [0x63, 0x0F7]:
-                self._log('Received "Reset".')
+                self._log('Received "Reset".', True)
                 self.reset()
         elif status == MidiConnection.PITCH_WHEEL_CHANGE:
             if self._automated_faders_available:
