@@ -107,15 +107,15 @@ class PythonMcu(QFrame):
         self.layout.addLayout(self.layout_2)
 
         self.frame_mcu = QFrame()
-        self.frame_mcu.setFrameStyle(QFrame.StyledPanel)
-        self.frame_mcu.setFrameShadow(QFrame.Raised)
+        self.frame_mcu.setFrameStyle(QFrame.Box)
+        self.frame_mcu.setFrameShadow(QFrame.Sunken)
         self.layout_2.addWidget(self.frame_mcu)
         self.grid_layout_mcu = QGridLayout()
         self.frame_mcu.setLayout(self.grid_layout_mcu)
 
         self.frame_controller = QFrame()
-        self.frame_controller.setFrameStyle(QFrame.StyledPanel)
-        self.frame_controller.setFrameShadow(QFrame.Raised)
+        self.frame_controller.setFrameStyle(QFrame.Box)
+        self.frame_controller.setFrameShadow(QFrame.Sunken)
         self.layout_2.addWidget(self.frame_controller)
         self.grid_layout_controller = QGridLayout()
         self.frame_controller.setLayout(self.grid_layout_controller)
@@ -171,6 +171,7 @@ class PythonMcu(QFrame):
         self.button_start_stop = QPushButton('&Start')
         self.bottom_layout.addWidget(self.button_start_stop)
         self.button_start_stop.setDefault(True)
+        self.button_start_stop.setFocus()
         self.button_start_stop.clicked.connect(self.interconnector_start_stop)
 
         self.button_close = QPushButton('&Close')
@@ -180,6 +181,8 @@ class PythonMcu(QFrame):
         self.button_about = QPushButton('A&bout')
         self.bottom_layout.addWidget(self.button_about)
         self.button_about.clicked.connect(self.display_about)
+
+        self._enable_controls(True)
 
         self._timer = QTimer(self)
         self._timer.setInterval(int(self._midi_latency))
@@ -265,6 +268,11 @@ class PythonMcu(QFrame):
         widget.currentIndexChanged.connect(self.combobox_item_selected)
 
         return widget
+
+
+    def _enable_controls(self, state):
+        self.frame_mcu.setEnabled(state)
+        self.frame_controller.setEnabled(state)
 
 
     def _initialise_hardware_controller(self):
@@ -387,6 +395,7 @@ class PythonMcu(QFrame):
 
     def interconnector_start_stop(self):
         if not self._interconnector:
+            self._enable_controls(False)
             self.button_start_stop.setText('&Stop')
 
             self.callback_log('Settings')
@@ -435,6 +444,7 @@ class PythonMcu(QFrame):
 
             self._timer.start()
         else:
+            self._enable_controls(True)
             self.button_start_stop.setText('&Start')
             self._interconnector_stop()
 
