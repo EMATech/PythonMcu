@@ -497,11 +497,15 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
     def _set_menu_string(self, menu_strings):
         assert(len(menu_strings) == 8)
 
-        self._clear_menu_string()
+        menu_string_temp = ''
         for menu_string in menu_strings:
-            self._menu_string += menu_string.center(9)
+            menu_string_temp += menu_string.center(9)[:9]
 
-        self._set_lcd(3, self._menu_string)
+        if self._menu_string != menu_string_temp:
+            self._clear_menu_string()
+            self._menu_string = menu_string_temp
+
+            self._set_lcd(3, self._menu_string)
 
 
     def _clear_menu_string(self):
@@ -597,6 +601,11 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         if status == 1:
             self._mode_edit = self._MODE_EDIT_VSELECT_SELECT
 
+            menu_strings = \
+                ('Track', 'Send', 'Panning', 'EQ', \
+                 'Plug-In', 'Instrum.', 'Switch 1', 'Switch 2')
+            self._set_menu_string(menu_strings)
+
             self.register_control( \
                 'vselect_channel_1', self._MIDI_CC_BUTTONS_LEFT_TOP)
             self.register_control( \
@@ -632,6 +641,8 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
                 'select_channel_8', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
         else:
             self._mode_edit = self._MODE_EDIT_VSELECT_ASSIGNMENT
+
+            self._clear_menu_string()
 
             self.register_control( \
                 'vselect_channel_1', self._MIDI_CC_BUTTONS_LEFT_TOP)
