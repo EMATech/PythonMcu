@@ -43,21 +43,41 @@ from PySide.QtGui import *
 configuration = ApplicationSettings()
 
 
-def callback_log(message):
-    print message
-
-
 class PythonMcu(QFrame):
     def __init__(self, parent=None):
         super(PythonMcu, self).__init__(parent)
 
-        # must be defined before reading the configuration file!
-        self._edit_usage_hint = QTextEdit()
-        self._edit_usage_hint.setReadOnly(True)
-
         font = QFont()
         font.setStyleHint(QFont.TypeWriter, QFont.PreferAntialias)
-        self._edit_usage_hint.setFontFamily(font.defaultFamily())
+
+        char_format = QTextCharFormat()
+        char_format.setFontFamily(font.defaultFamily())
+        text_width = QFontMetrics(char_format.font()).width('*') * 80
+
+        # must be defined before starting the logger!
+        self._edit_logger = QPlainTextEdit()
+        self._edit_logger.setReadOnly(True)
+        self._edit_logger.setCurrentCharFormat(char_format)
+        self._edit_logger.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self._edit_logger.setFixedWidth(text_width)
+
+        # must be defined before reading the configuration file!
+        self._edit_usage_hint = QPlainTextEdit()
+        self._edit_usage_hint.setReadOnly(True)
+        self._edit_usage_hint.setCurrentCharFormat(char_format)
+
+        self.callback_log('')
+        self.callback_log(configuration.get_full_description())
+        self.callback_log('')
+        self.callback_log('')
+        self.callback_log('Version numbers')
+        self.callback_log('===============')
+        self.callback_log('Python:  %s (%s)' % ( \
+                platform.python_version(), platform.python_implementation()))
+        self.callback_log('PySide:  %s' % PySide.__version__)
+        self.callback_log('pygame:  %s' % pygame.version.ver)
+        self.callback_log('')
+        self.callback_log('')
 
         self._read_configuration()
 
@@ -80,20 +100,23 @@ class PythonMcu(QFrame):
         self.setWindowTitle('Python MCU ' + version)
 
         # create layouts and add widgets
-        self.layout = QVBoxLayout()
+        self.layout = QHBoxLayout()
         self.setLayout(self.layout)
+
+        self.layout_2 = QVBoxLayout()
+        self.layout.addLayout(self.layout_2)
 
         self.frame_mcu = QFrame()
         self.frame_mcu.setFrameStyle(QFrame.StyledPanel)
         self.frame_mcu.setFrameShadow(QFrame.Raised)
-        self.layout.addWidget(self.frame_mcu)
+        self.layout_2.addWidget(self.frame_mcu)
         self.grid_layout_mcu = QGridLayout()
         self.frame_mcu.setLayout(self.grid_layout_mcu)
 
         self.frame_controller = QFrame()
         self.frame_controller.setFrameStyle(QFrame.StyledPanel)
         self.frame_controller.setFrameShadow(QFrame.Raised)
-        self.layout.addWidget(self.frame_controller)
+        self.layout_2.addWidget(self.frame_controller)
         self.grid_layout_controller = QGridLayout()
         self.frame_controller.setLayout(self.grid_layout_controller)
 
@@ -140,8 +163,10 @@ class PythonMcu(QFrame):
             self._edit_usage_hint, self.grid_layout_controller.rowCount(), \
                 0, 1, 2)
 
+        self.layout.addWidget(self._edit_logger)
+
         self.bottom_layout = QHBoxLayout()
-        self.layout.addLayout(self.bottom_layout)
+        self.layout_2.addLayout(self.bottom_layout)
 
         self.button_start_stop = QPushButton('&Start')
         self.bottom_layout.addWidget(self.button_start_stop)
@@ -269,9 +294,14 @@ class PythonMcu(QFrame):
         # show controller's usage hint
         usage_hint = '{0!s}.{0!s}.get_usage_hint()'.format( \
             self._hardware_controller_class)
-        self._edit_usage_hint.setText(eval(usage_hint))
+        self._edit_usage_hint.setPlainText(eval(usage_hint))
 
         return (controller_midi_input_default, controller_midi_output_default)
+
+
+    def callback_log(self, message):
+        print message
+        self._edit_logger.appendPlainText(message)
 
 
     def combobox_item_selected(self, selected_text):
@@ -328,7 +358,7 @@ class PythonMcu(QFrame):
                 'Python MCU', 'controller_midi_output', \
                     self._controller_midi_output)
         else:
-            callback_log('QComboBox not handled ("%s").' % selected_text)
+            self.callback_log('QComboBox not handled ("%s").' % selected_text)
 
 
     def checkbox_state_changed(self, state):
@@ -341,7 +371,7 @@ class PythonMcu(QFrame):
             'Python MCU', 'use_challenge_response', \
                 self._use_challenge_response)
         else:
-            callback_log('QCheckBox not handled ("%d").' % state)
+            self.callback_log('QCheckBox not handled ("%d").' % state)
 
 
     def process_midi_input(self):
@@ -356,35 +386,35 @@ class PythonMcu(QFrame):
         if not self._interconnector:
             self.button_start_stop.setText('&Stop')
 
-            callback_log('Settings')
-            callback_log('========')
-            callback_log('Emulated MCU model:      %s' % \
-                             self._emulated_mcu_model)
-            callback_log('Use challenge-response:  %s' % \
-                             self._use_challenge_response)
-            callback_log('Sequencer MIDI input:    %s' % \
-                             self._sequencer_midi_input)
-            callback_log('Sequencer MIDI output:   %s' % \
-                             self._sequencer_midi_output)
-            callback_log('')
-            callback_log('Hardware controller:     %s' % \
-                             self._hardware_controller)
-            callback_log('Controller MIDI input:   %s' % \
-                             self._controller_midi_input)
-            callback_log('Controller MIDI output:  %s' % \
-                             self._controller_midi_output)
-            callback_log('')
-            callback_log('MIDI latency:            %s ms' % \
-                             self._midi_latency)
-            callback_log('')
-            callback_log('')
+            self.callback_log('Settings')
+            self.callback_log('========')
+            self.callback_log('Emulated MCU model:      %s' % \
+                                  self._emulated_mcu_model)
+            self.callback_log('Use challenge-response:  %s' % \
+                                  self._use_challenge_response)
+            self.callback_log('Sequencer MIDI input:    %s' % \
+                                  self._sequencer_midi_input)
+            self.callback_log('Sequencer MIDI output:   %s' % \
+                                  self._sequencer_midi_output)
+            self.callback_log('')
+            self.callback_log('Hardware controller:     %s' % \
+                                  self._hardware_controller)
+            self.callback_log('Controller MIDI input:   %s' % \
+                                  self._controller_midi_input)
+            self.callback_log('Controller MIDI output:  %s' % \
+                                  self._controller_midi_output)
+            self.callback_log('')
+            self.callback_log('MIDI latency:            %s ms' % \
+                                  self._midi_latency)
+            self.callback_log('')
+            self.callback_log('')
 
             if configuration.has_changed():
-                callback_log('Saving configuration file ...')
+                self.callback_log('Saving configuration file ...')
                 configuration.save_configuration()
 
-            callback_log('Starting MCU emulation...')
-            callback_log('')
+            self.callback_log('Starting MCU emulation...')
+            self.callback_log('')
 
             # the "interconnector" is the brain of this application -- it
             # interconnects Mackie Control Host and MIDI controller while
@@ -397,7 +427,7 @@ class PythonMcu(QFrame):
                     self._hardware_controller_class, \
                     self._controller_midi_input, \
                     self._controller_midi_output, \
-                    callback_log)
+                    self.callback_log)
             self._interconnector.connect()
 
             self._timer.start()
@@ -409,14 +439,14 @@ class PythonMcu(QFrame):
     def _interconnector_stop(self):
             self._timer.stop()
 
-            callback_log('')
-            callback_log('Stopping MCU emulation...')
-            callback_log('')
+            self.callback_log('')
+            self.callback_log('Stopping MCU emulation...')
+            self.callback_log('')
 
             self._interconnector.disconnect()
             self._interconnector = None
 
-            callback_log('')
+            self.callback_log('')
 
 
     def close_application(self):
@@ -427,24 +457,11 @@ class PythonMcu(QFrame):
         if self._interconnector:
             self._interconnector_stop()
 
-        callback_log('Exiting application...')
-        callback_log('')
+        self.callback_log('Exiting application...')
+        self.callback_log('')
 
 
 if __name__ == '__main__':
-    callback_log('')
-    callback_log(configuration.get_full_description())
-    callback_log('')
-    callback_log('')
-    callback_log('Version numbers')
-    callback_log('===============')
-    callback_log('Python:  %s (%s)' % (platform.python_version(), \
-                                           platform.python_implementation()))
-    callback_log('PySide:  %s' % PySide.__version__)
-    callback_log('pygame:  %s' % pygame.version.ver)
-    callback_log('')
-    callback_log('')
-
     # Create the Qt Application
     app = QApplication(sys.argv)
 
