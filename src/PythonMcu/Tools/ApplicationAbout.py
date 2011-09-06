@@ -39,7 +39,7 @@ class ApplicationAbout:
     """
 
     # this may be queried from other classes to ascertain compatibility
-    _INCARNATION = 2
+    _INCARNATION = 3
 
     def __init__(self):
         """Initialise application information.

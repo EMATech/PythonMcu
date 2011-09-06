@@ -68,7 +68,7 @@ class ApplicationConfiguration:
     """Store user settings and application information in one place
        and make them available.
 
-       Incarnation #6.
+       Incarnation #7.
     """
     def __init__(self):
         """Initialise user configuration and application information.
@@ -85,7 +85,7 @@ class ApplicationConfiguration:
 
         # ascertain compatibility with the class "ApplicationAbout"
         assert self.get_application_information( \
-            'about_class_incarnation') == 2
+            'about_class_incarnation') == 3
 
         # this variable is used to check whether the user
         # configuration has changed and is in need of saving
