@@ -86,8 +86,8 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
     _MODE_OTHER_OFF = 0
     _MODE_OTHER_TRANSPORT = 1
     _MODE_OTHER_BANK = 2
-    _MODE_OTHER_GLOBAL_VIEW = 3
-    _MODE_OTHER_AUTOMATION = 4
+    _MODE_OTHER_AUTOMATION = 3
+    _MODE_OTHER_GLOBAL_VIEW = 4
     _MODE_OTHER_UTILITY = 5
 
 
@@ -269,9 +269,9 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM:
                 'self._change_mode_bank(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1:
-                'self._change_mode_global_view(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2:
                 'self._change_mode_automation(%d & 0x01)',
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2:
+                'self._change_mode_global_view(%d & 0x01)',
             self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3:
                 'self._change_mode_utility(%d & 0x01)',
             self._MIDI_CC_BUTTON_MODE_TRANSPORT:
@@ -787,12 +787,50 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self._restore_previous_mode()
 
 
+    def _change_mode_automation(self, status):
+        # leave other modes as is in order to return to the old one!
+
+        if status == 1:
+            self._mode_other = self._MODE_OTHER_AUTOMATION
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 1)
+
+            menu_strings = \
+                ('Read/Off', 'Write', 'Trim', 'Touch', \
+                 'Latch', '', 'Global', 'Group')
+            self._set_menu_string(menu_strings)
+
+            self.register_control( \
+                'automation_read_off', self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
+            self.register_control( \
+                'automation_write', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1)
+            self.register_control( \
+                'automation_trim', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2)
+            self.register_control( \
+                'automation_touch', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3)
+            self.register_control( \
+                'automation_latch', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4)
+
+            self.withdraw_control(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5)
+
+            self.register_control( \
+                'global_view', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6, \
+                    self._MIDI_CC_LED_AUTOMAP_LEARN)
+            self.register_control( \
+                'group', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
+        else:
+            self._mode_other = self._MODE_OTHER_OFF
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
+
+            self._clear_menu_string()
+            self._restore_previous_mode()
+
+
     def _change_mode_global_view(self, status):
         # leave other modes as is in order to return to the old one!
 
         if status == 1:
             self._mode_other = self._MODE_OTHER_GLOBAL_VIEW
-            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 1)
+            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 1)
 
             menu_strings = \
                 ('MIDI', 'Inputs', 'AudioTr.', 'Instrum.', \
@@ -823,42 +861,6 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self.register_control( \
                 'global_view_user', \
                     self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
-        else:
-            self._mode_other = self._MODE_OTHER_OFF
-            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
-
-            self._clear_menu_string()
-            self._restore_previous_mode()
-
-
-    def _change_mode_automation(self, status):
-        # leave other modes as is in order to return to the old one!
-
-        if status == 1:
-            self._mode_other = self._MODE_OTHER_AUTOMATION
-            self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 1)
-
-            menu_strings = \
-                ('Read/Off', 'Write', 'Trim', 'Touch', \
-                 'Latch', '', '', 'Group')
-            self._set_menu_string(menu_strings)
-
-            self.register_control( \
-                'automation_read_off', self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
-            self.register_control( \
-                'automation_write', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 1)
-            self.register_control( \
-                'automation_trim', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 2)
-            self.register_control( \
-                'automation_touch', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 3)
-            self.register_control( \
-                'automation_latch', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4)
-
-            self.withdraw_control(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5)
-            self.withdraw_control(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6)
-
-            self.register_control( \
-                'group', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
         else:
             self._mode_other = self._MODE_OTHER_OFF
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 0)
@@ -942,13 +944,13 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             'zoom', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 7)
 
         self.register_control( \
-            'relay_click', self._MIDI_CC_LED_AUTOMAP_LEARN)
+            'global_view', self._MIDI_CC_LED_AUTOMAP_LEARN)
         self.register_control( \
             'rude_solo', self._MIDI_CC_LED_AUTOMAP_VIEW)
         self.register_control( \
-            'beats', self._MIDI_CC_LED_AUTOMAP_USER)
+            'relay_click', self._MIDI_CC_LED_AUTOMAP_USER)
         self.register_control( \
-            'smpte', self._MIDI_CC_LED_AUTOMAP_FX)
+            'beats', self._MIDI_CC_LED_AUTOMAP_FX)
 
 
     def _restore_vpots(self):
