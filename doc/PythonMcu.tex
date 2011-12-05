@@ -39,15 +39,14 @@ protocol to control digital audio workstations (DAWs), especially
 their mixing sections.  However, these control surfaces have two
 drawbacks: they are definitely not cheap and require quite a bit of
 space.  If these are no restrictions to you, by all means go and try
-them.  But don't stop reading here, as this application might be
-useful for Mackie Control users as well.
+them.
 
 If, on the other hand, you have a certain lack of money or available
 space (or you have a controller that is simply too good to be
 exchanged for an MCU), you might have found just the application you
 need.  It might not support your MIDI hardware controller yet, but if
-you know a bit of \textbf{Python} (or a programmer) it's pretty easy
-to change that.
+you know a bit of \textbf{Python} (or a programmer who does) it's
+pretty easy to change that.
 
 
 \chapter{Installation}
@@ -56,9 +55,9 @@ to change that.
 Download and install the latest version of
 \href{http://www.python.org/}{Python 2.6} on your computer.  As of
 August 2011, there is no installer of Python 2.6.7 for Microsoft
-Windows yet.  Users of this operating system may download
-\href{http://www.python.org/download/releases/2.6.6/}{Python 2.6.6},
-instead.
+Windows yet, so you could try.  Users of this operating system may
+download \href{http://www.python.org/download/releases/2.6.6/}{Python
+  2.6.6}, instead.
 
 Please also download and install these libraries:
 
@@ -74,11 +73,11 @@ You'll also need virtual MIDI ports or cables to connect
 successfully used \application{MidiYoke NT} (Microsoft Windows) and
 \application{JACK} (GNU/Linux), but others may work just as well.
 
-When you're done, simply run the file \path{PythonMcu.py} in the
-directory \path{src} by either double-clicking it or starting a
-console window, moving to the directory \path{src} and running
-\texttt{python PythonMcu.py}.
-
+When you're done, open the directory \path{src} with your file manager
+and run the application by double-clicking on the file
+\path{PythonMcu.py}.  To get rid of the annoying console window on
+Microsoft Windows, try double-clicking on \path{PythonMcu.pyw},
+instead.
 
 \chapter{Tested configurations}
 \label{chap:tested_configurations}
@@ -133,8 +132,8 @@ report working configurations to me.  Thanks!
 This modular design means that the application happily works away with
 the irrelevant implementation details being effectively hidden from
 you.  As long as you adhere to the internal protocol, you may easily
-extend \application{Python MCU} by deriving a class from
-\textbf{MidiControllerTemplate} to include your own controller.
+add your own controller to \application{Python MCU} by deriving a
+class from \textbf{MidiControllerTemplate}.
 
 If all this means nothing to you, go find yourself a Python programmer
 (or learn Python yourself, it's rather easy and a lot of fun!).  As
