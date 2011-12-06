@@ -38,9 +38,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.0307305"
-     inkscape:cx="162.3631"
-     inkscape:cy="1103.5607"
+     inkscape:zoom="0.72883653"
+     inkscape:cx="372.04724"
+     inkscape:cy="526.18109"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -58,7 +58,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -5191,7 +5191,7 @@
          height="16.299213"
          width="33.307087"
          id="rect30797"
-         style="fill:#ffffff;stroke:#000000;stroke-width:0.70866138;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+         style="fill:#ffeeaa;stroke:#000000;stroke-width:0.70866138000000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
       <rect
          style="fill:#ffffff;stroke:#000000;stroke-width:0.70866138;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
          id="rect30799"
@@ -5626,16 +5626,20 @@
            sodipodi:role="line"
            id="tspan21422">View</tspan></text>
       <text
-         sodipodi:linespacing="125%"
+         sodipodi:linespacing="100%"
          id="text21518"
-         y="866.48669"
-         x="457.11591"
-         style="font-size:12px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:125%;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Humanst521 BT;-inkscape-font-specification:Humanst521 BT"
+         y="861.12439"
+         x="456.93036"
+         style="font-size:8px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:center;line-height:100%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;font-family:Humanst521 BT;-inkscape-font-specification:Humanst521 BT"
          xml:space="preserve"><tspan
-           y="866.48669"
-           x="457.11591"
+           y="861.12439"
+           x="456.93036"
            id="tspan21520"
-           sodipodi:role="line">Auto.</tspan></text>
+           sodipodi:role="line">Toggle</tspan><tspan
+           y="869.12439"
+           x="456.93036"
+           sodipodi:role="line"
+           id="tspan4150">Global V.</tspan></text>
       <text
          sodipodi:linespacing="100%"
          id="text21522"

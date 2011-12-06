@@ -278,6 +278,11 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
                 'self._change_mode_transport(%d & 0x01)',
             }
 
+        # make sure that no submenu disturbs toggling the "Global
+        # View" mode
+        if self._mode_other == self._MODE_OTHER_GLOBAL_VIEW:
+            del cc_selector[self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1]
+
         if status == (MidiConnection.CONTROL_CHANGE + \
                           self._MIDI_DEVICE_CHANNEL):
             cc_number = message[1]
@@ -602,7 +607,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
             menu_strings = \
                 ('Track', 'Send', 'Panning', 'EQ', \
-                 'Plug-In', 'Instrum.', 'Switch 1', 'Switch 2')
+                 'Plug-In', 'Instrum.', 'Switch A', 'Switch B')
             self._set_menu_string(menu_strings)
 
             self.register_control( \
@@ -754,6 +759,9 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         # leave other modes as is in order to return to the old one!
 
         if status == 1:
+            if self._mode_other != self._MODE_OTHER_OFF:
+                return
+
             self._mode_other = self._MODE_OTHER_BANK
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 1)
 
@@ -780,6 +788,9 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self.withdraw_control(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6)
             self.withdraw_control(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
         else:
+            if self._mode_other != self._MODE_OTHER_BANK:
+                return
+
             self._mode_other = self._MODE_OTHER_OFF
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 0)
 
@@ -791,12 +802,15 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         # leave other modes as is in order to return to the old one!
 
         if status == 1:
+            if self._mode_other != self._MODE_OTHER_OFF:
+                return
+
             self._mode_other = self._MODE_OTHER_AUTOMATION
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 1)
 
             menu_strings = \
                 ('Read/Off', 'Write', 'Trim', 'Touch', \
-                 'Latch', '', 'Global', 'Group')
+                 'Latch', '', '', 'Group')
             self._set_menu_string(menu_strings)
 
             self.register_control( \
@@ -811,13 +825,14 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
                 'automation_latch', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 4)
 
             self.withdraw_control(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 5)
+            self.withdraw_control(self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6)
 
-            self.register_control( \
-                'global_view', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 6, \
-                    self._MIDI_CC_LED_AUTOMAP_LEARN)
             self.register_control( \
                 'group', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
         else:
+            if self._mode_other != self._MODE_OTHER_AUTOMATION:
+                return
+
             self._mode_other = self._MODE_OTHER_OFF
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
 
@@ -829,6 +844,9 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         # leave other modes as is in order to return to the old one!
 
         if status == 1:
+            if self._mode_other != self._MODE_OTHER_OFF:
+                return
+
             self._mode_other = self._MODE_OTHER_GLOBAL_VIEW
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 1)
 
@@ -861,9 +879,18 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self.register_control( \
                 'global_view_user', \
                     self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
+
+            self.register_control( \
+                'global_view', self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, \
+                    self._MIDI_CC_LED_AUTOMAP_LEARN)
         else:
+            if self._mode_other != self._MODE_OTHER_GLOBAL_VIEW:
+                return
+
             self._mode_other = self._MODE_OTHER_OFF
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2, 0)
+
+            self.withdraw_control(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1)
 
             self._clear_menu_string()
             self._restore_previous_mode()
@@ -873,6 +900,9 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         # leave other modes as is in order to return to the old one!
 
         if status == 1:
+            if self._mode_other != self._MODE_OTHER_OFF:
+                return
+
             self._mode_other = self._MODE_OTHER_UTILITY
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 1)
 
@@ -898,6 +928,9 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self.register_control( \
                 'utilities_save', self._MIDI_CC_BUTTONS_LEFT_BOTTOM + 7)
         else:
+            if self._mode_other != self._MODE_OTHER_UTILITY:
+                return
+
             self._mode_other = self._MODE_OTHER_OFF
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 0)
 

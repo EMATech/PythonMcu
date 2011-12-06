@@ -235,7 +235,9 @@ class McuInterconnector(object):
         if midi_switch in self._led__hardware_to_mcu:
             mcu_command = self._led__hardware_to_mcu[midi_switch]
             midi_led = self._led__mcu_to_hardware[mcu_command]['midi_led']
-            self._hardware_controller.set_led(midi_led, 0)
+
+            if type(midi_led) != types.NoneType:
+                self._hardware_controller.set_led(midi_led, 0)
 
             del self._led__hardware_to_mcu[midi_switch]
             self._led__mcu_to_hardware[mcu_command]['midi_switch'] = None
@@ -246,7 +248,9 @@ class McuInterconnector(object):
         for midi_switch in self._led__hardware_to_mcu.keys():
             mcu_command = self._led__hardware_to_mcu[midi_switch]
             midi_led = self._led__mcu_to_hardware[mcu_command]['midi_led']
-            self._hardware_controller.set_led(midi_led, 0)
+
+            if type(midi_led) != types.NoneType:
+                self._hardware_controller.set_led(midi_led, 0)
 
         self._led__hardware_to_mcu = {}
         self._led__mcu_to_hardware = {}
