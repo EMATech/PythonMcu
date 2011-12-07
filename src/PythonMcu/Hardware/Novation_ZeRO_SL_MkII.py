@@ -58,6 +58,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
     _MIDI_CC_FADERS = 0x10
     _MIDI_CC_ENCODERS = 0x38
     _MIDI_CC_KNOBS = 0x08
+    _MIDI_CC_CONTROL_PEDAL = 0x40
 
     _MIDI_CC_BUTTON_BANK_UP = 0x58
     _MIDI_CC_BUTTON_BANK_DOWN = 0x59
@@ -262,6 +263,8 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
                 'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 6, %d)',
             self._MIDI_CC_ENCODERS + 7:
                 'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 7, %d)',
+            self._MIDI_CC_CONTROL_PEDAL:
+                'self.on_control_pedal(%d & 0x01)',
             self._MIDI_CC_BUTTON_BANK_UP:
                 'self._change_mode_edit(%d & 0x01)',
             self._MIDI_CC_BUTTON_BANK_DOWN:
@@ -494,6 +497,17 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
     def all_leds_off(self):
         self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
+
+
+    # --- pedal handling ---
+
+    def on_control_pedal(self, status):
+        if self.interconnector.is_playing():
+            mcu_command = 'stop'
+        else:
+            mcu_command = 'play'
+
+        self.interconnector.keypress_unregistered(mcu_command, status)
 
 
     # --- mode handling ---

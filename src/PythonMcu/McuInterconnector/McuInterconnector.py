@@ -161,6 +161,7 @@ class McuInterconnector(object):
                      mcu_midi_input, mcu_midi_output, \
                      hardware_controller_class, controller_midi_input, \
                      controller_midi_output, callback_log):
+        self._play_status = False
         self._callback_log = callback_log
 
         eval_controller_init = \
@@ -268,29 +269,38 @@ class McuInterconnector(object):
 
     def keypress(self, internal_id, status):
         if internal_id in self._led__hardware_to_mcu:
-            command = 'self._mackie_host_control.keypress_%s(%d)' % \
-                (self._led__hardware_to_mcu[internal_id], status)
-
-            eval(command)
+            mcu_command = self._led__hardware_to_mcu[internal_id]
+            self.keypress_unregistered(mcu_command, status)
             return True
         else:
             return False
+
+
+    def keypress_unregistered(self, mcu_command, status):
+        command = 'self._mackie_host_control.keypress_%s(%d)' % \
+            (mcu_command, status)
+        eval(command)
 
 
     def _set_led(self, mcu_command, status):
         if self._led__mcu_to_hardware[mcu_command]['value'] != status:
             self._led__mcu_to_hardware[mcu_command]['value'] = status
 
-            if self._led__mcu_to_hardware[mcu_command]['midi_switch'] \
-                    is not None:
+            if type(self._led__mcu_to_hardware[mcu_command]['midi_switch']) != \
+                    types.NoneType:
                 self._update_led(mcu_command)
 
 
     def _update_led(self, mcu_command):
-        if self._led__mcu_to_hardware[mcu_command]['midi_switch'] is not None:
+        if type(self._led__mcu_to_hardware[mcu_command]['midi_switch']) != \
+                types.NoneType:
             status = self._led__mcu_to_hardware[mcu_command]['value']
             self._hardware_controller.set_led( \
                 self._led__mcu_to_hardware[mcu_command]['midi_led'], status)
+
+
+    def is_playing(self):
+        return self._play_status
 
 
     # --- hardware controller commands ---
@@ -496,6 +506,11 @@ class McuInterconnector(object):
 
 
     def set_led_play(self, status):
+        if status:
+            self._play_status = True
+        else:
+            self._play_status = False
+
         self._set_led('play', status)
 
 
