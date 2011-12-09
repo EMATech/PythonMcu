@@ -102,10 +102,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         self.display_timecode_available = False
         self.meter_bridge_available = False
 
-        self._lcd_strings = [ \
-            '                                                                        ', \
-            '                                                                        ']
-        self._menu_string = ''
+        self._lcd_strings = ['', '']
 
         self._vpot_modes = \
             [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -134,8 +131,8 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         MidiControllerTemplate.connect(self)
         self._is_connected = True
 
-        self._set_lcd(1, 'Novation ZeRO SL MkII:  initialising...')
-        self._set_lcd(2, 'Mackie Host Control:    connecting...')
+        self.set_lcd_directly(0, 'Novation ZeRO SL MkII:  initialising...')
+        self.set_lcd_directly(1, 'Mackie Host Control:    connecting...')
 
         self._enter_ableton_mode()
 
@@ -143,7 +140,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         self._mode_track = self._MODE_TRACK_MUTE_SOLO
         self._restore_previous_mode()
 
-        self._set_lcd(1, 'Novation ZeRO SL MkII:  initialised.')
+        self.set_lcd_directly(0, 'Novation ZeRO SL MkII:  initialised.')
 
         self._log('Connected.', True)
 
@@ -153,8 +150,8 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
         self.withdraw_all_controls()
 
-        self._set_lcd(1, 'Novation ZeRO SL MkII:  disconnecting...')
-        self._set_lcd(2, '')
+        self.set_lcd_directly(0, 'Novation ZeRO SL MkII:  disconnecting...')
+        self.set_lcd_directly(1, '')
 
         self._leave_ableton_mode()
 
@@ -165,15 +162,15 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
     def go_online(self):
         MidiControllerTemplate.go_online(self)
 
-        self._set_lcd(1, 'Novation ZeRO SL MkII:  initialised.')
-        self._set_lcd(2, 'Mackie Host Control:    online.')
+        self.set_lcd_directly(0, 'Novation ZeRO SL MkII:  initialised.')
+        self.set_lcd_directly(1, 'Mackie Host Control:    online.')
 
 
     def go_offline(self):
         MidiControllerTemplate.go_offline(self)
 
-        self._set_lcd(1, 'Novation ZeRO SL MkII:  initialised.')
-        self._set_lcd(2, 'Mackie Host Control:    offline.')
+        self.set_lcd_directly(0, 'Novation ZeRO SL MkII:  initialised.')
+        self.set_lcd_directly(1, 'Mackie Host Control:    offline.')
 
 
     def _enter_ableton_mode(self):
@@ -220,8 +217,9 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
                         self._restore_previous_mode()
                         self._restore_vpots()
 
-                        self._set_lcd(1, self._lcd_strings[0])
-                        self._set_lcd(2, self._lcd_strings[1])
+                        # force update of LCD
+                        self._lcd_strings = ['', '']
+                        self.update_lcd()
 
             # all MIDI SysEx messages handled (including invalid
             # ones), so quit processing here
@@ -366,76 +364,50 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
     # --- handling of Mackie Control commands ---
 
-    def set_lcd(self, position, new_string):
-        """
-        send string of maximum 56 bytes to controller LCD
+    def set_lcd_directly(self, line, lcd_string):
+        if len(lcd_string) != 72:
+            lcd_string = lcd_string.ljust(72)[:72]
 
-        position 1: top row
-        position 2: bottom row
-        """
-        converted_string = ' '
-        for n in range(len(new_string)):
-            converted_string += new_string[n]
-            if (n%7) == 6:
-                converted_string += '  '
+        lcd_characters = []
+        for n in range(len(lcd_string)):
+            lcd_characters.append(ord(lcd_string[n]))
 
-        has_changed = False
-        converted_string = converted_string.ljust(72)
-
-        if self._lcd_strings[position - 1] != converted_string:
-            self._lcd_strings[position - 1] = converted_string
-            has_changed = True
-
-        # no need to update, so exit now
-        if not has_changed:
-            return
-        # menu is shown, so update strings silently and exit
-        elif (position == 2) and self._menu_string:
-            return
-        # update display
-        else:
-            self._set_lcd(position, converted_string)
+        self._update_lcd_raw(line, lcd_characters)
 
 
-    def _set_lcd(self, position, new_string):
-        """
-        send string of maximum 72 bytes to controller LCD
-
-        position 1: top row
-        position 2: bottom row
-        position 3: display menu (bottom row)
-        position 4: clear menu (bottom row)
-        """
-        if position == 3:
-            position = 2
-        elif position == 4:
-            position = 2
-            new_string = self._lcd_strings[1]
-        else:
-            new_string = new_string.ljust(72)
-
+    def update_lcd(self):
         # convert string
-        hex_codes = []
-        for character in new_string:
-            hex_codes.append(ord(character))
+        for line in range(2):
+            new_string = ''.join(self.get_lcd_characters(line))
+            if new_string != self._lcd_strings[line]:
+                self._lcd_strings[line] = new_string
+                hex_codes = []
 
-        self._set_lcd_raw(position, hex_codes)
+                for n in range(len(new_string)):
+                    hex_codes.append(ord(new_string[n]))
+                    if (n%7) == 6:
+                        hex_codes.append(0x20)
+                        hex_codes.append(0x20)
+
+                self._update_lcd_raw(line, hex_codes)
 
 
-
-    def _set_lcd_raw(self, position, hex_codes):
+    def _update_lcd_raw(self, line, hex_codes):
         """
         send hex codes of maximum 72 bytes to controller LCD
 
-        position 1: top row
-        position 2: bottom row
+        line 0: top row
+        line 1: bottom row
         """
         if not self._is_connected:
             return
 
-        if position == 2:
-            position = 3
-        sysex_data = [0x02, 0x01, 0x00, position, 0x04]
+        line %= 2
+        if line == 0:
+            display_line = 1
+        else:
+            display_line = 3
+        sysex_data = [0x02, 0x01, 0x00, display_line, 0x04]
 
         # convert string
         for hex_code in hex_codes:
@@ -447,10 +419,10 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         self.send_midi_sysex(sysex_data)
 
         # update second display page as well:
-        # * position 1  -->  top row (left controller block)
-        # * position 2  -->  top row (right controller block)
-        # * position 3  -->  bottom row (left controller block)
-        # * position 4  -->  bottom row (right controller block)
+        # * 0x01  -->  top row (left controller block)
+        # * 0x02  -->  top row (right controller block)
+        # * 0x03  -->  bottom row (left controller block)
+        # * 0x04  -->  bottom row (right controller block)
         sysex_data[3] += 1
 
         self.send_midi_sysex(sysex_data)
@@ -511,25 +483,6 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
 
     # --- mode handling ---
-
-    def _set_menu_string(self, menu_strings):
-        assert(len(menu_strings) == 8)
-
-        menu_string_temp = ''
-        for menu_string in menu_strings:
-            menu_string_temp += menu_string.center(9)[:9]
-
-        if self._menu_string != menu_string_temp:
-            self._clear_menu_string()
-            self._menu_string = menu_string_temp
-
-            self._set_lcd(3, self._menu_string)
-
-
-    def _clear_menu_string(self):
-        self._menu_string = ''
-        self._set_lcd(4, '')
-
 
     def _change_mode_track(self, status):
         self._mode_edit = self._MODE_EDIT_OFF
@@ -622,7 +575,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             menu_strings = \
                 ('Track', 'Send', 'Panning', 'EQ', \
                  'Plug-In', 'Instrum.', 'Switch A', 'Switch B')
-            self._set_menu_string(menu_strings)
+            self.show_menu(1, menu_strings)
 
             self.register_control( \
                 'vselect_channel_1', self._MIDI_CC_BUTTONS_LEFT_TOP)
@@ -660,7 +613,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         else:
             self._mode_edit = self._MODE_EDIT_VSELECT_ASSIGNMENT
 
-            self._clear_menu_string()
+            self.hide_menu(1)
 
             self.register_control( \
                 'vselect_channel_1', self._MIDI_CC_BUTTONS_LEFT_TOP)
@@ -710,7 +663,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             menu_strings = \
                 ('Click', 'Solo', 'Marker', 'Nudge', \
                  'SMPTE/Bt', '', 'Drop', 'Replace')
-            self._set_menu_string(menu_strings)
+            self.show_menu(1, menu_strings)
 
             self.register_control( \
                 'click', \
@@ -765,7 +718,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self.withdraw_control(self._MIDI_CC_BUTTON_CYCLE)
             self.withdraw_control(self._MIDI_CC_BUTTON_RECORD)
 
-            self._clear_menu_string()
+            self.hide_menu(1)
             self._restore_previous_mode()
 
 
@@ -782,7 +735,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             menu_strings = \
                 ('<<', '<', '>', '>>', \
                  '', '', '', '')
-            self._set_menu_string(menu_strings)
+            self.show_menu(1, menu_strings)
 
             self.register_control( \
                 'fader_banks_bank_left', \
@@ -808,7 +761,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self._mode_other = self._MODE_OTHER_OFF
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM, 0)
 
-            self._clear_menu_string()
+            self.hide_menu(1)
             self._restore_previous_mode()
 
 
@@ -825,7 +778,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             menu_strings = \
                 ('Read/Off', 'Write', 'Trim', 'Touch', \
                  'Latch', '', '', 'Group')
-            self._set_menu_string(menu_strings)
+            self.show_menu(1, menu_strings)
 
             self.register_control( \
                 'automation_read_off', self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
@@ -850,7 +803,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self._mode_other = self._MODE_OTHER_OFF
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1, 0)
 
-            self._clear_menu_string()
+            self.hide_menu(1)
             self._restore_previous_mode()
 
 
@@ -867,7 +820,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             menu_strings = \
                 ('MIDI', 'Inputs', 'AudioTr.', 'Instrum.', \
                  'AUX', 'Busses', 'Outputs', 'User')
-            self._set_menu_string(menu_strings)
+            self.show_menu(1, menu_strings)
 
             self.register_control( \
                 'global_view_midi_tracks', \
@@ -906,7 +859,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
             self.withdraw_control(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1)
 
-            self._clear_menu_string()
+            self.hide_menu(1)
             self._restore_previous_mode()
 
 
@@ -923,7 +876,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             menu_strings = \
                 ('Enter', 'Cancel', '', 'Undo', \
                  '', '', '', 'Save')
-            self._set_menu_string(menu_strings)
+            self.show_menu(1, menu_strings)
 
             self.register_control( \
                 'utilities_enter', self._MIDI_CC_BUTTONS_LEFT_BOTTOM)
@@ -948,7 +901,7 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self._mode_other = self._MODE_OTHER_OFF
             self._set_led(self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3, 0)
 
-            self._clear_menu_string()
+            self.hide_menu(1)
             self._restore_previous_mode()
 
 

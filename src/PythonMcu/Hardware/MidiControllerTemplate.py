@@ -52,6 +52,16 @@ class MidiControllerTemplate(object):
     def __init__(self, midi_input_name, midi_output_name, callback_log):
         self.callback_log = callback_log
 
+        # LCD has 2 rows with 56 characters each, fill with spaces
+        self._lcd_characters = [' '] * 2
+        self._lcd_overlay_characters = [' '] * 2
+
+        for line in range(2):
+            self._lcd_characters[line] = [' '] * 56
+            self._lcd_overlay_characters[line] = [' '] * 56
+
+        self._show_overlay = [False, False]
+
         self._log('Initialising MIDI ports...', True)
         self._midi_input_name = midi_input_name
         self._midi_output_name = midi_output_name
@@ -192,14 +202,22 @@ class MidiControllerTemplate(object):
 
     # --- handling of Mackie Control commands ---
 
-    def set_lcd(self, position, new_string):
-        """
-        send string of maximum 72 bytes to controller LCD
+    def set_lcd(self, position, hex_codes, update=True):
+        for hex_code in hex_codes:
+            # wrap display and determine position
+            position %= 112
+            (line, pos) = divmod(position, 56)
 
-        position 1: top row
-        position 2: bottom row
-        """
-        pass
+            # convert illegal characters to asterisk
+            if (hex_code < 0x20) or (hex_code > 0x7F):
+                self._lcd_characters[line][pos] = '*'
+            else:
+                self._lcd_characters[line][pos] = chr(hex_code)
+
+            position += 1
+
+        if update:
+            self.update_lcd()
 
 
     def set_led(self, internal_id, led_status):
@@ -273,3 +291,49 @@ class MidiControllerTemplate(object):
 
     def all_leds_off(self):
         self._log('Hardware LEDs NOT set to "off".')
+
+
+    # --- LCD and menu handling
+
+    def update_lcd(self):
+        pass
+
+
+    def get_lcd_characters(self, line):
+        line %= 2
+
+        if self._show_overlay[line]:
+            return self._lcd_overlay_characters[line]
+        else:
+            return self._lcd_characters[line]
+
+
+    def show_menu(self, line, menu_strings):
+        assert(len(menu_strings) == 8)
+
+        menu_string_temp = ''
+        for menu_string in menu_strings:
+            menu_string_temp += menu_string.center(7)[:7]
+
+        menu_characters = list(menu_string_temp)
+        self.show_overlay(line, menu_characters)
+
+
+    def hide_menu(self, line):
+        self.hide_overlay(line)
+
+
+    def show_overlay(self, line, overlay_characters):
+        line %= 2
+        assert(len(overlay_characters) == 56)
+
+        self._show_overlay[line] = True
+        self._lcd_overlay_characters[line] = overlay_characters
+        self.update_lcd()
+
+
+    def hide_overlay(self, line):
+        line %= 2
+
+        self._show_overlay[line] = False
+        self.update_lcd()

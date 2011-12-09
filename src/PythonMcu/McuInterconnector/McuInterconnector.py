@@ -366,14 +366,8 @@ class McuInterconnector(object):
             vpot_id, vpot_center_led, vpot_mode, vpot_position)
 
 
-    def set_lcd(self, position, new_string):
-        """
-        send string of maximum 72 bytes to controller LCD
-
-        position 1: top row
-        position 2: bottom row
-        """
-        self._hardware_controller.set_lcd(position, new_string)
+    def set_lcd(self, position, hex_codes):
+        self._hardware_controller.set_lcd(position, hex_codes)
 
 
     def set_led_channel_record_ready(self, channel, status):

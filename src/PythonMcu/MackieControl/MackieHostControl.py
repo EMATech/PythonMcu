@@ -135,11 +135,6 @@ class MackieHostControl:
         self._midi = MidiConnection(callback_log, self.receive_midi)
 
         self.unset_hardware_controller()
-
-        # LCD has 2 rows with 56 characters each, fill with spaces
-        self._lcd_characters = [' '] * 56 * 2
-        self._lcd_strings = ['', '']
-
         self._offline = True
 
         # Mackie Control model IDs:
@@ -429,29 +424,10 @@ class MackieHostControl:
                     [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
                 if message[5] == 0x12:
                     if self._display_lcd_available:
-                        lcd_position = message[6] - 1
-                        temp_string = message[7:-1]
+                        position = message[6]
+                        hex_codes = message[7:-1]
 
-                        for hex_code in temp_string:
-                            lcd_position += 1
-                            if lcd_position >= 112:
-                                break
-
-                            # convert illegal characters to asterisk
-                            if (hex_code < 0x20) or (hex_code > 0x7F):
-                                hex_code = 0x2A
-                            self._lcd_characters[lcd_position] = chr(hex_code)
-
-                        line_1 = ''.join(self._lcd_characters[:56])
-                        line_2 = ''.join(self._lcd_characters[56:])
-
-                        if self._lcd_strings[0] != line_1:
-                            self._lcd_strings[0] = line_1
-                            self._hardware_controller.set_lcd(1, line_1)
-
-                        if self._lcd_strings[1] != line_2:
-                            self._lcd_strings[1] = line_2
-                            self._hardware_controller.set_lcd(2, line_2)
+                        self._hardware_controller.set_lcd(position, hex_codes)
             elif status == MidiConnection.PITCH_WHEEL_CHANGE:
                 if self._automated_faders_available:
                     fader_id = message[0] & 0x0F
