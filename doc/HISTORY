@@ -1,0 +1,91 @@
+Git HEAD
+========
+
+* empty
+
+
+v1.07 (2011-12-11)
+==================
+
+* updated documentation
+    
+* correct calculation of path to configuration file
+
+* execute on Microsoft Windows without showing command line window
+
+* GUI: disable combo and check boxes when MCU emulation is running
+    
+* GUI: auto-scroll log window
+
+* MackieHostControl.py: optimised challenge-response code
+
+* MackieHostControl.py: support for "V-Select" LEDs
+    
+* MidiControllerTemplate.py: added generic LCD handling
+
+* Novation_ZeRO_SL_MkII.py: implemented "Global View" key and changed
+  some key assignments
+
+* Novation_ZeRO_SL_MkII.py: send transport commands via MIDI control
+  pedal
+
+
+
+v1.06 (2011-08-28)
+==================
+
+* added "about" window with license terms
+    
+* GUI: display log messages inside GUI text window
+
+* Novation_ZeRO_SL_MkII.py: fine-tuned menus
+
+
+
+v1.05 (2011-08-27)
+==================
+
+* changed configuration file name (Microsoft Windows)
+
+* hardware controllers now have default MIDI ports
+    
+* GUI: added check box to select MCU's "challenge response" mode
+
+* GUI: added usage hint for controllers
+    
+* added "Novation ZeRO SL MkII (MIDI)" as class inheritance demo
+
+
+
+v1.04 (2011-08-26)
+==================
+
+* created a GUI using the Qt framework
+
+* configurable MIDI latency
+
+* ApplicationSettings.py: changing an option now marks configuration
+  as changed
+
+* McuInterconnector.py: MCU and hardware controller intialisation now
+  handled within class
+
+* MidiConnection.py: static methods to get available MIDI inputs and
+  outputs
+
+
+
+v1.03 (2011-08-14)
+==================
+
+* out-sourced logging to central facility :)
+
+* MackieHostControl.py: implemented Logic Control challenge-response
+  system
+
+
+
+v1.02 (2011-08-07, initial commit)
+==================================
+
+* initial commit
