@@ -414,7 +414,8 @@ class PythonMcu(QFrame):
             # interconnects Mackie Control Host and MIDI controller while
             # handling the complete MIDI translation between those two
             self._interconnector = McuInterconnector( \
-                self._mcu_model_id, \
+                self, \
+                    self._mcu_model_id, \
                     self._mcu_connection, \
                     self._mcu_midi_input, \
                     self._mcu_midi_output, \

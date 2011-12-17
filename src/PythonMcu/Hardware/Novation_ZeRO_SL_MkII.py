@@ -394,13 +394,15 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
 
     def _update_lcd_raw(self, line, hex_codes):
         """
-        send hex codes of maximum 72 bytes to controller LCD
+        send hex codes of 72 bytes to controller LCD
 
         line 0: top row
         line 1: bottom row
         """
         if not self._is_connected:
             return
+
+        assert(len(hex_codes) == 72)
 
         line %= 2
         if line == 0:

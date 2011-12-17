@@ -157,12 +157,13 @@ class McuInterconnector(object):
     ]
 
 
-    def __init__(self, mcu_model_id, mcu_connection, \
+    def __init__(self, parent, mcu_model_id, mcu_connection, \
                      mcu_midi_input, mcu_midi_output, \
                      hardware_controller_class, controller_midi_input, \
                      controller_midi_output, callback_log):
         self._play_status = False
         self._callback_log = callback_log
+        self.parent = parent
 
         eval_controller_init = \
             '%(cc)s.%(cc)s("%(midi_in)s", "%(midi_out)s", callback_log)' % \

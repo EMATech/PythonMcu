@@ -56,7 +56,7 @@ class ApplicationAbout:
             'application':              'PythonMcu',
             'cmd_line':                 'PythonMcu.py',
             'description':              _('Mackie Host Controller written in Python'),
-            'version':                  '1.07',
+            'version':                  '1.08',
             'authors':                  'Martin Zuther',
             'contributors':             '',
             'copyright_years':          '2011',
