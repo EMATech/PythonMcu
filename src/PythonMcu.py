@@ -308,8 +308,9 @@ class PythonMcu(QFrame):
         self._edit_logger.appendPlainText(message)
 
 
-    def combobox_item_selected(self, selected_text):
+    def combobox_item_selected(self, ignore_this):
         widget = self.sender()
+        selected_text = widget.currentText()
 
         if widget == self._combo_mcu_model_id:
             self._mcu_emulated_model = selected_text

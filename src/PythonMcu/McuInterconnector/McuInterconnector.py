@@ -334,13 +334,13 @@ class McuInterconnector(object):
         self._mackie_host_control.move_fader_7bit(fader_id, fader_value)
 
 
-    def move_vpot(self, midi_channel, vpot_id, direction, number_of_ticks):
+    def move_vpot(self, vpot_id, direction, number_of_ticks):
         self._mackie_host_control.move_vpot( \
-            midi_channel, vpot_id, direction, number_of_ticks)
+            vpot_id, direction, number_of_ticks)
 
-    def move_vpot_raw(self, midi_channel, vpot_id, vpot_movement):
-        self._mackie_host_control.move_vpot_raw( \
-            midi_channel, vpot_id, vpot_movement)
+
+    def move_vpot_raw(self, vpot_id, vpot_movement):
+        self._mackie_host_control.move_vpot_raw(vpot_id, vpot_movement)
 
 
     # --- Mackie Control Unit commands ---

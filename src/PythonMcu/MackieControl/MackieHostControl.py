@@ -133,6 +133,7 @@ class MackieHostControl:
         self._midi_input_name = midi_input_name
         self._midi_output_name = midi_output_name
         self._midi = MidiConnection(callback_log, self.receive_midi)
+        self._midi_channel = 0
 
         self.unset_hardware_controller()
         self._offline = True
@@ -484,13 +485,6 @@ class MackieHostControl:
             self._log(output.strip())
 
 
-    def send_midi_control_change(self, midi_channel, cc_number, cc_value):
-        if self.is_offline():
-            return
-
-        self._midi.send_control_change(midi_channel, cc_number, cc_value)
-
-
     def send_midi_sysex(self, data):
         assert(type(data) == types.ListType)
 
@@ -503,7 +497,7 @@ class MackieHostControl:
 
     # --- commands from hardware control ---
 
-    def move_vpot(self, midi_channel, vpot_id, direction, number_of_ticks):
+    def move_vpot(self, vpot_id, direction, number_of_ticks):
         if self.is_offline():
             return
 
@@ -512,15 +506,15 @@ class MackieHostControl:
             vpot_movement = vpot_movement + 0x40
 
         self._midi.send_control_change( \
-            midi_channel, 0x10 + vpot_id, vpot_movement)
+            self._midi_channel, 0x10 + vpot_id, vpot_movement)
 
 
-    def move_vpot_raw(self, midi_channel, vpot_id, vpot_movement):
+    def move_vpot_raw(self, vpot_id, vpot_movement):
         if self.is_offline():
             return
 
         self._midi.send_control_change( \
-            midi_channel, 0x10 + vpot_id, vpot_movement)
+            self._midi_channel, 0x10 + vpot_id, vpot_movement)
 
 
     def move_fader(self, fader_id, fader_value):

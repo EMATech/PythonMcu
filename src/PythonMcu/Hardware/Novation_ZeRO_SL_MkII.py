@@ -246,21 +246,21 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
             self._MIDI_CC_FADERS + 7: \
                 'self.interconnector.move_fader_7bit(7, %d)',
             self._MIDI_CC_ENCODERS:
-                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 0, %d)',
+                'self.interconnector.move_vpot_raw(0, %d)',
             self._MIDI_CC_ENCODERS + 1:
-                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 1, %d)',
+                'self.interconnector.move_vpot_raw(1, %d)',
             self._MIDI_CC_ENCODERS + 2:
-                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 2, %d)',
+                'self.interconnector.move_vpot_raw(2, %d)',
             self._MIDI_CC_ENCODERS + 3:
-                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 3, %d)',
+                'self.interconnector.move_vpot_raw(3, %d)',
             self._MIDI_CC_ENCODERS + 4:
-                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 4, %d)',
+                'self.interconnector.move_vpot_raw(4, %d)',
             self._MIDI_CC_ENCODERS + 5:
-                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 5, %d)',
+                'self.interconnector.move_vpot_raw(5, %d)',
             self._MIDI_CC_ENCODERS + 6:
-                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 6, %d)',
+                'self.interconnector.move_vpot_raw(6, %d)',
             self._MIDI_CC_ENCODERS + 7:
-                'self.interconnector.move_vpot_raw(self._MIDI_DEVICE_CHANNEL, 7, %d)',
+                'self.interconnector.move_vpot_raw(7, %d)',
             self._MIDI_CC_CONTROL_PEDAL:
                 'self.on_control_pedal(%d & 0x01)',
             self._MIDI_CC_BUTTON_BANK_UP:

@@ -104,10 +104,16 @@ That being said, here's how to set up \application{Python MCU}\dots
   been added for completeness, but I don't think you'll ever need
   them.
 
-\item[Connection:] Defaults to ``Challenge / Response'' for ``Logic
-  Control'' and ``Wait for MIDI data'' for ``Mackie Control''.  If
-  you're having trouble connecting to your DAW, try changing this
-  setting.
+\item[Connection:] Determines how \application{Python MCU} connects to
+  your DAW.  If you're having trouble with connecting, try changing
+  this setting.
+
+  ``Challenge / Response'' forces \application{Python MCU} to register
+  with your DAW (which will only work if your DAW supports this),
+  whereas ``Wait for MIDI data'' simply waits for some data on the
+  MIDI input port.  ``Assume successful connection'' has been added
+  for testing purposes -- this setting assumes the presence of a
+  Mackie-Control-aware DAW without checking.
 
 \item[MIDI In/Out:] The virtual MIDI cables that connect
   \application{Python MCU} to your DAW.  I freely admit that it's not
