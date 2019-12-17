@@ -1,9 +1,20 @@
-PythonMcu
-=========
+# PythonMcu
 
 Mackie Host Controller written in Python
 
-Copyright (c) 2011 [Martin Zuther][1]
+## Documentation
+
+For documentation and further information, please see the directory
+[doc][], especially the [manual][].
+
+## Code of conduct
+
+Please read the [code of conduct][COC] before asking for help, filing
+bug reports or contributing to this project.  Thanks!
+
+## License
+
+Copyright (c) 2011 [Martin Zuther][]
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,13 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Thank you for using free software!
 
-Documentation
--------------
 
-For documentation and further information, please see the directory
-[doc][2], especially the file [PythonMcu.pdf][3].
-
-
-[1]: http://www.mzuther.de/
-[2]: https://github.com/mzuther/PythonMcu/tree/master/doc/
-[3]: https://github.com/mzuther/PythonMcu/raw/master/doc/PythonMcu.pdf
+[Martin Zuther]:  http://www.mzuther.de/
+[COC]:            https://github.com/mzuther/PythonMcu/tree/master/CODE_OF_CONDUCT.markdown
+[doc]:            https://github.com/mzuther/PythonMcu/tree/master/doc/
+[manual]:         https://github.com/mzuther/PythonMcu/raw/master/doc/PythonMcu.pdf
