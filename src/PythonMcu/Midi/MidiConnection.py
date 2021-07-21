@@ -5,6 +5,7 @@ PythonMcu
 =========
 Mackie Host Controller written in Python
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
+Copyright (c) 2021 Raphaël Doursenaud <rdoursenaud@free.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,7 +25,6 @@ Thank you for using free software!
 """
 
 import pygame.midi
-import types
 
 pygame.midi.init()
 
@@ -50,6 +50,9 @@ class MidiConnection:
 
         self._midi_input_name = None
         self._midi_output_name = None
+
+        self._midi_input = None
+        self._midi_output = None
 
 
     def connect(self, midi_input_name=None, midi_output_name=None):
@@ -77,13 +80,13 @@ class MidiConnection:
 
 
     def _init_input(self, device_name):
-        if device_name == None:
+        if device_name is None:
             return None
 
         for device_id in range(pygame.midi.get_count()):
             device = pygame.midi.get_device_info(device_id)
 
-            if device[1] == device_name and (device[2] == 1):
+            if device[1].decode('utf-8') == device_name and (device[2] == 1):
                 self._log('Opening MIDI input "%s"...' % device_name)
                 return pygame.midi.Input(device_id)
 
@@ -92,13 +95,13 @@ class MidiConnection:
 
 
     def _init_output(self, device_name):
-        if device_name == None:
+        if device_name is None:
             return None
 
         for device_id in range(pygame.midi.get_count()):
             device = pygame.midi.get_device_info(device_id)
 
-            if device[1] == device_name and (device[3] == 1):
+            if device[1].decode('utf-8') == device_name and (device[3] == 1):
                 self._log('Opening MIDI output "%s"...' % device_name)
                 return pygame.midi.Output(device_id, latency=0)
 
@@ -115,7 +118,7 @@ class MidiConnection:
         for id in range(pygame.midi.get_count()):
             device = pygame.midi.get_device_info(id)
             if device[2] == 1:
-                midi_inputs.append(device[1])
+                midi_inputs.append(device[1].decode('utf8'))
 
         return midi_inputs
 
@@ -127,7 +130,7 @@ class MidiConnection:
         for id in range(pygame.midi.get_count()):
             device = pygame.midi.get_device_info(id)
             if device[3] == 1:
-                midi_outputs.append(device[1])
+                midi_outputs.append(device[1].decode('utf8'))
 
         return midi_outputs
 
@@ -275,8 +278,8 @@ class MidiConnection:
             self._log('MIDI output not connected.')
             return
 
-        assert(type(header) == types.ListType)
-        assert(type(data) == types.ListType)
+        assert(type(header) is list)
+        assert(type(data) is list)
 
         sysex = [0xF0]
         sysex.extend(header)
@@ -290,13 +293,13 @@ if __name__ == "__main__":
     import time
 
     def callback_log(message):
-        print message
+        print(message)
 
     def callback_midi_in(status_byte, message):
-        print 'status %02X: ' % status_byte,
+        print('status %02X: ' % status_byte,)
         for byte in message:
-            print '%02X' % byte,
-        print
+            print('%02X' % byte,)
+        print()
 
     midi_input = 'In From MIDI Yoke:  2'
     midi_output = 'Out To MIDI Yoke:  1'

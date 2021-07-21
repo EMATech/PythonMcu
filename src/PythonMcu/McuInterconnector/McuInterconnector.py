@@ -5,6 +5,7 @@ PythonMcu
 =========
 Mackie Host Controller written in Python
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
+Copyright (c) 2021 Raphaël Doursenaud <rdoursenaud@free.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,7 +25,6 @@ Thank you for using free software!
 """
 
 import sys
-import types
 
 if __name__ == "__main__":
     # allow "PythonMcu" package imports when executing this module
@@ -238,7 +238,7 @@ class McuInterconnector(object):
             mcu_command = self._led__hardware_to_mcu[midi_switch]
             midi_led = self._led__mcu_to_hardware[mcu_command]['midi_led']
 
-            if type(midi_led) != types.NoneType:
+            if type(midi_led) is not type(None):
                 self._hardware_controller.set_led(midi_led, 0)
 
             del self._led__hardware_to_mcu[midi_switch]
@@ -251,7 +251,7 @@ class McuInterconnector(object):
             mcu_command = self._led__hardware_to_mcu[midi_switch]
             midi_led = self._led__mcu_to_hardware[mcu_command]['midi_led']
 
-            if type(midi_led) != types.NoneType:
+            if type(midi_led) is not type(None):
                 self._hardware_controller.set_led(midi_led, 0)
 
         self._led__hardware_to_mcu = {}
@@ -287,14 +287,14 @@ class McuInterconnector(object):
         if self._led__mcu_to_hardware[mcu_command]['value'] != status:
             self._led__mcu_to_hardware[mcu_command]['value'] = status
 
-            if type(self._led__mcu_to_hardware[mcu_command]['midi_switch']) != \
-                    types.NoneType:
+            if type(self._led__mcu_to_hardware[mcu_command]['midi_switch']) is not \
+                    type(None):
                 self._update_led(mcu_command)
 
 
     def _update_led(self, mcu_command):
-        if type(self._led__mcu_to_hardware[mcu_command]['midi_switch']) != \
-                types.NoneType:
+        if type(self._led__mcu_to_hardware[mcu_command]['midi_switch']) is not \
+                type(None):
             status = self._led__mcu_to_hardware[mcu_command]['value']
             self._hardware_controller.set_led( \
                 self._led__mcu_to_hardware[mcu_command]['midi_led'], status)
