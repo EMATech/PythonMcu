@@ -5,6 +5,7 @@ PythonMcu
 =========
 Mackie Host Controller written in Python
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
+Copyright (c) 2021 Raphaël Doursenaud <rdoursenaud@free.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,7 +33,7 @@ import os
 module_path = os.path.dirname(os.path.realpath(__file__))
 gettext.bindtextdomain('PythonMcu', os.path.join(module_path, 'po/'))
 gettext.textdomain('PythonMcu')
-_ = gettext.lgettext
+_ = gettext.gettext
 
 class ApplicationAbout:
     """Store application information in one place and make it available.
@@ -56,10 +57,10 @@ class ApplicationAbout:
             'application':              'PythonMcu',
             'cmd_line':                 'PythonMcu.py',
             'description':              _('Mackie Host Controller written in Python'),
-            'version':                  '1.08',
+            'version':                  '2.0',
             'authors':                  'Martin Zuther',
-            'contributors':             '',
-            'copyright_years':          '2011',
+            'contributors':             'Raphaël Doursenaud',
+            'copyright_years':          '2011-2021',
             'license_selected':         _('GPL version 3 (or later)'),
             'license_name':             'GNU General Public License v3.0',
             'license_short': \
@@ -1502,7 +1503,7 @@ first, please read
         """
         output = '\nAbout the application\n=====================\n'
 
-        keys = self._about.keys()
+        keys = list(self._about.keys())
         keys.sort()
 
         for setting in keys:
@@ -1651,12 +1652,12 @@ if __name__ == "__main__":
     about = ApplicationAbout()
     output = about.get_full_description() + '\n\n\n' + str(about)
 
-    print
+    print()
     for line in output.split('\n'):
-        print '  ' + line
+        print('  ' + line)
 
     # wait for key press
-    print
-    print
-    print '  Press any key ...',
-    raw_input()
+    print()
+    print()
+    print('  Press any key ...',)
+    input()

@@ -5,6 +5,7 @@ PythonMcu
 =========
 Mackie Host Controller written in Python
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
+Copyright (c) 2021 Raphaël Doursenaud <rdoursenaud@free.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -113,6 +114,8 @@ class Novation_ZeRO_SL_MkII(MidiControllerTemplate):
         self._mode_edit = self._MODE_EDIT_OFF
         self._mode_other = self._MODE_OTHER_OFF
         self._mode_automap = False
+
+        self._is_connected = False
 
 
     @staticmethod

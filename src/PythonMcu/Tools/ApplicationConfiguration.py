@@ -5,6 +5,7 @@ PythonMcu
 =========
 Mackie Host Controller written in Python
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
+Copyright (c) 2021 Raphaël Doursenaud <rdoursenaud@free.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,11 +24,10 @@ Thank you for using free software!
 
 """
 
-import ConfigParser
+import configparser
 import os
-import types
 
-import ApplicationAbout
+from PythonMcu.Tools import ApplicationAbout
 
 
 class SortedDict(dict):
@@ -44,7 +44,7 @@ class SortedDict(dict):
         List containing a sorted copy of the dictionary’s list of keys
 
         """
-        keys = dict.keys(self)
+        keys = list(dict.keys(self))
         keys.sort()
         return keys
 
@@ -59,7 +59,7 @@ class SortedDict(dict):
         pairs
 
         """
-        items = dict.items(self)
+        items = list(dict.items(self))
         items.sort()
         return items
 
@@ -92,7 +92,7 @@ class ApplicationConfiguration:
         self._configuration_changed = False
 
         # initialise and load user configuration
-        self._configuration = ConfigParser.RawConfigParser( \
+        self._configuration = configparser.RawConfigParser( \
             dict_type = SortedDict)
         self.load_configuration()
 
@@ -473,11 +473,11 @@ if __name__ == "__main__":
     output = configuration.get_full_description() + '\n\n\n' + \
         str(configuration) + '\n'
 
-    print
+    print()
     for line in output.split('\n'):
-        print '  ' + line
+        print('  ' + line)
 
     # wait for key press
-    print
-    print '  Press any key ...',
-    raw_input()
+    print()
+    print('  Press any key ...',)
+    input()

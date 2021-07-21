@@ -6,6 +6,7 @@ PythonMcu
 =========
 Mackie Host Controller written in Python
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
+Copyright (c) 2021 Raphaël Doursenaud <rdoursenaud@free.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,9 +36,9 @@ import platform
 import sys
 
 import pygame.version
-import PySide
-from PySide.QtCore import *
-from PySide.QtGui import *
+import PySide2
+from PySide2.QtCore import *
+from PySide2.QtGui import *
 
 
 configuration = ApplicationConfiguration()
@@ -52,7 +53,7 @@ class PythonMcu(QFrame):
 
         char_format = QTextCharFormat()
         char_format.setFontFamily(font.defaultFamily())
-        text_width = QFontMetrics(char_format.font()).width('*') * 80
+        text_width = QFontMetrics(char_format.font()).horizontalAdvance('*') * 80
 
         # must be defined before starting the logger!
         self._edit_logger = QPlainTextEdit()
@@ -74,7 +75,7 @@ class PythonMcu(QFrame):
         self.callback_log('===============')
         self.callback_log('Python:  %s (%s)' % ( \
                 platform.python_version(), platform.python_implementation()))
-        self.callback_log('PySide:  %s' % PySide.__version__)
+        self.callback_log('PySide:  %s' % PySide2.__version__)
         self.callback_log('pygame:  %s' % pygame.version.ver)
         self.callback_log('')
         self.callback_log('')
@@ -304,7 +305,7 @@ class PythonMcu(QFrame):
         if repaint:
             self._edit_logger.repaint()
 
-        print message
+        print(message)
         self._edit_logger.appendPlainText(message)
 
 

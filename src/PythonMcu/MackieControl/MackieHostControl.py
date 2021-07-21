@@ -5,6 +5,7 @@ PythonMcu
 =========
 Mackie Host Controller written in Python
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
+Copyright (c) 2021 Raphaël Doursenaud <rdoursenaud@free.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,7 +27,6 @@ Thank you for using free software!
 import os
 import sys
 import time
-import types
 
 if __name__ == "__main__":
     # allow "PythonMcu" package imports when executing this module
@@ -486,7 +486,7 @@ class MackieHostControl:
 
 
     def send_midi_sysex(self, data):
-        assert(type(data) == types.ListType)
+        assert(type(data) is list)
 
         header = [0x00, 0x00, 0x66, self._mcu_model_id]
 
