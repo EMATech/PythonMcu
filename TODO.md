@@ -1,6 +1,7 @@
 - [x] [mzuther] implement basic functionality
 - [x] [rdoursenaud] port to python 3 and pyside 2
 - [x] [rdoursenaud] cleanup code and make it PEP008 compliant
+- [ ] [rdoursenaud] write pytest unit tests only looking at the protocol docs
 - [ ] [rdoursenaud] properly handle invalid config file
 - [ ] [rdoursenaud] disallow start if MIDI ports are not set in the GUI
 - [ ] [rdoursenaud] don't freeze GUI while "Waiting for MIDI input from host..."

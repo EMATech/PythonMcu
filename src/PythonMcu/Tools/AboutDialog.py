@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # allow "PythonMcu" package imports when executing this module
     sys.path.append('../../')
 
-from PythonMcu.Tools.ApplicationConfiguration import *
+from PythonMcu.Tools.ApplicationConfiguration import ApplicationConfiguration
 
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QFont, QTextCharFormat, QFontMetrics
@@ -40,7 +40,7 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QTextBrowser, QHBoxLayout, Q
 # noinspection PyArgumentList
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
-        super(AboutDialog, self).__init__(parent)
+        super().__init__(parent)
 
         self._configuration = ApplicationConfiguration()
         self.setWindowTitle(
@@ -64,9 +64,7 @@ class AboutDialog(QDialog):
         self._edit_license.setFixedWidth(text_width)
         self._edit_license.setFixedHeight(text_height)
         self._edit_license.setHtml(
-            self._configuration.get_full_description('html') +
-            '<hr>' +
-            self._configuration.get_license('html')
+            self._configuration.get_full_description('html') + '<hr>' + self._configuration.get_license('html')
         )
 
         self._layout.addWidget(self._edit_license)

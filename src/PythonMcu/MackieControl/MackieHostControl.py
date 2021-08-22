@@ -208,19 +208,19 @@ class MackieHostControl:
             self.send_midi_sysex(sysex_message)
 
             return
-        else:
-            # let's make sure the MIDI input buffer is empty
-            self._midi.process_input_buffer(use_callback=False)
 
-            if self._mcu_connection == self.WAIT_FOR_MIDI_DATA:
-                self._log('Waiting for MIDI input from host...', True)
+        # let's make sure the MIDI input buffer is empty
+        self._midi.process_input_buffer(use_callback=False)
 
-                # wait for some MIDI input from the host (all data are
-                # left in the MIDI input buffer!)
-                while self._midi.buffer_is_empty():
-                    time.sleep(0.1)
+        if self._mcu_connection == self.WAIT_FOR_MIDI_DATA:
+            self._log('Waiting for MIDI input from host...', True)
 
-            self.go_online()
+            # wait for some MIDI input from the host (all data are
+            # left in the MIDI input buffer!)
+            while self._midi.buffer_is_empty():
+                time.sleep(0.1)
+
+        self.go_online()
 
     def disconnect(self):
         self._log('Disconnecting...', True)
@@ -271,27 +271,25 @@ class MackieHostControl:
     def get_mcu_model_from_id(model_id):
         if model_id == 0x10:
             return 'Logic Control'
-        elif model_id == 0x11:
+        if model_id == 0x11:
             return 'Logic Control XT'
-        elif model_id == 0x14:
+        if model_id == 0x14:
             return 'Mackie Control'
-        elif model_id == 0x15:
+        if model_id == 0x15:
             return 'Mackie Control XT'
-        else:
-            return None
+        return None
 
     @staticmethod
     def get_mcu_id_from_model(model):
         if model == 'Logic Control':
             return 0x10
-        elif model == 'Logic Control XT':
+        if model == 'Logic Control XT':
             return 0x11
-        elif model == 'Mackie Control':
+        if model == 'Mackie Control':
             return 0x14
-        elif model == 'Mackie Control XT':
+        if model == 'Mackie Control XT':
             return 0x15
-        else:
-            return None
+        return None
 
     @staticmethod
     def get_preferred_mcu_model():
@@ -305,15 +303,15 @@ class MackieHostControl:
     def get_preferred_midi_input():
         if os.name == 'nt':
             return 'In From MIDI Yoke:  2'
-        else:
-            return 'mcu'
+
+        return 'mcu'
 
     @staticmethod
     def get_preferred_midi_output():
         if os.name == 'nt':
             return 'Out To MIDI Yoke:  1'
-        else:
-            return 'mcu'
+
+        return 'mcu'
 
     # --- MIDI processing ---
     def process_midi_input(self):
@@ -331,7 +329,7 @@ class MackieHostControl:
                 self.send_midi_sysex(sysex_message)
 
                 return
-            elif message[5] == 0x02:
+            if message[5] == 0x02:
                 self._log('Received "Host Connection Reply".')
                 if (message[6:13] == self._serial_number_bytes) and (message[13:17] == self._response_bytes):
                     self._log('Sending "Host Connection Confirmation"...', True)
@@ -356,7 +354,7 @@ class MackieHostControl:
                     self.send_midi_sysex(sysex_message)
 
                 return
-            elif message[5:] == [0x13, 0x00, 0x0F7]:
+            if message[5:] == [0x13, 0x00, 0x0F7]:
                 self._log('Received "Version Request".')
                 self._log('Sending "Version Reply"...', True)
 
@@ -365,22 +363,22 @@ class MackieHostControl:
                 self.send_midi_sysex(sysex_message)
 
                 return
-            elif message[5:] == [0x0F, 0x7F, 0x0F7]:
+            if message[5:] == [0x0F, 0x7F, 0x0F7]:
                 self._log('Received "Go Offline".', True)
                 self.go_offline()
 
                 return
-            elif message[5:] == [0x61, 0x0F7]:
+            if message[5:] == [0x61, 0x0F7]:
                 self._log('Received "Faders To Minimum".', True)
                 self.faders_to_minimum()
 
                 return
-            elif message[5:] == [0x62, 0x0F7]:
+            if message[5:] == [0x62, 0x0F7]:
                 self._log('Received "All LEDs Off".', True)
                 self.all_leds_off()
 
                 return
-            elif message[5:] == [0x63, 0x0F7]:
+            if message[5:] == [0x63, 0x0F7]:
                 self._log('Received "Reset".', True)
                 self.reset()
 
@@ -445,7 +443,7 @@ class MackieHostControl:
             self._log(output.strip())
 
     def send_midi_sysex(self, data):
-        assert(type(data) is list)
+        assert isinstance(data, list)
 
         header = [0x00, 0x00, 0x66, self._mcu_model_id]
 

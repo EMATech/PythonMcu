@@ -136,24 +136,24 @@ class ApplicationConfiguration:
         if self.has_changed() and not force:
             # signal failure
             return False
+
         # read application settings from configuration file
+        # retrieve location of configuration file
+        file_name = self.get_application_information('config_file_path')
+
+        # if configuration file exists, load it
+        if os.path.isfile(file_name):
+            self._configuration.read(file_name)
+
+            # configuration has just been loaded, so mark as clean
+            self._configuration_changed = False
         else:
-            # retrieve location of configuration file
-            file_name = self.get_application_information('config_file_path')
+            # configuration file does not exist, so mark
+            # configuration as dirty
+            self._configuration_changed = True
 
-            # if configuration file exists, load it
-            if os.path.isfile(file_name):
-                self._configuration.read(file_name)
-
-                # configuration has just been loaded, so mark as clean
-                self._configuration_changed = False
-            else:
-                # configuration file does not exist, so mark
-                # configuration as dirty
-                self._configuration_changed = True
-
-            # signal success
-            return True
+        # signal success
+        return True
 
     def save_configuration(self):
         """Save user configuration to file.
@@ -174,11 +174,8 @@ class ApplicationConfiguration:
         # if configuration is dirty ...
         if self.has_changed():
             # ... open, truncate and save configuration file
-            f = open(self.get_application_information('config_file_path'), 'w+')
-            self._configuration.write(f)
-
-            # finally, close configuration file
-            f.close()
+            with open(self.get_application_information('config_file_path'), 'w+') as file:
+                self._configuration.write(file)
 
             # configuration has just been saved, so mark as clean
             self._configuration_changed = False
@@ -270,18 +267,18 @@ class ApplicationConfiguration:
         if not self._configuration.has_option(section, option):
             self.set_option(section, option, default)
             return default
-        # otherwise retrieve current value
-        else:
-            current_value = self._configuration.get(section, option)
 
-            # if current value is an empty string, store and return
-            # default value
-            if not current_value:
-                self.set_option(section, option, default)
-                return default
-            # otherwise return current value
-            else:
-                return current_value
+        # otherwise retrieve current value
+        current_value = self._configuration.get(section, option)
+
+        # if current value is an empty string, store and return
+        # default value
+        if not current_value:
+            self.set_option(section, option, default)
+            return default
+
+        # otherwise return current value
+        return current_value
 
     def set_option(self, section, option, current_value):
         """Set (and possibly create) a configuration option.

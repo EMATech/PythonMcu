@@ -136,9 +136,9 @@ class MidiConnection:
 
         if device_id < 0:
             return None
-        else:
-            device = pygame.midi.get_device_info(device_id)
-            return device[1]
+
+        device = pygame.midi.get_device_info(device_id)
+        return device[1]
 
     @staticmethod
     def get_default_midi_output():
@@ -146,9 +146,9 @@ class MidiConnection:
 
         if device_id < 0:
             return None
-        else:
-            device = pygame.midi.get_device_info(device_id)
-            return device[1]
+
+        device = pygame.midi.get_device_info(device_id)
+        return device[1]
 
     # --- MIDI processing ---
     def buffer_is_empty(self):
@@ -256,8 +256,8 @@ class MidiConnection:
             self._log('MIDI output not connected.')
             return
 
-        assert(type(header) is list)
-        assert(type(data) is list)
+        assert isinstance(header, list)
+        assert isinstance(data, list)
 
         sysex = [0xF0]
         sysex.extend(header)
@@ -281,11 +281,12 @@ if __name__ == "__main__":
             print('%02X' % byte, )
         print()
 
-    midi_input = 'In From MIDI Yoke:  2'
-    midi_output = 'Out To MIDI Yoke:  1'
+
+    MIDI_INPUT = 'In From MIDI Yoke:  2'
+    MIDI_OUTPUT = 'Out To MIDI Yoke:  1'
 
     midi_connection = MidiConnection(log_callback, midi_in_callback)
-    midi_connection.connect(midi_input, midi_output)
+    midi_connection.connect(MIDI_INPUT, MIDI_OUTPUT)
 
     midi_connection.send_control_change(0, 0x07, 0x80)
     midi_connection.send_sysex([0x01, 0x02], [0x11, 0x12, 0x13])

@@ -1525,8 +1525,8 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
         """
         if information in self._about:
             return self._about[information]
-        else:
-            return None
+
+        return None
 
     def get_copyrights(self):
         """Return application copyrights as string.
@@ -1561,8 +1561,8 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
         """
         if selection in ('selected', 'name', 'short', 'plain', 'html'):
             return self.get('license_%s' % selection)
-        else:
-            return None
+
+        return None
 
     def get_version(self, long):
         """Return application version as string.
@@ -1581,8 +1581,8 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
                 'application': self.get('application'),
                 'version': self.get('version')
             }
-        else:
-            return self.get('version')
+
+        return self.get('version')
 
     def get_description(self, long):
         """Return application description as string.
@@ -1601,8 +1601,8 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
             description += '\n' + self.get('description')
 
             return description
-        else:
-            return self.get('description')
+
+        return self.get('description')
 
     def get_full_description(self, text_format='plain'):
         """Return full application description as string.
@@ -1629,12 +1629,12 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
                 output += '<h3>Contributors</h3><p>%s</p>' % contributors
 
             return output
-        else:
-            output = self.get_description(True) + '\n'
-            output += self.get_copyrights() + '\n\n'
-            output += self.get_license('short')
 
-            return output
+        output = self.get_description(True) + '\n'
+        output += self.get_copyrights() + '\n\n'
+        output += self.get_license('short')
+
+        return output
 
 
 if __name__ == "__main__":

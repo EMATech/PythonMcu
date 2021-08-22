@@ -37,7 +37,7 @@ from PythonMcu.Tools.ApplicationConfiguration import ApplicationConfiguration
 from PythonMcu.Hardware import *
 
 
-class McuInterconnector(object):
+class McuInterconnector:
     _LED_STATUS = {
         0x00: 'off',
         0x01: 'flashing',
@@ -234,8 +234,7 @@ class McuInterconnector(object):
             self._led__mcu_to_hardware[mcu_command]['midi_led'] = None
 
     def withdraw_all_controls(self):
-        for midi_switch in self._led__hardware_to_mcu.keys():
-            mcu_command = self._led__hardware_to_mcu[midi_switch]
+        for midi_switch, mcu_command in self._led__hardware_to_mcu.items():
             midi_led = self._led__mcu_to_hardware[mcu_command]['midi_led']
 
             if midi_led:
@@ -257,8 +256,8 @@ class McuInterconnector(object):
             mcu_command = self._led__hardware_to_mcu[internal_id]
             self.keypress_unregistered(mcu_command, status)
             return True
-        else:
-            return False
+
+        return False
 
     @staticmethod
     def keypress_unregistered(mcu_command, status):

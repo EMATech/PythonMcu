@@ -170,8 +170,8 @@ class NovationZeROSLMkII(MidiControllerTemplate):
         self.send_midi_sysex([0x01, 0x01])
 
         # clear all LEDs and switch off "transport" mode
-        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
-        self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
+        self.send_midi_control_change(cc_number=self._MIDI_CC_CLEAR_ALL_LEDS, cc_value=0x00)
+        self.send_midi_control_change(cc_number=self._MIDI_CC_BUTTON_MODE_TRANSPORT, cc_value=0x00)
 
     def _leave_ableton_mode(self):
         self._log('Leaving "Ableton" mode...', True)
@@ -180,8 +180,8 @@ class NovationZeROSLMkII(MidiControllerTemplate):
         self.send_midi_sysex([0x01, 0x00])
 
         # clear all LEDs and switch off "transport" mode
-        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
-        self.send_midi_control_change(self._MIDI_CC_BUTTON_MODE_TRANSPORT, 0x00)
+        self.send_midi_control_change(cc_number=self._MIDI_CC_CLEAR_ALL_LEDS, cc_value=0x00)
+        self.send_midi_control_change(cc_number=self._MIDI_CC_BUTTON_MODE_TRANSPORT, cc_value=0x00)
 
     # --- MIDI processing ---
     def receive_midi(self, status, message):
@@ -274,9 +274,12 @@ class NovationZeROSLMkII(MidiControllerTemplate):
                 message_string.append('%02X' % byte)
             self._log(' '.join(message_string))
 
-    def send_midi_control_change(self, cc_number, cc_value, channel=None):
+    def send_midi_control_change(self, channel=None, cc_number=None, cc_value=None):
         if not self._is_connected:
             return
+
+        if channel:
+            raise ValueError("The channel is fixed for this device!")
 
         MidiControllerTemplate.send_midi_control_change(self, self._MIDI_DEVICE_CHANNEL, cc_number, cc_value)
 
@@ -284,15 +287,15 @@ class NovationZeROSLMkII(MidiControllerTemplate):
     def get_preferred_midi_input():
         if os.name == 'nt':
             return 'ZeRO MkII: Port 2'
-        else:
-            return 'ZeRO MkII MIDI 2'
+
+        return 'ZeRO MkII MIDI 2'
 
     @staticmethod
     def get_preferred_midi_output():
         if os.name == 'nt':
             return 'ZeRO MkII: Port 2'
-        else:
-            return 'ZeRO MkII MIDI 2'
+
+        return 'ZeRO MkII MIDI 2'
 
     # --- registration of MIDI controls ---
     def register_control(self, mcu_command, midi_switch, midi_led=None):
@@ -319,8 +322,8 @@ class NovationZeROSLMkII(MidiControllerTemplate):
             lcd_string = lcd_string.ljust(72)[:72]
 
         lcd_characters = []
-        for n in range(len(lcd_string)):
-            lcd_characters.append(ord(lcd_string[n]))
+        for index, string in enumerate(lcd_string):
+            lcd_characters.append(ord(string))
 
         self._update_lcd_raw(line, lcd_characters)
 
@@ -332,9 +335,9 @@ class NovationZeROSLMkII(MidiControllerTemplate):
                 self._lcd_strings[line] = new_string
                 hex_codes = []
 
-                for n in range(len(new_string)):
-                    hex_codes.append(ord(new_string[n]))
-                    if (n % 7) == 6:
+                for index, string in enumerate(new_string):
+                    hex_codes.append(ord(string))
+                    if index % 7 == 6:
                         hex_codes.append(0x20)
                         hex_codes.append(0x20)
 
@@ -350,7 +353,7 @@ class NovationZeROSLMkII(MidiControllerTemplate):
         if not self._is_connected:
             return
 
-        assert (len(hex_codes) == 72)
+        assert len(hex_codes) == 72
 
         line %= 2
         if line == 0:
@@ -395,25 +398,25 @@ class NovationZeROSLMkII(MidiControllerTemplate):
 
         MidiControllerTemplate.send_midi_control_change(self, self._MIDI_DEVICE_CHANNEL, led_id, led_status)
 
-    def set_vpot_led_ring(self, vpot_id, center_led, mode, position):
-        vpot_mode = None
-        if mode == self.VPOT_MODE_WRAP:
-            vpot_mode = 0x00
-        elif mode == self.VPOT_MODE_BOOST_CUT:
-            vpot_mode = 0x20
-        elif mode == self.VPOT_MODE_SPREAD:
-            vpot_mode = 0x30
-        elif mode == self.VPOT_MODE_SINGLE_DOT:
-            vpot_mode = 0x40
+    def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, vpot_position):
+        mode = None
+        if vpot_mode == self.VPOT_MODE_WRAP:
+            mode = 0x00
+        elif vpot_mode == self.VPOT_MODE_BOOST_CUT:
+            mode = 0x20
+        elif vpot_mode == self.VPOT_MODE_SPREAD:
+            mode = 0x30
+        elif vpot_mode == self.VPOT_MODE_SINGLE_DOT:
+            mode = 0x40
 
-        self._vpot_modes[vpot_id] = vpot_mode
-        self._vpot_positions[vpot_id] = position
+        self._vpot_modes[vpot_id] = mode
+        self._vpot_positions[vpot_id] = vpot_position
 
-        self._set_led(self._MIDI_CC_ENCODER_MODE + vpot_id, vpot_mode)
-        self._set_led(self._MIDI_CC_ENCODER_LIGHTS + vpot_id, position)
+        self._set_led(self._MIDI_CC_ENCODER_MODE + vpot_id, mode)
+        self._set_led(self._MIDI_CC_ENCODER_LIGHTS + vpot_id, vpot_position)
 
     def all_leds_off(self):
-        self.send_midi_control_change(self._MIDI_CC_CLEAR_ALL_LEDS, 0x00)
+        self.send_midi_control_change(cc_number=self._MIDI_CC_CLEAR_ALL_LEDS, cc_value=0x00)
 
     # --- pedal handling ---
     def on_control_pedal(self, status):

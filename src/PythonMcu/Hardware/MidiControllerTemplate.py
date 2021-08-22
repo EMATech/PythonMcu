@@ -33,8 +33,7 @@ if __name__ == "__main__":
 from PythonMcu.Midi.MidiConnection import MidiConnection
 
 
-class MidiControllerTemplate(object):
-
+class MidiControllerTemplate:
     MIDI_MANUFACTURER_ID = None
     MIDI_DEVICE_ID = None
 
@@ -47,7 +46,7 @@ class MidiControllerTemplate(object):
         0x00: 'off',
         0x01: 'flashing',
         0x7F: 'on'
-        }
+    }
 
     def __init__(self, midi_input_name, midi_output_name, callback_log):
         self.callback_log = callback_log
@@ -79,11 +78,11 @@ class MidiControllerTemplate(object):
         self.meter_bridge_available = True
 
         self.display_7seg_characters = []
-        for counter in range(4):
+        for _ in range(4):
             self.display_7seg_characters.append(' ')
 
         self.display_timecode_characters = []
-        for counter in range(20):
+        for _ in range(20):
             self.display_timecode_characters.append(' ')
 
     @staticmethod
@@ -145,7 +144,7 @@ class MidiControllerTemplate(object):
         self.midi.send_control_change(channel, cc_number, cc_value)
 
     def send_midi_sysex(self, data):
-        assert(type(data) is list)
+        assert isinstance(data, list)
 
         header = []
         header.extend(self.MIDI_MANUFACTURER_ID)
@@ -215,8 +214,8 @@ class MidiControllerTemplate(object):
 
         if character_code < 0x20:
             return chr(character_code + 0x40), dot
-        else:
-            return chr(character_code), dot
+
+        return chr(character_code), dot
 
     def set_display_timecode(self, position, character_code):
         character = self._decode_7seg_character(character_code)
@@ -262,11 +261,11 @@ class MidiControllerTemplate(object):
 
         if self._show_overlay[line]:
             return self._lcd_overlay_characters[line]
-        else:
-            return self._lcd_characters[line]
+
+        return self._lcd_characters[line]
 
     def show_menu(self, line, menu_strings):
-        assert(len(menu_strings) == 8)
+        assert len(menu_strings) == 8
 
         menu_string_temp = ''
         for menu_string in menu_strings:
@@ -280,7 +279,7 @@ class MidiControllerTemplate(object):
 
     def show_overlay(self, line, overlay_characters):
         line %= 2
-        assert(len(overlay_characters) == 56)
+        assert len(overlay_characters) == 56
 
         self._show_overlay[line] = True
         self._lcd_overlay_characters[line] = overlay_characters

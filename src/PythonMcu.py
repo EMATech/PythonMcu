@@ -50,15 +50,17 @@ configuration = ApplicationConfiguration()
 class PythonMcu(QFrame):
     # noinspection PyUnresolvedReferences
     def __init__(self, parent=None):
-        super(PythonMcu, self).__init__(parent)
+        super().__init__(parent)
 
+        self._controller_midi_input = None
+        self._controller_midi_output = None
+        self._hardware_controller = None
+        self._hardware_controller_class = None
+        self._mcu_connection = None
         self._mcu_emulated_model = None
         self._mcu_midi_input = None
         self._mcu_midi_output = None
-        self._hardware_controller = None
-        self._controller_midi_input = None
-        self._controller_midi_output = None
-        self._mcu_connection = None
+        self._mcu_model_id = None
 
         font = QFont()
         font.setStyleHint(QFont.TypeWriter, QFont.PreferAntialias)
