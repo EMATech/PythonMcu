@@ -270,17 +270,14 @@ class MidiConnection:
 if __name__ == "__main__":
     import time
 
-
     def log_callback(message):
         print(message)
-
 
     def midi_in_callback(status_byte, message):
         print('status %02X: ' % status_byte, )
         for byte in message:
             print('%02X' % byte, )
         print()
-
 
     MIDI_INPUT = 'In From MIDI Yoke:  2'
     MIDI_OUTPUT = 'Out To MIDI Yoke:  1'

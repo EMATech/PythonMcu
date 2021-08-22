@@ -54,8 +54,8 @@ class ApplicationAbout:
         """
         self._about = {
             'about_class_incarnation': self._INCARNATION,
-            'application': 'PythonMcu',
-            'cmd_line': 'PythonMcu.py',
+            'application': 'Python MCU',
+            'cmd_line': 'python_mcu.py',
             'description': _('Mackie Host Controller written in Python'),
             'version': '2.0',
             'authors': 'Martin Zuther, Raphaël Doursenaud',

@@ -322,7 +322,7 @@ class NovationZeROSLMkII(MidiControllerTemplate):
             lcd_string = lcd_string.ljust(72)[:72]
 
         lcd_characters = []
-        for index, string in enumerate(lcd_string):
+        for _, string in enumerate(lcd_string):
             lcd_characters.append(ord(string))
 
         self._update_lcd_raw(line, lcd_characters)

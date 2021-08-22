@@ -47,7 +47,7 @@ configuration = ApplicationConfiguration()
 
 
 # noinspection PyArgumentList
-class PythonMcu(QFrame):
+class PythonMcuApp(QFrame):
     # noinspection PyUnresolvedReferences
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -109,6 +109,7 @@ class PythonMcu(QFrame):
             'Mackie Control', 'Mackie Control XT'
         ]
 
+        # TODO: derive from classes imported via PythonMcu.Hardware *
         hardware_controllers = [
             'Novation ZeRO SL MkII',
             'Novation ZeRO SL MkII (MIDI)'
@@ -465,7 +466,7 @@ if __name__ == '__main__':
     app = QApplication()
 
     # Create and show the form
-    python_mcu = PythonMcu()
+    python_mcu = PythonMcuApp()
     python_mcu.show()
 
     # Run the main Qt loop

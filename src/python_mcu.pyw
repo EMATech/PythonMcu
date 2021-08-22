@@ -26,4 +26,4 @@ Thank you for using free software!
 
 # to get rid of the Windows command line window, we'll simply use the
 # '.pyw' extension for this script and let it execute "PythonMcu.py"
-exec(open('PythonMcu.py').read())
+exec(open('python_mcu.py').read())

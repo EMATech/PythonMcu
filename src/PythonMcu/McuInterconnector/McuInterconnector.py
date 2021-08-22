@@ -234,7 +234,7 @@ class McuInterconnector:
             self._led__mcu_to_hardware[mcu_command]['midi_led'] = None
 
     def withdraw_all_controls(self):
-        for midi_switch, mcu_command in self._led__hardware_to_mcu.items():
+        for _, mcu_command in self._led__hardware_to_mcu.items():
             midi_led = self._led__mcu_to_hardware[mcu_command]['midi_led']
 
             if midi_led:

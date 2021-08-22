@@ -1,6 +1,7 @@
 - [x] [mzuther] implement basic functionality
 - [x] [rdoursenaud] port to python 3 and pyside 2
 - [x] [rdoursenaud] cleanup code and make it PEP008 compliant
+- [x] [rdoursenaud] port latex documentation to Sphinx
 - [ ] [rdoursenaud] write pytest unit tests only looking at the protocol docs
 - [ ] [rdoursenaud] properly handle invalid config file
 - [ ] [rdoursenaud] disallow start if MIDI ports are not set in the GUI
@@ -9,6 +10,9 @@
 - [ ] [rdoursenaud] create virtualports using rtmidi for supported platforms (And remove MIDI Yoke references)
 - [ ] [rdoursenaud] create windows virtualports using pytemidi (Requires Loop Midi to be installed)
 - [ ] [rdoursenaud] explore if using mido could be beneficial
+- [ ] [rdoursenaud] add a nice icon
+- [ ] [rdoursenaud] reduce and restore from systray using QSystemTrayIcon or pystray
 - [ ] [rdoursenaud] create Microsoft Windows binary using pyinstaller?
-- [ ] [rdoursenaud] update documentation (and move to rtd?)
+- [x] [rdoursenaud] update documentation
+- [ ] [rdoursenaud] publish documentation to readthedocs.org
 - [ ] [rdoursenaud] release version 2.0
