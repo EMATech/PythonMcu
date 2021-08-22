@@ -1,6 +1,8 @@
 *~
 .*~
 *.pyc
-auto/
 Desktop.ini
 Thumbs.db
+auto/
+/release/
+/venv/
