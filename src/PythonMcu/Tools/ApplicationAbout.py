@@ -25,7 +25,6 @@ Thank you for using free software!
 """
 
 import gettext
-import locale
 import os
 
 
@@ -34,6 +33,7 @@ module_path = os.path.dirname(os.path.realpath(__file__))
 gettext.bindtextdomain('PythonMcu', os.path.join(module_path, 'po/'))
 gettext.textdomain('PythonMcu')
 _ = gettext.gettext
+
 
 class ApplicationAbout:
     """Store application information in one place and make it available.
@@ -52,18 +52,17 @@ class ApplicationAbout:
         None
 
         """
-        self._about = { \
-            'about_class_incarnation':  self._INCARNATION,
-            'application':              'PythonMcu',
-            'cmd_line':                 'PythonMcu.py',
-            'description':              _('Mackie Host Controller written in Python'),
-            'version':                  '2.0',
-            'authors':                  'Martin Zuther, Raphaël Doursenaud',
-            'copyright_years':          '2011-2021',
-            'license_selected':         _('GPL version 3 (or later)'),
-            'license_name':             'GNU General Public License v3.0',
-            'license_short': \
-"""This program is free software: you can redistribute it and/or modify
+        self._about = {
+            'about_class_incarnation': self._INCARNATION,
+            'application': 'PythonMcu',
+            'cmd_line': 'PythonMcu.py',
+            'description': _('Mackie Host Controller written in Python'),
+            'version': '2.0',
+            'authors': 'Martin Zuther, Raphaël Doursenaud',
+            'copyright_years': '2011-2021',
+            'license_selected': _('GPL version 3 (or later)'),
+            'license_name': 'GNU General Public License v3.0',
+            'license_short': """This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -77,8 +76,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Thank you for using free software!""",
-            'license_plain': \
-"""                    GNU GENERAL PUBLIC LICENSE
+            'license_plain': """                    GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
@@ -752,8 +750,7 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <http://www.gnu.org/philosophy/why-not-lgpl.html>.""",
-            'license_html': \
-"""<h3 style="text-align: center;">GNU GENERAL PUBLIC LICENSE</h3>
+            'license_html': """<h3 style="text-align: center;">GNU GENERAL PUBLIC LICENSE</h3>
 
 <p style="text-align: center;">Version 3, 29 June 2007</p>
 
@@ -1478,17 +1475,15 @@ library, you may consider it more useful to permit linking proprietary
 applications with the library.  If this is what you want to do, use
 the GNU Lesser General Public License instead of this License.  But
 first, please read
-&lt;<a href="http://www.gnu.org/philosophy/why-not-lgpl.html">http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
+&lt;<a href="http://www.gnu.org/philosophy/why-not-lgpl.html">
+http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
         }
 
         # set path to configuration file
         if os.name == 'nt':
-            self._about['config_file_path'] = \
-                os.path.expanduser(os.path.join('~', '_python_mcu'))
+            self._about['config_file_path'] = os.path.expanduser(os.path.join('~', '_python_mcu'))
         else:
-            self._about['config_file_path'] = \
-                os.path.expanduser(os.path.join('~', '.python_mcu'))
-
+            self._about['config_file_path'] = os.path.expanduser(os.path.join('~', '.python_mcu'))
 
     def __repr__(self):
         """Return all application information as string.
@@ -1517,7 +1512,6 @@ first, please read
         # dump the whole thing
         return output
 
-
     def get(self, information):
         """Return requested application information as string.
 
@@ -1534,7 +1528,6 @@ first, please read
         else:
             return None
 
-
     def get_copyrights(self):
         """Return application copyrights as string.
 
@@ -1545,10 +1538,10 @@ first, please read
         Formatted string containing application copyrights
 
         """
-        return '(c) %(copyright_years)s %(authors)s' % \
-            {'copyright_years': self.get('copyright_years'),\
-                 'authors': self.get('authors')}
-
+        return '(c) %(copyright_years)s %(authors)s' % {
+            'copyright_years': self.get('copyright_years'),
+            'authors': self.get('authors')
+        }
 
     def get_license(self, selection):
         """Return application license or its terms as string.
@@ -1571,7 +1564,6 @@ first, please read
         else:
             return None
 
-
     def get_version(self, long):
         """Return application version as string.
 
@@ -1585,12 +1577,12 @@ first, please read
         """
 
         if long:
-            return '%(application)s %(version)s' % \
-                {'application': self.get('application'), \
-                     'version': self.get('version')}
+            return '%(application)s %(version)s' % {
+                'application': self.get('application'),
+                'version': self.get('version')
+            }
         else:
             return self.get('version')
-
 
     def get_description(self, long):
         """Return application description as string.
@@ -1612,11 +1604,10 @@ first, please read
         else:
             return self.get('description')
 
-
-    def get_full_description(self, format='plain'):
+    def get_full_description(self, text_format='plain'):
         """Return full application description as string.
 
-        format -- String indicating format:
+        text_format -- String indicating format:
                   'plain':  plain text
                   'html':   HTML format
 
@@ -1624,19 +1615,18 @@ first, please read
         Formatted string containing full application description
 
         """
-        if format == 'html':
-            output = '<h3>%s</h3><p>%s<br />%s</p>' % \
-                (self.get_version(True), \
-                     self.get_copyrights(), \
-                     self.get_description(False))
+        if text_format == 'html':
+            output = '<h3>%s</h3><p>%s<br />%s</p>' % (
+                self.get_version(True),
+                self.get_copyrights(),
+                self.get_description(False)
+            )
 
-            output += '<h3>License</h3><pre>%s</pre>' % \
-                self.get_license('short')
+            output += '<h3>License</h3><pre>%s</pre>' % self.get_license('short')
 
             contributors = self.get('contributors')
             if contributors:
-                output += '<h3>Contributors</h3><p>%s</p>' % \
-                    contributors
+                output += '<h3>Contributors</h3><p>%s</p>' % contributors
 
             return output
         else:
@@ -1649,10 +1639,10 @@ first, please read
 
 if __name__ == "__main__":
     about = ApplicationAbout()
-    output = about.get_full_description() + '\n\n\n' + str(about)
+    contents = about.get_full_description() + '\n\n\n' + str(about)
 
     print()
-    for line in output.split('\n'):
+    for line in contents.split('\n'):
         print('  ' + line)
 
     # wait for key press

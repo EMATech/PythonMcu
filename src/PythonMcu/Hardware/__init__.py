@@ -5,6 +5,7 @@ PythonMcu
 =========
 Mackie Host Controller written in Python
 Copyright (c) 2011 Martin Zuther (http://www.mzuther.de/)
+Copyright (c) 2021 Raphaël Doursenaud <rdoursenaud@free.fr>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,8 +24,7 @@ Thank you for using free software!
 
 """
 
-
-__all__ = [ \
-    'Novation_ZeRO_SL_MkII', \
-    'Novation_ZeRO_SL_MkII_MIDI'
+__all__ = [
+    'NovationZeROSLMkII',
+    'NovationZeROSLMkIIMIDI'
 ]

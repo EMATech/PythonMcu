@@ -84,18 +84,15 @@ class ApplicationConfiguration:
         self._about = ApplicationAbout.ApplicationAbout()
 
         # ascertain compatibility with the class "ApplicationAbout"
-        assert self.get_application_information( \
-            'about_class_incarnation') == 3
+        assert self.get_application_information('about_class_incarnation') == 3
 
         # this variable is used to check whether the user
         # configuration has changed and is in need of saving
         self._configuration_changed = False
 
         # initialise and load user configuration
-        self._configuration = configparser.RawConfigParser( \
-            dict_type = SortedDict)
+        self._configuration = configparser.RawConfigParser(dict_type=SortedDict)
         self.load_configuration()
-
 
     def __repr__(self):
         """Return application information and user configuration file
@@ -122,7 +119,6 @@ class ApplicationConfiguration:
 
         # dump the whole thing
         return output.strip('\n')
-
 
     def load_configuration(self, force=False):
         """Load user configuration file into memory.
@@ -159,7 +155,6 @@ class ApplicationConfiguration:
             # signal success
             return True
 
-
     def save_configuration(self):
         """Save user configuration to file.
 
@@ -188,7 +183,6 @@ class ApplicationConfiguration:
             # configuration has just been saved, so mark as clean
             self._configuration_changed = False
 
-
     def has_changed(self):
         """Query whether user configuration has changed.
 
@@ -201,7 +195,6 @@ class ApplicationConfiguration:
 
         """
         return self._configuration_changed
-
 
     def add_section(self, section):
         """Add a section.
@@ -219,7 +212,6 @@ class ApplicationConfiguration:
             # configuration as dirty here
             self._configuration.add_section(section)
 
-
     def remove_section(self, section):
         """Remove a section.
 
@@ -236,7 +228,6 @@ class ApplicationConfiguration:
 
             # mark configuration as dirty
             self._configuration_changed = True
-
 
     def get_sections(self):
         """Get all sections.
@@ -260,8 +251,7 @@ class ApplicationConfiguration:
         # finally, return sections
         return sections
 
-
-    def get_option(self, section, option, default = None):
+    def get_option(self, section, option, default=None):
         """Get an configuration option.
 
         Keyword arguments:
@@ -293,7 +283,6 @@ class ApplicationConfiguration:
             else:
                 return current_value
 
-
     def set_option(self, section, option, current_value):
         """Set (and possibly create) a configuration option.
 
@@ -317,7 +306,6 @@ class ApplicationConfiguration:
         # mark configuration as dirty
         self._configuration_changed = True
 
-
     def remove_option(self, section, option):
         """Remove a configuration option.
 
@@ -335,7 +323,6 @@ class ApplicationConfiguration:
 
             # mark configuration as dirty
             self._configuration_changed = True
-
 
     def get_options(self, section):
         """Get all option names of a section
@@ -357,7 +344,6 @@ class ApplicationConfiguration:
         options.sort()
         return options
 
-
     def get_items(self, section):
         """Get all configuration items of a section
 
@@ -378,7 +364,6 @@ class ApplicationConfiguration:
         items.sort()
         return items
 
-
     def get_application_information(self, information):
         """Return requested application information as string.
 
@@ -392,7 +377,6 @@ class ApplicationConfiguration:
         """
         return self._about.get(information)
 
-
     def get_copyrights(self):
         """Return application copyrights as string.
 
@@ -404,7 +388,6 @@ class ApplicationConfiguration:
 
         """
         return self._about.get_copyrights()
-
 
     def get_license(self, selection):
         """Return application license or its terms as string.
@@ -424,7 +407,6 @@ class ApplicationConfiguration:
         """
         return self._about.get_license(selection)
 
-
     def get_version(self, long):
         """Return application version as string.
 
@@ -437,7 +419,6 @@ class ApplicationConfiguration:
 
         """
         return self._about.get_version(long)
-
 
     def get_description(self, long):
         """Return application description as string.
@@ -452,11 +433,10 @@ class ApplicationConfiguration:
         """
         return self._about.get_description(long)
 
-
-    def get_full_description(self, format='plain'):
+    def get_full_description(self, text_format='plain'):
         """Return full application description as string.
 
-        format -- String indicating format:
+        text_format -- String indicating format:
                   'plain':  plain text
                   'html':   HTML format
 
@@ -464,17 +444,16 @@ class ApplicationConfiguration:
         Formatted string containing full application description
 
         """
-        return self._about.get_full_description(format)
+        return self._about.get_full_description(text_format)
 
 
 if __name__ == "__main__":
     configuration = ApplicationConfiguration()
 
-    output = configuration.get_full_description() + '\n\n\n' + \
-        str(configuration) + '\n'
+    contents = configuration.get_full_description() + '\n\n\n' + str(configuration) + '\n'
 
     print()
-    for line in output.split('\n'):
+    for line in contents.split('\n'):
         print('  ' + line)
 
     # wait for key press

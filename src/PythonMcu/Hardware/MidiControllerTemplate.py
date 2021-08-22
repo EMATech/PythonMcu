@@ -57,7 +57,9 @@ class MidiControllerTemplate(object):
         self._lcd_overlay_characters = [' '] * 2
 
         for line in range(2):
+            # noinspection PyTypeChecker
             self._lcd_characters[line] = [' '] * 56
+            # noinspection PyTypeChecker
             self._lcd_overlay_characters[line] = [' '] * 56
 
         self._show_overlay = [False, False]
@@ -67,7 +69,8 @@ class MidiControllerTemplate(object):
         self._midi_output_name = midi_output_name
         self.midi = MidiConnection(self.callback_log, self.receive_midi)
 
-        self.unset_interconnector()
+        # Initialized by set_interconnector()
+        self.interconnector = None
 
         self.display_lcd_available = True
         self.automated_faders_available = True
@@ -83,72 +86,54 @@ class MidiControllerTemplate(object):
         for counter in range(20):
             self.display_timecode_characters.append(' ')
 
-
     @staticmethod
     def get_usage_hint():
         return ''
 
-
     def _log(self, message, repaint=False):
         self.callback_log('[Controller Template]  ' + message, repaint)
 
-
     # --- initialisation ---
-
     def set_interconnector(self, host):
         self.interconnector = host
-
 
     def unset_interconnector(self):
         self.interconnector = None
 
-
     def connect(self):
         self._log('Opening MIDI ports...', True)
         self.midi.connect(self._midi_input_name, self._midi_output_name)
-
 
     def disconnect(self):
         self._log('Closing MIDI ports...')
         self.midi.disconnect()
         self._log('Disconnected.', True)
 
-
     def go_online(self):
         self._log('Mackie Host Control went online...', True)
-
 
     def go_offline(self):
         self._log('Mackie Host Control went offline...', True)
 
-
     # --- abilities of hardware controller ---
-
     def has_display_7seg(self):
         return self.display_7seg_available
-
 
     def has_display_lcd(self):
         return self.display_lcd_available
 
-
     def has_display_timecode(self):
         return self.display_timecode_available
-
 
     def has_automated_faders(self):
         return self.automated_faders_available
 
-
     def has_meter_bridge(self):
         return self.meter_bridge_available
 
-
     # --- MIDI processing ---
-
     def process_midi_input(self):
         self.midi.process_input_buffer()
-
 
     def receive_midi(self, status, message):
         message_string = ['status %02X: ' % status]
@@ -156,10 +141,8 @@ class MidiControllerTemplate(object):
             message_string.append('%02X' % byte)
         self._log(' '.join(message_string))
 
-
     def send_midi_control_change(self, channel, cc_number, cc_value):
         self.midi.send_control_change(channel, cc_number, cc_value)
-
 
     def send_midi_sysex(self, data):
         assert(type(data) is list)
@@ -170,38 +153,28 @@ class MidiControllerTemplate(object):
 
         self.midi.send_sysex(header, data)
 
-
     @staticmethod
     def get_preferred_midi_input():
         return ''
-
 
     @staticmethod
     def get_preferred_midi_output():
         return ''
 
-
     # --- registration of MIDI controls ---
-
-    def register_control(self, mcu_command, midi_switch, midi_led = None):
+    def register_control(self, mcu_command, midi_switch, midi_led=None):
         if midi_led:
-            self.interconnector.register_control( \
-                mcu_command, midi_switch, midi_led)
+            self.interconnector.register_control(mcu_command, midi_switch, midi_led)
         else:
-            self.interconnector.register_control( \
-                mcu_command, midi_switch, midi_switch)
-
+            self.interconnector.register_control(mcu_command, midi_switch, midi_switch)
 
     def withdraw_control(self, midi_switch):
-        self.interconnector.withdraw_control(midi_switch_cc)
-
+        self.interconnector.withdraw_control(midi_switch)
 
     def withdraw_all_controls(self):
         self.interconnector.withdraw_all_controls()
 
-
     # --- handling of Mackie Control commands ---
-
     def set_lcd(self, position, hex_codes, update=True):
         for hex_code in hex_codes:
             # wrap display and determine position
@@ -219,10 +192,8 @@ class MidiControllerTemplate(object):
         if update:
             self.update_lcd()
 
-
     def set_led(self, internal_id, led_status):
         pass
-
 
     def set_display_7seg(self, position, character_code):
         character = self._decode_7seg_character(character_code)
@@ -234,8 +205,8 @@ class MidiControllerTemplate(object):
         string_7seg = ''.join(self.display_7seg_characters)
         self._log('7 segment display NOT set to "%s".' % string_7seg)
 
-
-    def _decode_7seg_character(self, character_code):
+    @staticmethod
+    def _decode_7seg_character(character_code):
         if character_code >= 0x40:
             character_code = character_code - 0x40
             dot = '.'
@@ -243,10 +214,9 @@ class MidiControllerTemplate(object):
             dot = ' '
 
         if character_code < 0x20:
-            return (chr(character_code + 0x40), dot)
+            return chr(character_code + 0x40), dot
         else:
-            return (chr(character_code), dot)
-
+            return chr(character_code), dot
 
     def set_display_timecode(self, position, character_code):
         character = self._decode_7seg_character(character_code)
@@ -263,41 +233,29 @@ class MidiControllerTemplate(object):
             string_timecode = ''.join(self.display_timecode_characters)
             self._log('timecode display NOT set to "%s".' % string_timecode)
 
-
     def set_peak_level(self, meter_id, meter_level):
         if meter_level == 0x0F:
             self._log('Meter #%d overload NOT cleared.' % meter_id)
         elif meter_level == 0x0F:
             self._log('Meter #%d NOT set to overload.' % meter_id)
         else:
-            self._log('Meter #%d NOT set to %03d%%.' % \
-                          (meter_id, meter_level * 10))
-
+            self._log('Meter #%d NOT set to %03d%%.' % (meter_id, meter_level * 10))
 
     def fader_moved(self, fader_id, fader_position):
-        self._log('Hardware fader #%d NOT moved to position %04d.' % \
-                      (fader_id, fader_position))
+        self._log('Hardware fader #%d NOT moved to position %04d.' % (fader_id, fader_position))
 
-
-    def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, \
-                              vpot_position):
-        self._log('V-Pot #%d LED ring NOT set to position %02d (mode %d).' % \
-                      (vpot_id, vpot_position, vpot_mode))
-
+    def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, vpot_position):
+        self._log('V-Pot #%d LED ring NOT set to position %02d (mode %d).' % (vpot_id, vpot_position, vpot_mode))
 
     def faders_to_minimum(self):
         self._log('Hardware faders NOT set to minimum.')
 
-
     def all_leds_off(self):
         self._log('Hardware LEDs NOT set to "off".')
 
-
     # --- LCD and menu handling
-
     def update_lcd(self):
         pass
-
 
     def get_lcd_characters(self, line):
         line %= 2
@@ -306,7 +264,6 @@ class MidiControllerTemplate(object):
             return self._lcd_overlay_characters[line]
         else:
             return self._lcd_characters[line]
-
 
     def show_menu(self, line, menu_strings):
         assert(len(menu_strings) == 8)
@@ -318,10 +275,8 @@ class MidiControllerTemplate(object):
         menu_characters = list(menu_string_temp)
         self.show_overlay(line, menu_characters)
 
-
     def hide_menu(self, line):
         self.hide_overlay(line)
-
 
     def show_overlay(self, line, overlay_characters):
         line %= 2
@@ -330,7 +285,6 @@ class MidiControllerTemplate(object):
         self._show_overlay[line] = True
         self._lcd_overlay_characters[line] = overlay_characters
         self.update_lcd()
-
 
     def hide_overlay(self, line):
         line %= 2

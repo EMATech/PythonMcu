@@ -32,18 +32,20 @@ if __name__ == "__main__":
 
 from PythonMcu.Tools.ApplicationConfiguration import *
 
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
+from PySide2.QtCore import Qt
+from PySide2.QtGui import QFont, QTextCharFormat, QFontMetrics
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QTextBrowser, QHBoxLayout, QLabel, QPushButton, QApplication
 
+
+# noinspection PyArgumentList
 class AboutDialog(QDialog):
     def __init__(self, parent=None):
         super(AboutDialog, self).__init__(parent)
 
         self._configuration = ApplicationConfiguration()
-        self.setWindowTitle( \
-            'About ' + self._configuration.get_application_information( \
-                'application'))
+        self.setWindowTitle(
+            'About ' + self._configuration.get_application_information('application')
+        )
 
         self._layout = QVBoxLayout()
         self.setLayout(self._layout)
@@ -61,26 +63,30 @@ class AboutDialog(QDialog):
         self._edit_license.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self._edit_license.setFixedWidth(text_width)
         self._edit_license.setFixedHeight(text_height)
-        self._edit_license.setHtml( \
-            self._configuration.get_full_description('html') + '<hr>' + \
-                self._configuration.get_license('html'))
+        self._edit_license.setHtml(
+            self._configuration.get_full_description('html') +
+            '<hr>' +
+            self._configuration.get_license('html')
+        )
 
         self._layout.addWidget(self._edit_license)
 
         self._layout_2 = QHBoxLayout()
         self._layout.addLayout(self._layout_2)
 
+        # noinspection PyTypeChecker
         self._label_thanks = QLabel('Thank you for using free software!')
         self._layout_2.addWidget(self._label_thanks)
 
         self._button_close = QPushButton('I like &free software!')
+        # noinspection PyUnresolvedReferences
         self._button_close.clicked.connect(self.close)
         self._layout_2.addWidget(self._button_close)
 
 
 if __name__ == '__main__':
     # Create the Qt Application
-    app = QApplication(sys.argv)
+    app = QApplication()
 
     # Create and show the license dialog
     about_dialog = AboutDialog()

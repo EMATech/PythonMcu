@@ -30,33 +30,27 @@ if __name__ == "__main__":
     # allow "PythonMcu" package imports when executing this module
     sys.path.append('../../../')
 
-from PythonMcu.Hardware.MidiControllerTemplate import MidiControllerTemplate
-from PythonMcu.Hardware.Novation_ZeRO_SL_MkII import Novation_ZeRO_SL_MkII
+from PythonMcu.Hardware.NovationZeROSLMkII import NovationZeROSLMkII
 from PythonMcu.Midi.MidiConnection import MidiConnection
 
 
-class Novation_ZeRO_SL_MkII_MIDI(Novation_ZeRO_SL_MkII):
+class NovationZeROSLMkIIMIDI(NovationZeROSLMkII):
     def __init__(self, midi_input, midi_output, callback_log):
-        Novation_ZeRO_SL_MkII.__init__(self, midi_input, midi_output, \
-                                           callback_log)
-
+        NovationZeROSLMkII.__init__(self, midi_input, midi_output, callback_log)
 
     @staticmethod
     def get_usage_hint():
         return 'Connect the controller\'s "MIDI Port 1" to your computer, ' + \
-            'switch to preset #32 (Ableton Live Automap) ' + \
-            'and change the following settings:\n\n' + \
-            '* Global --> Routing --> MIDI To:\n  remove port "M1"\n' + \
-            '* Edit --> Routing --> ProgPort:\n  add port "M1"\n' + \
-            '* Edit --> Routing --> ComnPort:\n  add port "M1"'
-
+               'switch to preset #32 (Ableton Live Automap) ' + \
+               'and change the following settings:\n\n' + \
+               '* Global --> Routing --> MIDI To:\n  remove port "M1"\n' + \
+               '* Edit --> Routing --> ProgPort:\n  add port "M1"\n' + \
+               '* Edit --> Routing --> ComnPort:\n  add port "M1"'
 
     # --- MIDI processing ---
-
     @staticmethod
     def get_preferred_midi_input():
         return MidiConnection.get_default_midi_input().decode('utf-8')
-
 
     @staticmethod
     def get_preferred_midi_output():
