@@ -2,6 +2,7 @@
 - [x] [rdoursenaud] port to python 3 and pyside 2
 - [x] [rdoursenaud] cleanup code and make it PEP008 compliant
 - [x] [rdoursenaud] port latex documentation to Sphinx
+- [x] [rdoursenaud] standard Python repository layout
 - [ ] [rdoursenaud] write pytest unit tests only looking at the protocol docs
 - [ ] [rdoursenaud] properly handle invalid config file
 - [ ] [rdoursenaud] disallow start if MIDI ports are not set in the GUI
@@ -12,6 +13,7 @@
 - [ ] [rdoursenaud] explore if using mido could be beneficial
 - [ ] [rdoursenaud] add a nice icon
 - [ ] [rdoursenaud] reduce and restore from systray using QSystemTrayIcon or pystray
+- [ ] [rdoursenaud] add setup.py
 - [ ] [rdoursenaud] create Microsoft Windows binary using pyinstaller?
 - [x] [rdoursenaud] update documentation
 - [ ] [rdoursenaud] publish documentation to readthedocs.org
