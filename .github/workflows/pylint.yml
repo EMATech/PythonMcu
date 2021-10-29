@@ -20,4 +20,4 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Analysing the code with pylint
       run: |
-        pylint --output-format=colorized --disable=C0301,C0103 --fail-under=7.75 python_mcu
+        pylint python_mcu

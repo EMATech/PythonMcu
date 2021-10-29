@@ -4,10 +4,10 @@ PythonMcu.Hardware package
 Submodules
 ----------
 
-PythonMcu.Hardware.MidiControllerTemplate module
+PythonMcu.Hardware._MidiControllerTemplate module
 ------------------------------------------------
 
-.. automodule:: PythonMcu.Hardware.MidiControllerTemplate
+.. automodule:: PythonMcu.Hardware._MidiControllerTemplate
    :members:
    :undoc-members:
    :show-inheritance:

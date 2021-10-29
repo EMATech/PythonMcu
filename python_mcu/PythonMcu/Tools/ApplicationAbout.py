@@ -1504,9 +1504,9 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
             if setting in ('license_plain', 'license_html'):
                 short_setting = '\n'.join(self._about[setting].split('\n')[:5])
                 short_setting += '\n[...]'
-                output += '[%s]\n%s\n\n' % (setting, short_setting)
+                output += f'[{setting}]\n{short_setting}\n\n'
             else:
-                output += '[%s]\n%s\n\n' % (setting, self._about[setting])
+                output += f'[{setting}]\n{self._about[setting]}\n\n'
         output = output.strip('\n')
 
         # dump the whole thing
@@ -1538,10 +1538,7 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
         Formatted string containing application copyrights
 
         """
-        return '(c) %(copyright_years)s %(authors)s' % {
-            'copyright_years': self.get('copyright_years'),
-            'authors': self.get('authors')
-        }
+        return f'(c) {self.get("copyright_years")} {self.get("authors")}'
 
     def get_license(self, selection):
         """Return application license or its terms as string.
@@ -1560,7 +1557,7 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
 
         """
         if selection in ('selected', 'name', 'short', 'plain', 'html'):
-            return self.get('license_%s' % selection)
+            return self.get(f'license_{selection}')
 
         return None
 
@@ -1577,10 +1574,7 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
         """
 
         if long:
-            return '%(application)s %(version)s' % {
-                'application': self.get('application'),
-                'version': self.get('version')
-            }
+            return f'{self.get("application")} {self.get("version")}'
 
         return self.get('version')
 
@@ -1616,17 +1610,14 @@ http://www.gnu.org/philosophy/why-not-lgpl.html</a>&gt;.</p>"""
 
         """
         if text_format == 'html':
-            output = '<h3>%s</h3><p>%s<br />%s</p>' % (
-                self.get_version(True),
-                self.get_copyrights(),
-                self.get_description(False)
-            )
+            output = f'<h3>{self.get_version(True)}</h3>'
+            output += f'<p>{self.get_copyrights()}<br />{self.get_description(False)}</p>'
 
-            output += '<h3>License</h3><pre>%s</pre>' % self.get_license('short')
+            output += f'<h3>License</h3><pre>{self.get_license("short")}</pre>'
 
             contributors = self.get('contributors')
             if contributors:
-                output += '<h3>Contributors</h3><p>%s</p>' % contributors
+                output += f'<h3>Contributors</h3><p>{contributors}</p>'
 
             return output
 

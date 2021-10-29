@@ -25,14 +25,9 @@ Thank you for using free software!
 """
 
 import os
-import sys
 import time
 
-if __name__ == "__main__":
-    # allow "PythonMcu" package imports when executing this module
-    sys.path.append('../../')
-
-from PythonMcu.Midi.MidiConnection import MidiConnection
+from ..Midi.MidiConnection import MidiConnection
 
 
 class MackieHostControl:
@@ -42,6 +37,8 @@ class MackieHostControl:
     ASSUME_SUCCESSFUL_CONNECTION = 'Assume successful connection'
     CHALLENGE_RESPONSE = 'Challenge / Response'
     WAIT_FOR_MIDI_DATA = 'Wait for MIDI data'
+
+    MACKIE_SYSEX_ID = [0x00, 0x00, 0x66]
 
     SWITCH_RELEASED = 0
     SWITCH_PRESSED = 1
@@ -199,6 +196,9 @@ class MackieHostControl:
         self._log('Opening MIDI ports...')
         self._midi.connect(self._midi_input_name, self._midi_output_name)
 
+        # let's make sure the MIDI input buffer is empty
+        self._midi.process_input_buffer(use_callback=False)
+
         if self._mcu_connection == self.CHALLENGE_RESPONSE:
             self._log('Sending "Host Connection Query"...', True)
 
@@ -208,9 +208,6 @@ class MackieHostControl:
             self.send_midi_sysex(sysex_message)
 
             return
-
-        # let's make sure the MIDI input buffer is empty
-        self._midi.process_input_buffer(use_callback=False)
 
         if self._mcu_connection == self.WAIT_FOR_MIDI_DATA:
             self._log('Waiting for MIDI input from host...', True)
@@ -318,7 +315,10 @@ class MackieHostControl:
         self._midi.process_input_buffer()
 
     def receive_midi(self, status, message):
-        if status == MidiConnection.SYSTEM_MESSAGE and message[0:5] == [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
+
+        # We ignore the byte 4 (mcu_model_id) on purpose since the host can't know it yet
+        if status == MidiConnection.SYSTEM_MESSAGE and \
+                message[0:4] == [MidiConnection.SYSTEM_MESSAGE] + self.MACKIE_SYSEX_ID:
             if message[5:] == [0x00, 0xF7]:
                 self._log('Received "Device Query".')
                 self._log('Sending "Host Connection Query"...', True)
@@ -386,66 +386,66 @@ class MackieHostControl:
 
         # do not make this an "elif" clause, otherwise some MIDI SysEx
         # messages won't get processed!
-        if not self.is_offline():
-            if status == MidiConnection.SYSTEM_MESSAGE and message[0:5] == [0xF0, 0x00, 0x00, 0x66, self._mcu_model_id]:
-                if message[5] == 0x12:
-                    if self._display_lcd_available:
-                        position = message[6]
-                        hex_codes = message[7:-1]
+        if self.is_offline():
+            self._log(f"Message received while offline:  {message!r}")
+            return
 
-                        self._hardware_controller.set_lcd(position, hex_codes)
-            elif status == MidiConnection.PITCH_WHEEL_CHANGE:
-                if self._automated_faders_available:
-                    fader_id = message[0] & 0x0F
-                    fader_position = (message[1] + (message[2] << 7)) >> 4
-                    self._hardware_controller.fader_moved(fader_id, fader_position)
-            elif status == MidiConnection.NOTE_ON_EVENT:
-                led_id = message[1]
-                led_status = 0  # off
+        # Once again, we ignore the byte 4 (mcu_model_id) because some DAWs will send whatever (0x20 in Studio One 5)
+        if status == MidiConnection.SYSTEM_MESSAGE and \
+                message[0:4] == [MidiConnection.SYSTEM_MESSAGE] + self.MACKIE_SYSEX_ID:
+            if message[5] == 0x12:
+                if self._display_lcd_available:
+                    position = message[6]
+                    hex_codes = message[7:-1]
 
-                if message[2] == 0x7F:
-                    led_status = 1  # on
-                elif message[2] == 0x01:
-                    led_status = 2  # flashing
+                    self._hardware_controller.set_lcd(position, hex_codes)
+        elif status == MidiConnection.PITCH_WHEEL_CHANGE:
+            if self._automated_faders_available:
+                fader_id = message[0] & 0x0F
+                fader_position = (message[1] + (message[2] << 7)) >> 4
+                self._hardware_controller.fader_moved(fader_id, fader_position)
+        elif status == MidiConnection.NOTE_ON_EVENT:
+            led_id = message[1]
 
-                self._set_led(led_id, led_status)
-            elif (status == MidiConnection.CONTROL_CHANGE) and ((message[1] & 0xF0) == 0x30):
-                vpot_id = message[1] & 0x0F
-                vpot_center_led = (message[2] & 0x40) >> 7
-                vpot_mode = (message[2] & 0x30) >> 4
-                vpot_position = message[2] & 0x0F
-                self._hardware_controller.set_vpot_led_ring(vpot_id, vpot_center_led, vpot_mode, vpot_position)
-            elif (status == MidiConnection.CONTROL_CHANGE) and ((message[1] & 0xF0) == 0x40):
-                position = message[1] & 0x0F
-                character_code = message[2]
+            led_status = 0  # off
+            if message[2] == 0x7F:
+                led_status = 1  # on
+            elif message[2] == 0x01:
+                led_status = 2  # flashing
 
-                if position < 10:
-                    if self._display_timecode_available:
-                        self._hardware_controller.set_display_timecode(position, character_code)
-                elif self._display_7seg_available:
-                    self._hardware_controller.set_display_7seg(position, character_code)
-            elif status == MidiConnection.CHANNEL_PRESSURE:
-                if self._meter_bridge_available:
-                    meter_id = (message[1] & 0x70) >> 4
-                    meter_level = message[1] & 0x0F
-                    self._hardware_controller.set_peak_level(meter_id, meter_level)
-            else:
-                output = 'status %02X: ' % status
-                for byte in message:
-                    output += '%02X ' % byte
+            self._set_led(led_id, led_status)
+        elif status == MidiConnection.CONTROL_CHANGE and message[1] & 0xF0 == 0x30:
+            vpot_id = message[1] & 0x0F
+            vpot_center_led = (message[2] & 0x40) >> 7
+            vpot_mode = (message[2] & 0x30) >> 4
+            vpot_position = message[2] & 0x0F
 
-                self._log(output.strip())
+            if vpot_id not in range(0, 8):
+                self._log(f"Ignoring out of range V-Pot ID received: {vpot_id:d}")
+                return
+
+            self._hardware_controller.set_vpot_led_ring(vpot_id, vpot_center_led, vpot_mode, vpot_position)
+        elif (status == MidiConnection.CONTROL_CHANGE) and ((message[1] & 0xF0) == 0x40):
+            position = message[1] & 0x0F
+            character_code = message[2]
+
+            if position < 10:
+                if self._display_timecode_available:
+                    self._hardware_controller.set_display_timecode(position, character_code)
+            elif self._display_7seg_available:
+                self._hardware_controller.set_display_7seg(position, character_code)
+        elif status == MidiConnection.CHANNEL_PRESSURE:
+            if self._meter_bridge_available:
+                meter_id = (message[1] & 0x70) >> 4
+                meter_level = message[1] & 0x0F
+                self._hardware_controller.set_peak_level(meter_id, meter_level)
         else:
-            output = 'status %02X: ' % status
-            for byte in message:
-                output += '%02X ' % byte
-
-            self._log(output.strip())
+            self._log(f"Unsupported message: {message!r}")
 
     def send_midi_sysex(self, data):
         assert isinstance(data, list)
 
-        header = [0x00, 0x00, 0x66, self._mcu_model_id]
+        header = self.MACKIE_SYSEX_ID + [self._mcu_model_id]
 
         # leading 0xF0 and trailing 0xF7 are added by "MidiConnection"
         # class method
@@ -492,7 +492,7 @@ class MackieHostControl:
             self._midi.send_note_on(switch_id, 0x7F)
             self._midi.send_note_on(switch_id, 0x00)
         else:
-            self._log('Illegal key press status 0x%02X on switch 0x%02X detected!' % (status, switch_id))
+            self._log(f'Illegal key press status 0x{status:02X} on switch 0x{switch_id:02X} detected!')
 
     def keypress_record_ready_channel(self, channel, status):
         # channel: 1 - 8
@@ -874,92 +874,94 @@ class MackieHostControl:
             return
 
         selector = {
-            self._LED_SWITCH_CHANNEL_RECORD_READY: 'self._hardware_controller.set_led_channel_record_ready(0, status)',
+            self._LED_SWITCH_CHANNEL_RECORD_READY: {'method': 'set_led_channel_record_ready', 'params': f'0, {status}'},
             self._LED_SWITCH_CHANNEL_RECORD_READY + 1:
-                'self._hardware_controller.set_led_channel_record_ready(1, status)',
+                {'method': 'set_led_channel_record_ready', 'params': f'1, {status}'},
             self._LED_SWITCH_CHANNEL_RECORD_READY + 2:
-                'self._hardware_controller.set_led_channel_record_ready(2, status)',
+                {'method': 'set_led_channel_record_ready', 'params': f'2, {status}'},
             self._LED_SWITCH_CHANNEL_RECORD_READY + 3:
-                'self._hardware_controller.set_led_channel_record_ready(3, status)',
+                {'method': 'set_led_channel_record_ready', 'params': f'3, {status}'},
             self._LED_SWITCH_CHANNEL_RECORD_READY + 4:
-                'self._hardware_controller.set_led_channel_record_ready(4, status)',
+                {'method': 'set_led_channel_record_ready', 'params': f'4, {status}'},
             self._LED_SWITCH_CHANNEL_RECORD_READY + 5:
-                'self._hardware_controller.set_led_channel_record_ready(5, status)',
+                {'method': 'set_led_channel_record_ready', 'params': f'5, {status}'},
             self._LED_SWITCH_CHANNEL_RECORD_READY + 6:
-                'self._hardware_controller.set_led_channel_record_ready(6, status)',
+                {'method': 'set_led_channel_record_ready', 'params': f'6, {status}'},
             self._LED_SWITCH_CHANNEL_RECORD_READY + 7:
-                'self._hardware_controller.set_led_channel_record_ready(7, status)',
-            self._LED_SWITCH_CHANNEL_SOLO: 'self._hardware_controller.set_led_channel_solo(0, status)',
-            self._LED_SWITCH_CHANNEL_SOLO + 1: 'self._hardware_controller.set_led_channel_solo(1, status)',
-            self._LED_SWITCH_CHANNEL_SOLO + 2: 'self._hardware_controller.set_led_channel_solo(2, status)',
-            self._LED_SWITCH_CHANNEL_SOLO + 3: 'self._hardware_controller.set_led_channel_solo(3, status)',
-            self._LED_SWITCH_CHANNEL_SOLO + 4: 'self._hardware_controller.set_led_channel_solo(4, status)',
-            self._LED_SWITCH_CHANNEL_SOLO + 5: 'self._hardware_controller.set_led_channel_solo(5, status)',
-            self._LED_SWITCH_CHANNEL_SOLO + 6: 'self._hardware_controller.set_led_channel_solo(6, status)',
-            self._LED_SWITCH_CHANNEL_SOLO + 7: 'self._hardware_controller.set_led_channel_solo(7, status)',
-            self._LED_SWITCH_CHANNEL_MUTE: 'self._hardware_controller.set_led_channel_mute(0, status)',
-            self._LED_SWITCH_CHANNEL_MUTE + 1: 'self._hardware_controller.set_led_channel_mute(1, status)',
-            self._LED_SWITCH_CHANNEL_MUTE + 2: 'self._hardware_controller.set_led_channel_mute(2, status)',
-            self._LED_SWITCH_CHANNEL_MUTE + 3: 'self._hardware_controller.set_led_channel_mute(3, status)',
-            self._LED_SWITCH_CHANNEL_MUTE + 4: 'self._hardware_controller.set_led_channel_mute(4, status)',
-            self._LED_SWITCH_CHANNEL_MUTE + 5: 'self._hardware_controller.set_led_channel_mute(5, status)',
-            self._LED_SWITCH_CHANNEL_MUTE + 6: 'self._hardware_controller.set_led_channel_mute(6, status)',
-            self._LED_SWITCH_CHANNEL_MUTE + 7: 'self._hardware_controller.set_led_channel_mute(7, status)',
-            self._LED_SWITCH_CHANNEL_SELECT: 'self._hardware_controller.set_led_channel_select(0, status)',
-            self._LED_SWITCH_CHANNEL_SELECT + 1: 'self._hardware_controller.set_led_channel_select(1, status)',
-            self._LED_SWITCH_CHANNEL_SELECT + 2: 'self._hardware_controller.set_led_channel_select(2, status)',
-            self._LED_SWITCH_CHANNEL_SELECT + 3: 'self._hardware_controller.set_led_channel_select(3, status)',
-            self._LED_SWITCH_CHANNEL_SELECT + 4: 'self._hardware_controller.set_led_channel_select(4, status)',
-            self._LED_SWITCH_CHANNEL_SELECT + 5: 'self._hardware_controller.set_led_channel_select(5, status)',
-            self._LED_SWITCH_CHANNEL_SELECT + 6: 'self._hardware_controller.set_led_channel_select(6, status)',
-            self._LED_SWITCH_CHANNEL_SELECT + 7: 'self._hardware_controller.set_led_channel_select(7, status)',
-            self._LED_SWITCH_CHANNEL_VSELECT: 'self._hardware_controller.set_led_channel_vselect(0, status)',
-            self._LED_SWITCH_CHANNEL_VSELECT + 1: 'self._hardware_controller.set_led_channel_vselect(1, status)',
-            self._LED_SWITCH_CHANNEL_VSELECT + 2: 'self._hardware_controller.set_led_channel_vselect(2, status)',
-            self._LED_SWITCH_CHANNEL_VSELECT + 3: 'self._hardware_controller.set_led_channel_vselect(3, status)',
-            self._LED_SWITCH_CHANNEL_VSELECT + 4: 'self._hardware_controller.set_led_channel_vselect(4, status)',
-            self._LED_SWITCH_CHANNEL_VSELECT + 5: 'self._hardware_controller.set_led_channel_vselect(5, status)',
-            self._LED_SWITCH_CHANNEL_VSELECT + 6: 'self._hardware_controller.set_led_channel_vselect(6, status)',
-            self._LED_SWITCH_CHANNEL_VSELECT + 7: 'self._hardware_controller.set_led_channel_vselect(7, status)',
-            self._LED_SWITCH_ASSIGNMENT_TRACK: 'self._hardware_controller.set_led_assignment_track(status)',
-            self._LED_SWITCH_ASSIGNMENT_SEND: 'self._hardware_controller.set_led_assignment_send(status)',
+                {'method': 'set_led_channel_record_ready', 'params': f'7, {status}'},
+            self._LED_SWITCH_CHANNEL_SOLO: {'method': 'set_led_channel_solo', 'params': f'0, {status}'},
+            self._LED_SWITCH_CHANNEL_SOLO + 1: {'method': 'set_led_channel_solo', 'params': f'1, {status}'},
+            self._LED_SWITCH_CHANNEL_SOLO + 2: {'method': 'set_led_channel_solo', 'params': f'2, {status}'},
+            self._LED_SWITCH_CHANNEL_SOLO + 3: {'method': 'set_led_channel_solo', 'params': f'3, {status}'},
+            self._LED_SWITCH_CHANNEL_SOLO + 4: {'method': 'set_led_channel_solo', 'params': f'4, {status}'},
+            self._LED_SWITCH_CHANNEL_SOLO + 5: {'method': 'set_led_channel_solo', 'params': f'5, {status}'},
+            self._LED_SWITCH_CHANNEL_SOLO + 6: {'method': 'set_led_channel_solo', 'params': f'6, {status}'},
+            self._LED_SWITCH_CHANNEL_SOLO + 7: {'method': 'set_led_channel_solo', 'params': f'7, {status}'},
+            self._LED_SWITCH_CHANNEL_MUTE: {'method': 'set_led_channel_mute', 'params': f'0, {status}'},
+            self._LED_SWITCH_CHANNEL_MUTE + 1: {'method': 'set_led_channel_mute', 'params': f'1, {status}'},
+            self._LED_SWITCH_CHANNEL_MUTE + 2: {'method': 'set_led_channel_mute', 'params': f'2, {status}'},
+            self._LED_SWITCH_CHANNEL_MUTE + 3: {'method': 'set_led_channel_mute', 'params': f'3, {status}'},
+            self._LED_SWITCH_CHANNEL_MUTE + 4: {'method': 'set_led_channel_mute', 'params': f'4, {status}'},
+            self._LED_SWITCH_CHANNEL_MUTE + 5: {'method': 'set_led_channel_mute', 'params': f'5, {status}'},
+            self._LED_SWITCH_CHANNEL_MUTE + 6: {'method': 'set_led_channel_mute', 'params': f'6, {status}'},
+            self._LED_SWITCH_CHANNEL_MUTE + 7: {'method': 'set_led_channel_mute', 'params': f'7, {status}'},
+            self._LED_SWITCH_CHANNEL_SELECT: {'method': 'set_led_channel_select', 'params': f'0, {status}'},
+            self._LED_SWITCH_CHANNEL_SELECT + 1: {'method': 'set_led_channel_select', 'params': f'1, {status}'},
+            self._LED_SWITCH_CHANNEL_SELECT + 2: {'method': 'set_led_channel_select', 'params': f'2, {status}'},
+            self._LED_SWITCH_CHANNEL_SELECT + 3: {'method': 'set_led_channel_select', 'params': f'3, {status}'},
+            self._LED_SWITCH_CHANNEL_SELECT + 4: {'method': 'set_led_channel_select', 'params': f'4, {status}'},
+            self._LED_SWITCH_CHANNEL_SELECT + 5: {'method': 'set_led_channel_select', 'params': f'5, {status}'},
+            self._LED_SWITCH_CHANNEL_SELECT + 6: {'method': 'set_led_channel_select', 'params': f'6, {status}'},
+            self._LED_SWITCH_CHANNEL_SELECT + 7: {'method': 'set_led_channel_select', 'params': f'7, {status}'},
+            self._LED_SWITCH_CHANNEL_VSELECT: {'method': 'set_led_channel_vselect', 'params': f'0, {status}'},
+            self._LED_SWITCH_CHANNEL_VSELECT + 1: {'method': 'set_led_channel_vselect', 'params': f'1, {status}'},
+            self._LED_SWITCH_CHANNEL_VSELECT + 2: {'method': 'set_led_channel_vselect', 'params': f'2, {status}'},
+            self._LED_SWITCH_CHANNEL_VSELECT + 3: {'method': 'set_led_channel_vselect', 'params': f'3, {status}'},
+            self._LED_SWITCH_CHANNEL_VSELECT + 4: {'method': 'set_led_channel_vselect', 'params': f'4, {status}'},
+            self._LED_SWITCH_CHANNEL_VSELECT + 5: {'method': 'set_led_channel_vselect', 'params': f'5, {status}'},
+            self._LED_SWITCH_CHANNEL_VSELECT + 6: {'method': 'set_led_channel_vselect', 'params': f'6, {status}'},
+            self._LED_SWITCH_CHANNEL_VSELECT + 7: {'method': 'set_led_channel_vselect', 'params': f'7, {status}'},
+            self._LED_SWITCH_ASSIGNMENT_TRACK: {'method': 'set_led_assignment_track', 'params': f'{status}'},
+            self._LED_SWITCH_ASSIGNMENT_SEND: {'method': 'set_led_assignment_send', 'params': f'{status}'},
             self._LED_SWITCH_ASSIGNMENT_PAN_SURROUND:
-                'self._hardware_controller.set_led_assignment_pan_surround(status)',
-            self._LED_SWITCH_ASSIGNMENT_PLUG_IN: 'self._hardware_controller.set_led_assignment_plug_in(status)',
-            self._LED_SWITCH_ASSIGNMENT_EQ: 'self._hardware_controller.set_led_assignment_eq(status)',
-            self._LED_SWITCH_ASSIGNMENT_INSTRUMENT: 'self._hardware_controller.set_led_assignment_instrument(status)',
-            self._LED_SWITCH_FLIP: 'self._hardware_controller.set_led_flip(status)',
-            self._LED_SWITCH_GLOBAL_VIEW: 'self._hardware_controller.set_led_global_view(status)',
-            self._LED_SWITCH_AUTOMATION_READ_OFF: 'self._hardware_controller.set_led_automation_read_off(status)',
-            self._LED_SWITCH_AUTOMATION_WRITE: 'self._hardware_controller.set_led_automation_write(status)',
-            self._LED_SWITCH_AUTOMATION_TRIM: 'self._hardware_controller.set_led_automation_trim(status)',
-            self._LED_SWITCH_AUTOMATION_TOUCH: 'self._hardware_controller.set_led_automation_touch(status)',
-            self._LED_SWITCH_AUTOMATION_LATCH: 'self._hardware_controller.set_led_automation_latch(status)',
-            self._LED_SWITCH_GROUP: 'self._hardware_controller.set_led_group(status)',
-            self._LED_SWITCH_UTILITIES_SAVE: 'self._hardware_controller.set_led_utilities_save(status)',
-            self._LED_SWITCH_UTILITIES_UNDO: 'self._hardware_controller.set_led_utilities_undo(status)',
-            self._LED_SWITCH_MARKER: 'self._hardware_controller.set_led_marker(status)',
-            self._LED_SWITCH_NUDGE: 'self._hardware_controller.set_led_nudge(status)',
-            self._LED_SWITCH_CYCLE: 'self._hardware_controller.set_led_cycle(status)',
-            self._LED_SWITCH_DROP: 'self._hardware_controller.set_led_drop(status)',
-            self._LED_SWITCH_REPLACE: 'self._hardware_controller.set_led_replace(status)',
-            self._LED_SWITCH_CLICK: 'self._hardware_controller.set_led_click(status)',
-            self._LED_SWITCH_SOLO: 'self._hardware_controller.set_led_solo(status)',
-            self._LED_SWITCH_REWIND: 'self._hardware_controller.set_led_rewind(status)',
-            self._LED_SWITCH_FAST_FORWARD: 'self._hardware_controller.set_led_fast_forward(status)',
-            self._LED_SWITCH_STOP: 'self._hardware_controller.set_led_stop(status)',
-            self._LED_SWITCH_PLAY: 'self._hardware_controller.set_led_play(status)',
-            self._LED_SWITCH_RECORD: 'self._hardware_controller.set_led_record(status)',
-            self._LED_SWITCH_ZOOM: 'self._hardware_controller.set_led_zoom(status)',
-            self._LED_SWITCH_SCRUB: 'self._hardware_controller.set_led_scrub(status)',
-            self._LED_SMPTE: 'self._hardware_controller.set_led_smpte(status)',
-            self._LED_BEATS: 'self._hardware_controller.set_led_beats(status)',
-            self._LED_RUDE_SOLO: 'self._hardware_controller.set_led_rude_solo(status)',
-            self._LED_RELAY_CLICK: 'self._hardware_controller.set_led_relay_click(status)'
+                {'method': 'set_led_assignment_pan_surround', 'params': f'{status}'},
+            self._LED_SWITCH_ASSIGNMENT_PLUG_IN: {'method': 'set_led_assignment_plug_in', 'params': f'{status}'},
+            self._LED_SWITCH_ASSIGNMENT_EQ: {'method': 'set_led_assignment_eq', 'params': f'{status}'},
+            self._LED_SWITCH_ASSIGNMENT_INSTRUMENT: {'method': 'set_led_assignment_instrument', 'params': f'{status}'},
+            self._LED_SWITCH_FLIP: {'method': 'set_led_flip', 'params': f'{status}'},
+            self._LED_SWITCH_GLOBAL_VIEW: {'method': 'set_led_global_view', 'params': f'{status}'},
+            self._LED_SWITCH_AUTOMATION_READ_OFF: {'method': 'set_led_automation_read_off', 'params': f'{status}'},
+            self._LED_SWITCH_AUTOMATION_WRITE: {'method': 'set_led_automation_write', 'params': f'{status}'},
+            self._LED_SWITCH_AUTOMATION_TRIM: {'method': 'set_led_automation_trim', 'params': f'{status}'},
+            self._LED_SWITCH_AUTOMATION_TOUCH: {'method': 'set_led_automation_touch', 'params': f'{status}'},
+            self._LED_SWITCH_AUTOMATION_LATCH: {'method': 'set_led_automation_latch', 'params': f'{status}'},
+            self._LED_SWITCH_GROUP: {'method': 'set_led_group', 'params': f'{status}'},
+            self._LED_SWITCH_UTILITIES_SAVE: {'method': 'set_led_utilities_save', 'params': f'{status}'},
+            self._LED_SWITCH_UTILITIES_UNDO: {'method': 'set_led_utilities_undo', 'params': f'{status}'},
+            self._LED_SWITCH_MARKER: {'method': 'set_led_marker', 'params': f'{status}'},
+            self._LED_SWITCH_NUDGE: {'method': 'set_led_nudge', 'params': f'{status}'},
+            self._LED_SWITCH_CYCLE: {'method': 'set_led_cycle', 'params': f'{status}'},
+            self._LED_SWITCH_DROP: {'method': 'set_led_drop', 'params': f'{status}'},
+            self._LED_SWITCH_REPLACE: {'method': 'set_led_replace', 'params': f'{status}'},
+            self._LED_SWITCH_CLICK: {'method': 'set_led_click', 'params': f'{status}'},
+            self._LED_SWITCH_SOLO: {'method': 'set_led_solo', 'params': f'{status}'},
+            self._LED_SWITCH_REWIND: {'method': 'set_led_rewind', 'params': f'{status}'},
+            self._LED_SWITCH_FAST_FORWARD: {'method': 'set_led_fast_forward', 'params': f'{status}'},
+            self._LED_SWITCH_STOP: {'method': 'set_led_stop', 'params': f'{status}'},
+            self._LED_SWITCH_PLAY: {'method': 'set_led_play', 'params': f'{status}'},
+            self._LED_SWITCH_RECORD: {'method': 'set_led_record', 'params': f'{status}'},
+            self._LED_SWITCH_ZOOM: {'method': 'set_led_zoom', 'params': f'{status}'},
+            self._LED_SWITCH_SCRUB: {'method': 'set_led_scrub', 'params': f'{status}'},
+            self._LED_SMPTE: {'method': 'set_led_smpte', 'params': f'{status}'},
+            self._LED_BEATS: {'method': 'set_led_beats', 'params': f'{status}'},
+            self._LED_RUDE_SOLO: {'method': 'set_led_rude_solo', 'params': f'{status}'},
+            self._LED_RELAY_CLICK: {'method': 'set_led_relay_click', 'params': f'{status}'}
         }
 
         if led_id in selector:
-            eval(selector[led_id])
+            led_method = getattr(self._hardware_controller, selector[led_id]['method'])
+            led_params = tuple(map(int, selector[led_id]['params'].split(', ')))
+            led_method(*led_params)
         else:
             led_status = 'off'
             if status == 1:
@@ -967,7 +969,7 @@ class MackieHostControl:
             elif status == 2:
                 led_status = 'flashing'
 
-            self._log('LED 0x%02X NOT implemented (%s).' % (led_id, led_status))
+            self._log(f'LED 0x{led_id:02X} NOT implemented ({led_status}).')
 
     def faders_to_minimum(self):
         if self._hardware_controller:

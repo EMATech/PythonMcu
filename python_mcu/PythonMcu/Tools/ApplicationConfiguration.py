@@ -27,7 +27,7 @@ Thank you for using free software!
 import configparser
 import os
 
-from PythonMcu.Tools import ApplicationAbout
+from .ApplicationAbout import ApplicationAbout
 
 
 class SortedDict(dict):
@@ -81,7 +81,7 @@ class ApplicationConfiguration:
 
         """
         # initialise application information
-        self._about = ApplicationAbout.ApplicationAbout()
+        self._about = ApplicationAbout()
 
         # ascertain compatibility with the class "ApplicationAbout"
         assert self.get_application_information('about_class_incarnation') == 3
@@ -112,10 +112,10 @@ class ApplicationConfiguration:
         output += '\n\n\nConfiguration file\n=================='
         # append sorted sections
         for section in self.get_sections():
-            output += '\n[%s]\n' % section
+            output += f'\n{section}\n'
             # append sorted options
             for item in self.get_items(section):
-                output += '%s: %s\n' % (item[0], item[1])
+                output += f'{item[0]}: {item[1]}\n'
 
         # dump the whole thing
         return output.strip('\n')

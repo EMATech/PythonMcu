@@ -23,24 +23,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 Thank you for using free software!
 
 """
+from binascii import hexlify
 
-import pygame.midi
-
-pygame.midi.init()
+import rtmidi
+import rtmidi.midiutil
+import rtmidi.midiconstants
 
 
 class MidiConnection:
     __module__ = __name__
     __doc__ = 'MIDI connection handler'
 
-    NOTE_OFF_EVENT = 0x80
-    NOTE_ON_EVENT = 0x90
-    POLYPHONIC_KEY_PRESSURE = 0xA0
-    CONTROL_CHANGE = 0xB0
-    PROGRAM_CHANGE = 0xC0
-    CHANNEL_PRESSURE = 0xD0
-    PITCH_WHEEL_CHANGE = 0xE0
-    SYSTEM_MESSAGE = 0xF0
+    NOTE_OFF_EVENT = rtmidi.midiconstants.NOTE_OFF
+    NOTE_ON_EVENT = rtmidi.midiconstants.NOTE_ON
+    POLYPHONIC_KEY_PRESSURE = rtmidi.midiconstants.POLYPHONIC_PRESSURE
+    CONTROL_CHANGE = rtmidi.midiconstants.CONTROL_CHANGE
+    PROGRAM_CHANGE = rtmidi.midiconstants.PROGRAM_CHANGE
+    CHANNEL_PRESSURE = rtmidi.midiconstants.CHANNEL_PRESSURE
+    PITCH_WHEEL_CHANGE = rtmidi.midiconstants.PITCH_BEND
+    SYSTEM_MESSAGE = rtmidi.midiconstants.SYSTEM_EXCLUSIVE
 
     # --- initialisation ---
 
@@ -54,23 +55,40 @@ class MidiConnection:
         self._midi_input = None
         self._midi_output = None
 
-    def connect(self, midi_input_name=None, midi_output_name=None):
-        self._midi_input_name = midi_input_name
-        if self._midi_input_name:
-            self._midi_input = self._init_input(self._midi_input_name)
+        self._input_buffer = []
 
-        self._midi_output_name = midi_output_name
-        if self._midi_output_name:
-            self._midi_output = self._init_output(self._midi_output_name)
+    def connect(self, midi_input_name=None, midi_output_name=None):
+        if midi_input_name:
+            midi_input = self._init_input(midi_input_name)
+            if midi_input:
+                midi_in_port, in_name = midi_input
+                self._midi_input = midi_in_port
+                self._midi_input_name = in_name
+                self._midi_input.ignore_types(sysex=False)  # Make sure rtmidi doesn't filter out SysEx
+            else:
+                raise ValueError(f'MIDI input {midi_input_name} not found')
+
+        if midi_output_name:
+            midi_output = self._init_output(midi_output_name)
+            if midi_output:
+                midi_out_port, out_name = midi_output
+                self._midi_output = midi_out_port
+                self._midi_output_name = out_name
+            else:
+                raise ValueError(f'MIDI output {midi_output_name} not found')
 
     def disconnect(self):
         if self._midi_input:
-            self._log('Closing MIDI input "%s"...' % self._midi_input_name)
-            self._midi_input.close()
+            self._log(f'Closing MIDI input "{self._midi_input_name}"...')
+            self._midi_input.close_port()
+            self._midi_input_name = None
+            self._midi_input = None
 
         if self._midi_output:
-            self._log('Closing MIDI output "%s"...' % self._midi_output_name)
-            self._midi_output.close()
+            self._log(f'Closing MIDI output "{self._midi_output_name}"...')
+            self._midi_output.close_port()
+            self._midi_output_name = None
+            self._midi_output = None
 
     def _log(self, message):
         self._callback_log('[MIDI Connection      ]  ' + message, True)
@@ -79,159 +97,128 @@ class MidiConnection:
         if device_name is None:
             return None
 
-        for device_id in range(pygame.midi.get_count()):
-            device = pygame.midi.get_device_info(device_id)
+        self._log(f'Opening MIDI input "{device_name}"...')
+        try:
+            midi_input = rtmidi.midiutil.open_midiinput(device_name, interactive=False, client_name="PythonMCU")
+        except(rtmidi.InvalidPortError, rtmidi.NoDevicesError, rtmidi.SystemError) as e:
+            self._log(f'MIDI In \'{device_name}\' not found.\nReason: {e}\n')
+            return None
 
-            # noinspection PyUnresolvedReferences
-            if device[1].decode('utf-8') == device_name and (device[2] == 1):
-                self._log('Opening MIDI input "%s"...' % device_name)
-                return pygame.midi.Input(device_id)
-
-        self._log('MIDI In \'%s\' not found.\n' % device_name)
-        return None
+        return midi_input
 
     def _init_output(self, device_name):
         if device_name is None:
             return None
 
-        for device_id in range(pygame.midi.get_count()):
-            device = pygame.midi.get_device_info(device_id)
-
-            # noinspection PyUnresolvedReferences
-            if device[1].decode('utf-8') == device_name and (device[3] == 1):
-                self._log('Opening MIDI output "%s"...' % device_name)
-                return pygame.midi.Output(device_id, latency=0)
-
-        self._log('MIDI Out \'%s\' not found.\n' % device_name)
-        return None
-
-    # --- static methods ---
-    @staticmethod
-    def get_midi_inputs():
-        midi_inputs = []
-
-        for dev_id in range(pygame.midi.get_count()):
-            device = pygame.midi.get_device_info(dev_id)
-            if device[2] == 1:
-                # noinspection PyUnresolvedReferences
-                midi_inputs.append(device[1].decode('utf8'))
-
-        return midi_inputs
-
-    @staticmethod
-    def get_midi_outputs():
-        midi_outputs = []
-
-        for dev_id in range(pygame.midi.get_count()):
-            device = pygame.midi.get_device_info(dev_id)
-            if device[3] == 1:
-                # noinspection PyUnresolvedReferences
-                midi_outputs.append(device[1].decode('utf8'))
-
-        return midi_outputs
-
-    @staticmethod
-    def get_default_midi_input():
-        device_id = pygame.midi.get_default_input_id()
-
-        if device_id < 0:
+        self._log(f'Opening MIDI output "{device_name}"...')
+        try:
+            midi_output = rtmidi.midiutil.open_midioutput(device_name, interactive=False, client_name="PythonMCU")
+        except(rtmidi.InvalidPortError, rtmidi.NoDevicesError, rtmidi.SystemError) as e:
+            self._log(f'MIDI Out \'{device_name}\' not found.\nReason: {e}\n')
             return None
 
-        device = pygame.midi.get_device_info(device_id)
-        return device[1]
-
-    @staticmethod
-    def get_default_midi_output():
-        device_id = pygame.midi.get_default_output_id()
-
-        if device_id < 0:
-            return None
-
-        device = pygame.midi.get_device_info(device_id)
-        return device[1]
+        return midi_output
 
     # --- MIDI processing ---
     def buffer_is_empty(self):
-        return not self._midi_input.poll()
+        if not self._midi_input:
+            self._log('MIDI input not connected.')
+            return False
+
+        if msg := self._midi_input.get_message():
+            self._input_buffer.append([msg[0]])  # Ignore timestamp
+        del msg
+
+        return not self._input_buffer
 
     def process_input_buffer(self, use_callback=True):
-        if not self._midi_output:
-            self._log('MIDI output not connected.')
+        if not self._midi_input:
+            self._log('MIDI input not connected.')
             return
 
-        while self._midi_input.poll():
-            (status, message) = self._receive_message()
+        while msg := self._midi_input.get_message():
+            self._input_buffer.append([msg[0]])  # Ignore timestamp
+        del msg
 
-            if use_callback:
-                self._callback(status, message)
+        if self._input_buffer:
+            for message in self._input_buffer.pop(0):
+                (status, message) = self._receive_message(message)
 
-    def _receive_message(self):
-        message = self._midi_input.read(1)[0][0]
+                # FIXME: Factorize and only display in DEBUG mode
+                output = f'status {status:02X}: '
+                for byte in message:
+                    output += f'{byte:02X} '
+                self._log('Raw message received: ' + output.strip())
+
+                if use_callback:
+                    self._callback(status, message)
+
+    def _receive_message(self, message):
         status_byte = message[0] & 0xF0
 
-        if message[0] == 0xF0:
-            while 0xF7 not in message:
-                message.extend(self._midi_input.read(1)[0][0])
-            while message[-1] != 0xF7:
-                del message[-1]
-
-        status = None
-        if status_byte == self.NOTE_OFF_EVENT:
+        status = 0x00
+        if status_byte == rtmidi.midiconstants.NOTE_OFF:
             status = self.NOTE_OFF_EVENT
-            del message[3]
-        elif status_byte == self.NOTE_ON_EVENT:
+        elif status_byte == rtmidi.midiconstants.NOTE_ON:
             status = self.NOTE_ON_EVENT
-            del message[3]
-        elif status_byte == self.POLYPHONIC_KEY_PRESSURE:
+        elif status_byte == rtmidi.midiconstants.POLYPHONIC_PRESSURE:
             status = self.POLYPHONIC_KEY_PRESSURE
-            del message[3]
-        elif status_byte == self.CONTROL_CHANGE:
+        elif status_byte == rtmidi.midiconstants.CONTROL_CHANGE:
             status = self.CONTROL_CHANGE
-            del message[3]
-        elif status_byte == self.PROGRAM_CHANGE:
+        elif status_byte == rtmidi.midiconstants.PROGRAM_CHANGE:
             status = self.PROGRAM_CHANGE
-            del message[2:3]
-        elif status_byte == self.CHANNEL_PRESSURE:
+        elif status_byte == rtmidi.midiconstants.CHANNEL_PRESSURE:
             status = self.CHANNEL_PRESSURE
-            del message[2:3]
-        elif status_byte == self.PITCH_WHEEL_CHANGE:
+        elif status_byte == rtmidi.midiconstants.PITCH_BEND:
             status = self.PITCH_WHEEL_CHANGE
-            del message[3]
-        elif status_byte == self.SYSTEM_MESSAGE:
+        elif status_byte == rtmidi.midiconstants.SYSTEM_EXCLUSIVE:
             status = self.SYSTEM_MESSAGE
 
         return status, message
+
+    def _raw_send(self, message):
+
+        # FIXME: Factorize and only display in DEBUG mode
+        output = ''
+        for byte in message:
+            output += f'{byte:02X} '
+        self._log('Raw message sent: ' + output.strip())
+
+        self._midi_output.send_message(message)
 
     def send(self, status, data_1, data_2):
         if not self._midi_output:
             self._log('MIDI output not connected.')
             return
-
-        self._midi_output.write_short(status, data_1, data_2)
+        msg = [status, data_1, data_2]
+        self._raw_send(msg)
 
     def send_note_on(self, key, velocity):
         if not self._midi_output:
             self._log('MIDI output not connected.')
             return
 
-        #        self._log('%02X %02X %02X' % (self.NOTE_ON_EVENT, key, velocity))
-        self._midi_output.write_short(self.NOTE_ON_EVENT, key, velocity)
+#        self._log(f'{self.NOTE_ON_EVENT:02X} {key:02X} {velocity:02X}')
+        msg = [self.NOTE_ON_EVENT, key, velocity]
+        self._raw_send(msg)
 
     def send_note_off(self, key, velocity):
         if not self._midi_output:
             self._log('MIDI output not connected.')
             return
 
-        #        self._log('%02X %02X %02X' % (self.NOTE_OFF_EVENT, key, velocity))
-        self._midi_output.write_short(self.NOTE_OFF_EVENT, key, velocity)
+#        self._log(f'{self.NOTE_OFF_EVENT:02X} {key:02X} {velocity:02X}')
+        msg = [self.NOTE_OFF_EVENT, key, velocity]
+        self._raw_send(msg)
 
     def send_control_change(self, channel, cc_number, cc_value):
         if not self._midi_output:
             self._log('MIDI output not connected.')
             return
 
-        #         self._log('%02X %02X %02X' % (self.CONTROL_CHANGE + channel, cc_number, cc_value))
-        self._midi_output.write_short(self.CONTROL_CHANGE + channel, cc_number, cc_value)
+#        self._log(f'{self.CONTROL_CHANGE + channel:02X} {cc_number:02X} {cc_value:02X}')
+        msg = [self.CONTROL_CHANGE + channel, cc_number, cc_value]
+        self._raw_send(msg)
 
     def send_pitch_wheel_change(self, channel, pitch):
         if not self._midi_output:
@@ -240,16 +227,18 @@ class MidiConnection:
 
         pitch_high = pitch >> 7
         pitch_low = pitch & 0x7F
-        #         self._log('%02X %02X %02X' % (self.PITCH_WHEEL_CHANGE + channel, pitch_low, pitch_high))
-        self._midi_output.write_short(self.PITCH_WHEEL_CHANGE + channel, pitch_low, pitch_high)
+#        self._log(f'{self.PITCH_WHEEL_CHANGE + channel:02X} {pitch_low:02X} {pitch_high:02X}')
+        msg = [self.PITCH_WHEEL_CHANGE + channel, pitch_low, pitch_high]
+        self._raw_send(msg)
 
     def send_pitch_wheel_change_7bit(self, channel, pitch):
         if not self._midi_output:
             self._log('MIDI output not connected.')
             return
 
-        #         self._log('%02X %02X %02X' % (self.PITCH_WHEEL_CHANGE + channel, pitch, pitch))
-        self._midi_output.write_short(self.PITCH_WHEEL_CHANGE + channel, pitch, pitch)
+#        self._log(f'{self.PITCH_WHEEL_CHANGE + channel:02X} {pitch:02X} {pitch:02X}')
+        msg = [self.PITCH_WHEEL_CHANGE + channel, pitch, pitch]
+        self._raw_send(msg)
 
     def send_sysex(self, header, data):
         if not self._midi_output:
@@ -259,12 +248,14 @@ class MidiConnection:
         assert isinstance(header, list)
         assert isinstance(data, list)
 
-        sysex = [0xF0]
+        sysex = [rtmidi.midiconstants.SYSTEM_EXCLUSIVE]
         sysex.extend(header)
         sysex.extend(data)
-        sysex.append(0xF7)
+        sysex.append(rtmidi.midiconstants.END_OF_EXCLUSIVE)
 
-        self._midi_output.write_sys_ex(0, sysex)
+        assert sysex[0] == rtmidi.midiconstants.SYSTEM_EXCLUSIVE and sysex[-1] == rtmidi.midiconstants.END_OF_EXCLUSIVE
+
+        self._raw_send(sysex)
 
 
 if __name__ == "__main__":
@@ -274,10 +265,9 @@ if __name__ == "__main__":
         print(message)
 
     def midi_in_callback(status_byte, message):
-        print('status %02X: ' % status_byte, )
+        print(f'status {status_byte:02X}: ', )
         for byte in message:
-            print('%02X' % byte, )
-        print()
+            print(f'{byte:02X}', )
 
     MIDI_INPUT = 'In From MIDI Yoke:  2'
     MIDI_OUTPUT = 'Out To MIDI Yoke:  1'

@@ -24,17 +24,10 @@ Thank you for using free software!
 
 """
 
-import sys
+import importlib
 
-if __name__ == "__main__":
-    # allow "PythonMcu" package imports when executing this module
-    sys.path.append('../../')
-
-from PythonMcu.MackieControl.MackieHostControl import MackieHostControl
-from PythonMcu.Tools.ApplicationConfiguration import ApplicationConfiguration
-
-# noinspection PyUnresolvedReferences
-from PythonMcu.Hardware import *
+from ..MackieControl.MackieHostControl import MackieHostControl
+from ..Tools.ApplicationConfiguration import ApplicationConfiguration
 
 
 class McuInterconnector:
@@ -45,22 +38,6 @@ class McuInterconnector:
     }
 
     _MCU_COMMANDS = [
-        'function_channel_1',
-        'function_channel_2',
-        'function_channel_3',
-        'function_channel_4',
-        'function_channel_5',
-        'function_channel_6',
-        'function_channel_7',
-        'function_channel_8',
-        'mute_channel_1',
-        'mute_channel_2',
-        'mute_channel_3',
-        'mute_channel_4',
-        'mute_channel_5',
-        'mute_channel_6',
-        'mute_channel_7',
-        'mute_channel_8',
         'record_ready_channel_1',
         'record_ready_channel_2',
         'record_ready_channel_3',
@@ -69,14 +46,7 @@ class McuInterconnector:
         'record_ready_channel_6',
         'record_ready_channel_7',
         'record_ready_channel_8',
-        'select_channel_1',
-        'select_channel_2',
-        'select_channel_3',
-        'select_channel_4',
-        'select_channel_5',
-        'select_channel_6',
-        'select_channel_7',
-        'select_channel_8',
+
         'solo_channel_1',
         'solo_channel_2',
         'solo_channel_3',
@@ -85,6 +55,25 @@ class McuInterconnector:
         'solo_channel_6',
         'solo_channel_7',
         'solo_channel_8',
+
+        'mute_channel_1',
+        'mute_channel_2',
+        'mute_channel_3',
+        'mute_channel_4',
+        'mute_channel_5',
+        'mute_channel_6',
+        'mute_channel_7',
+        'mute_channel_8',
+
+        'select_channel_1',
+        'select_channel_2',
+        'select_channel_3',
+        'select_channel_4',
+        'select_channel_5',
+        'select_channel_6',
+        'select_channel_7',
+        'select_channel_8',
+
         'vselect_channel_1',
         'vselect_channel_2',
         'vselect_channel_3',
@@ -94,66 +83,99 @@ class McuInterconnector:
         'vselect_channel_7',
         'vselect_channel_8',
 
-        'assignment_eq',
-        'assignment_instrument',
+        'assignment_track',
+        'assignment_send',
         'assignment_pan_surround',
         'assignment_plug_in',
-        'assignment_send',
-        'assignment_track',
-        'automation_latch',
-        'automation_read_off',
-        'automation_touch',
-        'automation_trim',
-        'automation_write',
-        'beats',
-        'click',
-        'command_alt',
-        'control',
-        'cursor_down',
-        'cursor_left',
-        'cursor_right',
-        'cursor_up',
-        'cycle',
-        'drop',
+        'assignment_eq',
+        'assignment_instrument',
+
         'fader_banks_bank_left',
         'fader_banks_bank_right',
         'fader_banks_channel_left',
         'fader_banks_channel_right',
-        'fast_forward',
+
         'flip',
         'global_view',
-        'global_view_audio_instruments',
+
+        'name_value',
+        'smpte_beats',
+
+        'function_channel_1',
+        'function_channel_2',
+        'function_channel_3',
+        'function_channel_4',
+        'function_channel_5',
+        'function_channel_6',
+        'function_channel_7',
+        'function_channel_8',
+
+        'global_view_midi_tracks',
+        'global_view_inputs',
         'global_view_audio_tracks',
+        'global_view_audio_instruments',
         'global_view_aux',
         'global_view_busses',
-        'global_view_inputs',
-        'global_view_midi_tracks',
         'global_view_outputs',
         'global_view_user',
-        'group',
-        'marker',
-        'name_value',
-        'nudge',
-        'option',
-        'play',
-        'record',
-        'relay_click',
-        'replace',
-        'rewind',
-        'rude_solo',
-        'scrub',
+
         'shift',
-        'smpte',
-        'smpte_beats',
-        'solo',
-        'stop',
-        'user_switch_1',
-        'user_switch_2',
-        'utilities_cancel',
-        'utilities_enter',
+        'option',
+        'control',
+        'command_alt',
+
+        'automation_read_off',
+        'automation_write',
+        'automation_trim',
+        'automation_touch',
+        'automation_latch',
+
+        'group',
+
         'utilities_save',
         'utilities_undo',
+        'utilities_cancel',
+        'utilities_enter',
+
+        'marker',
+        'nudge',
+        'cycle',
+        'drop',
+        'replace',
+        'click',
+        'solo',
+
+        'rewind',
+        'fast_forward',
+        'stop',
+        'play',
+        'record',
+
+        'cursor_down',
+        'cursor_left',
+        'cursor_right',
+        'cursor_up',
+
         'zoom',
+        'scrub',
+
+        'user_switch_1',
+        'user_switch_2',
+
+        'fader_touch_1',
+        'fader_touch_2',
+        'fader_touch_3',
+        'fader_touch_4',
+        'fader_touch_5',
+        'fader_touch_6',
+        'fader_touch_7',
+        'fader_touch_8',
+        'fader_touch_master',
+
+        'smpte',
+        'beats',
+        'rude_solo',
+        'relay_click',
     ]
 
     def __init__(self, parent, mcu_model_id, mcu_connection, mcu_midi_input, mcu_midi_output, hardware_controller_class,
@@ -162,12 +184,11 @@ class McuInterconnector:
         self._callback_log = callback_log
         self.parent = parent
 
-        eval_controller_init = '%(cc)s.%(cc)s("%(midi_in)s", "%(midi_out)s", callback_log)' % {
-            'cc': hardware_controller_class,
-            'midi_in': controller_midi_input,
-            'midi_out': controller_midi_output
-        }
-        self._hardware_controller = eval(eval_controller_init)
+        # FIXME: factorize into factory method
+        hw_module = importlib.import_module('.' + hardware_controller_class, package='PythonMcu.Hardware')
+        hw_class = getattr(hw_module, hardware_controller_class)
+
+        self._hardware_controller = hw_class(controller_midi_input, controller_midi_output, callback_log)
 
         # get "Python MCU" version number
         python_mcu_version = ApplicationConfiguration().get_version(False)
@@ -259,10 +280,9 @@ class McuInterconnector:
 
         return False
 
-    @staticmethod
-    def keypress_unregistered(mcu_command, status):
-        command = 'self._mackie_host_control.keypress_%s(%d)' % (mcu_command, status)
-        eval(command)
+    def keypress_unregistered(self, mcu_command, status):
+        kp_method = getattr(self._mackie_host_control, f'keypress_{mcu_command}')
+        kp_method(status)
 
     def _set_led(self, mcu_command, status):
         if self._led__mcu_to_hardware[mcu_command]['value'] != status:
@@ -328,23 +348,23 @@ class McuInterconnector:
 
     def set_led_channel_record_ready(self, channel, status):
         # channel: 0 - 7
-        self._set_led('record_ready_channel_%d' % (channel + 1), status)
+        self._set_led(f'record_ready_channel_{channel + 1}', status)
 
     def set_led_channel_solo(self, channel, status):
         # channel: 0 - 7
-        self._set_led('solo_channel_%d' % (channel + 1), status)
+        self._set_led(f'solo_channel_{channel + 1}', status)
 
     def set_led_channel_mute(self, channel, status):
         # channel: 0 - 7
-        self._set_led('mute_channel_%d' % (channel + 1), status)
+        self._set_led(f'mute_channel_{channel + 1}', status)
 
     def set_led_channel_select(self, channel, status):
         # channel: 0 - 7
-        self._set_led('select_channel_%d' % (channel + 1), status)
+        self._set_led(f'select_channel_{channel + 1}', status)
 
     def set_led_channel_vselect(self, channel, status):
         # channel: 0 - 7
-        self._set_led('vselect_channel_%d' % (channel + 1), status)
+        self._set_led(f'vselect_channel_{channel + 1}', status)
 
     def set_led_assignment_track(self, status):
         self._set_led('assignment_track', status)

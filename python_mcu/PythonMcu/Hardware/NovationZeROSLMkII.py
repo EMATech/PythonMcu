@@ -25,17 +25,12 @@ Thank you for using free software!
 """
 
 import os
-import sys
 
-if __name__ == "__main__":
-    # allow "PythonMcu" package imports when executing this module
-    sys.path.append('../../../')
-
-from PythonMcu.Hardware.MidiControllerTemplate import MidiControllerTemplate
-from PythonMcu.Midi.MidiConnection import MidiConnection
+from ..Hardware._MidiControllerTemplate import _MidiControllerTemplate
+from ..Midi.MidiConnection import MidiConnection
 
 
-class NovationZeROSLMkII(MidiControllerTemplate):
+class NovationZeROSLMkII(_MidiControllerTemplate):
     # Novation Digital Music System
     MIDI_MANUFACTURER_ID = [0x00, 0x20, 0x29]
 
@@ -93,7 +88,7 @@ class NovationZeROSLMkII(MidiControllerTemplate):
     _MODE_OTHER_UTILITY = 5
 
     def __init__(self, midi_input, midi_output, callback_log):
-        MidiControllerTemplate.__init__(self, midi_input, midi_output, callback_log)
+        super().__init__(midi_input, midi_output, callback_log)
 
         self.display_lcd_available = True
         self.automated_faders_available = False
@@ -116,14 +111,14 @@ class NovationZeROSLMkII(MidiControllerTemplate):
     @staticmethod
     def get_usage_hint():
         return 'Connect the controller\'s USB port to your computer ' + \
-               'and switch to preset #32 (Ableton Live Automap).'
+               'and select the second ZeRO MkII MIDI port.'
 
     def _log(self, message, repaint=False):
         self.callback_log('[Novation ZeRO SL MkII]  ' + message, repaint)
 
     # --- initialisation ---
     def connect(self):
-        MidiControllerTemplate.connect(self)
+        super().connect()
         self._is_connected = True
 
         self.set_lcd_directly(0, 'Novation ZeRO SL MkII:  initialising...')
@@ -150,16 +145,16 @@ class NovationZeROSLMkII(MidiControllerTemplate):
         self._leave_ableton_mode()
 
         self._is_connected = False
-        MidiControllerTemplate.disconnect(self)
+        super().disconnect()
 
     def go_online(self):
-        MidiControllerTemplate.go_online(self)
+        super().go_online()
 
         self.set_lcd_directly(0, 'Novation ZeRO SL MkII:  initialised.')
         self.set_lcd_directly(1, 'Mackie Host Control:    online.')
 
     def go_offline(self):
-        MidiControllerTemplate.go_offline(self)
+        super().go_offline()
 
         self.set_lcd_directly(0, 'Novation ZeRO SL MkII:  initialised.')
         self.set_lcd_directly(1, 'Mackie Host Control:    offline.')
@@ -216,30 +211,34 @@ class NovationZeROSLMkII(MidiControllerTemplate):
             return
 
         cc_selector = {
-            self._MIDI_CC_FADERS: 'self.interconnector.move_fader_7bit(0, %d)',
-            self._MIDI_CC_FADERS + 1: 'self.interconnector.move_fader_7bit(1, %d)',
-            self._MIDI_CC_FADERS + 2: 'self.interconnector.move_fader_7bit(2, %d)',
-            self._MIDI_CC_FADERS + 3: 'self.interconnector.move_fader_7bit(3, %d)',
-            self._MIDI_CC_FADERS + 4: 'self.interconnector.move_fader_7bit(4, %d)',
-            self._MIDI_CC_FADERS + 5: 'self.interconnector.move_fader_7bit(5, %d)',
-            self._MIDI_CC_FADERS + 6: 'self.interconnector.move_fader_7bit(6, %d)',
-            self._MIDI_CC_FADERS + 7: 'self.interconnector.move_fader_7bit(7, %d)',
-            self._MIDI_CC_ENCODERS: 'self.interconnector.move_vpot_raw(0, %d)',
-            self._MIDI_CC_ENCODERS + 1: 'self.interconnector.move_vpot_raw(1, %d)',
-            self._MIDI_CC_ENCODERS + 2: 'self.interconnector.move_vpot_raw(2, %d)',
-            self._MIDI_CC_ENCODERS + 3: 'self.interconnector.move_vpot_raw(3, %d)',
-            self._MIDI_CC_ENCODERS + 4: 'self.interconnector.move_vpot_raw(4, %d)',
-            self._MIDI_CC_ENCODERS + 5: 'self.interconnector.move_vpot_raw(5, %d)',
-            self._MIDI_CC_ENCODERS + 6: 'self.interconnector.move_vpot_raw(6, %d)',
-            self._MIDI_CC_ENCODERS + 7: 'self.interconnector.move_vpot_raw(7, %d)',
-            self._MIDI_CC_CONTROL_PEDAL: 'self.on_control_pedal(%d & 0x01)',
-            self._MIDI_CC_BUTTON_BANK_UP: 'self._change_mode_edit(%d & 0x01)',
-            self._MIDI_CC_BUTTON_BANK_DOWN: 'self._change_mode_track(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM: 'self._change_mode_bank(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1: 'self._change_mode_automation(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2: 'self._change_mode_global_view(%d & 0x01)',
-            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3: 'self._change_mode_utility(%d & 0x01)',
-            self._MIDI_CC_BUTTON_MODE_TRANSPORT: 'self._change_mode_transport(%d & 0x01)',
+            self._MIDI_CC_FADERS: {'member': self.interconnector, 'method': 'move_fader_7bit', 'params': [0, '{:d}']},
+            self._MIDI_CC_FADERS + 1: {'member': self.interconnector, 'method': 'move_fader_7bit', 'params': [1, '{:d}']},
+            self._MIDI_CC_FADERS + 2: {'member': self.interconnector, 'method': 'move_fader_7bit', 'params': [2, '{:d}']},
+            self._MIDI_CC_FADERS + 3: {'member': self.interconnector, 'method': 'move_fader_7bit', 'params': [3, '{:d}']},
+            self._MIDI_CC_FADERS + 4: {'member': self.interconnector, 'method': 'move_fader_7bit', 'params': [4, '{:d}']},
+            self._MIDI_CC_FADERS + 5: {'member': self.interconnector, 'method': 'move_fader_7bit', 'params': [5, '{:d}']},
+            self._MIDI_CC_FADERS + 6: {'member': self.interconnector, 'method': 'move_fader_7bit', 'params': [6, '{:d}']},
+            self._MIDI_CC_FADERS + 7: {'member': self.interconnector, 'method': 'move_fader_7bit', 'params': [7, '{:d}']},
+            self._MIDI_CC_ENCODERS: {'member': self.interconnector, 'method': 'move_vpot_raw', 'params': [0, '{:d}']},
+            self._MIDI_CC_ENCODERS + 1: {'member': self.interconnector, 'method': 'move_vpot_raw', 'params': [1, '{:d}']},
+            self._MIDI_CC_ENCODERS + 2: {'member': self.interconnector, 'method': 'move_vpot_raw', 'params': [2, '{:d}']},
+            self._MIDI_CC_ENCODERS + 3: {'member': self.interconnector, 'method': 'move_vpot_raw', 'params': [3, '{:d}']},
+            self._MIDI_CC_ENCODERS + 4: {'member': self.interconnector, 'method': 'move_vpot_raw', 'params': [4, '{:d}']},
+            self._MIDI_CC_ENCODERS + 5: {'member': self.interconnector, 'method': 'move_vpot_raw', 'params': [5, '{:d}']},
+            self._MIDI_CC_ENCODERS + 6: {'member': self.interconnector, 'method': 'move_vpot_raw', 'params': [6, '{:d}']},
+            self._MIDI_CC_ENCODERS + 7: {'member': self.interconnector, 'method': 'move_vpot_raw', 'params': [7, '{:d}']},
+            self._MIDI_CC_CONTROL_PEDAL: {'member': self, 'method': 'on_control_pedal', 'params': ['{:d}']},
+            self._MIDI_CC_BUTTON_BANK_UP: {'member': self, 'method': '_change_mode_edit', 'params': ['{:d}']},
+            self._MIDI_CC_BUTTON_BANK_DOWN: {'member': self, 'method': '_change_mode_track', 'params': ['{:d}']},
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM: {'member': self, 'method': '_change_mode_bank', 'params': ['{:d}']},
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 1: {'member': self, 'method': '_change_mode_automation',
+                                                     'params': ['{:d}']},
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 2: {'member': self, 'method': '_change_mode_global_view',
+                                                     'params': ['{:d}']},
+            self._MIDI_CC_BUTTONS_RIGHT_BOTTOM + 3: {'member': self, 'method': '_change_mode_utility',
+                                                     'params': ['{:d}']},
+            self._MIDI_CC_BUTTON_MODE_TRANSPORT: {'member': self, 'method': '_change_mode_transport',
+                                                  'params': ['{:d}']},
         }
 
         # make sure that no submenu disturbs toggling the "Global
@@ -252,26 +251,32 @@ class NovationZeROSLMkII(MidiControllerTemplate):
             cc_value = message[2]
 
             if cc_number in cc_selector:
-                eval(cc_selector[cc_number] % cc_value)
+                cc_member = cc_selector[cc_number]['member']
+                cc_method = getattr(cc_member, cc_selector[cc_number]['method'])
+                cc_params = cc_selector[cc_number]['params']
+                for index, param in enumerate(cc_params):
+                    if isinstance(param, str):
+                        cc_params[index] = param.format(cc_value)
+                        cc_params[index] = int(cc_params[index])
+                cc_method(*cc_params)
             elif cc_number == 0x6B:
                 # this controller change message is sent on entering
                 # and leaving "Automap" mode and can be probably
                 # ignored
                 pass
             else:
-                internal_id = 'cc%d' % cc_number
-                status = cc_value & 0x01
-                key_processed = self.interconnector.keypress(internal_id, status)
+                internal_id = f'cc{cc_number}'
+                key_processed = self.interconnector.keypress(internal_id, cc_value)
 
                 if not key_processed:
-                    message_string = ['status %02X: ' % status]
+                    message_string = [f'status {status:02X}: ']
                     for byte in message:
-                        message_string.append('%02X' % byte)
+                        message_string.append(f'{byte:02X}')
                     self._log(' '.join(message_string))
         else:
-            message_string = ['status %02X: ' % status]
+            message_string = [f'status {status:02X}: ']
             for byte in message:
-                message_string.append('%02X' % byte)
+                message_string.append(f'{byte:02X}')
             self._log(' '.join(message_string))
 
     def send_midi_control_change(self, channel=None, cc_number=None, cc_value=None):
@@ -281,40 +286,39 @@ class NovationZeROSLMkII(MidiControllerTemplate):
         if channel:
             raise ValueError("The channel is fixed for this device!")
 
-        MidiControllerTemplate.send_midi_control_change(self, self._MIDI_DEVICE_CHANNEL, cc_number, cc_value)
+        super().send_midi_control_change(self._MIDI_DEVICE_CHANNEL, cc_number, cc_value)
 
     @staticmethod
     def get_preferred_midi_input():
         if os.name == 'nt':
-            return 'ZeRO MkII: Port 2'
+            return 'MIDIIN2 (ZeRO MkII)'  # Windows 10 (without Automap drivers)
+            #return 'ZeRO MkII: Port 2'  # Windows 7?
 
         return 'ZeRO MkII MIDI 2'
 
     @staticmethod
     def get_preferred_midi_output():
         if os.name == 'nt':
-            return 'ZeRO MkII: Port 2'
+            return 'MIDIOUT2 (ZeRO MkII)'  # Windows 10 (without Automap drivers)
+            #return 'ZeRO MkII: Port 2'  # Windows 7?
 
         return 'ZeRO MkII MIDI 2'
 
     # --- registration of MIDI controls ---
     def register_control(self, mcu_command, midi_switch, midi_led=None):
-        midi_switch_cc = 'cc%d' % midi_switch
+        midi_switch_cc = f'cc{midi_switch}'
 
         if midi_led:
-            midi_led_cc = 'cc%d' % midi_led
+            midi_led_cc = f'cc{midi_led}'
         else:
             midi_led_cc = midi_switch_cc
 
         self.interconnector.register_control(mcu_command, midi_switch_cc, midi_led_cc)
 
     def withdraw_control(self, midi_switch):
-        midi_switch_cc = 'cc%d' % midi_switch
+        midi_switch_cc = f'cc{midi_switch}'
 
         self.interconnector.withdraw_control(midi_switch_cc)
-
-    def set_display_7seg(self, position, character_code):
-        MidiControllerTemplate.set_display_7seg(self, position, character_code)
 
     # --- handling of Mackie Control commands ---
     def set_lcd_directly(self, line, lcd_string):
@@ -388,15 +392,15 @@ class NovationZeROSLMkII(MidiControllerTemplate):
         controller_id = int(internal_id[2:])
 
         if controller_type == 'cc':
-            MidiControllerTemplate.send_midi_control_change(self, self._MIDI_DEVICE_CHANNEL, controller_id, led_status)
+            super().send_midi_control_change(self._MIDI_DEVICE_CHANNEL, controller_id, led_status)
         else:
-            self._log('controller type "%s" unknown.' % controller_type)
+            self._log(f'controller type "{controller_type}" unknown.')
 
     def _set_led(self, led_id, led_status):
         if not self._is_connected:
             return
 
-        MidiControllerTemplate.send_midi_control_change(self, self._MIDI_DEVICE_CHANNEL, led_id, led_status)
+        super().send_midi_control_change(self._MIDI_DEVICE_CHANNEL, led_id, led_status)
 
     def set_vpot_led_ring(self, vpot_id, vpot_center_led, vpot_mode, vpot_position):
         mode = None

@@ -26,15 +26,11 @@ Thank you for using free software!
 
 import sys
 
-if __name__ == "__main__":
-    # allow "PythonMcu" package imports when executing this module
-    sys.path.append('../../')
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QTextCharFormat, QFontMetrics
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QTextBrowser, QHBoxLayout, QLabel, QPushButton, QApplication
 
-from PythonMcu.Tools.ApplicationConfiguration import ApplicationConfiguration
-
-from PySide2.QtCore import Qt
-from PySide2.QtGui import QFont, QTextCharFormat, QFontMetrics
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QTextBrowser, QHBoxLayout, QLabel, QPushButton, QApplication
+from .ApplicationConfiguration import ApplicationConfiguration
 
 
 # noinspection PyArgumentList
@@ -55,7 +51,8 @@ class AboutDialog(QDialog):
 
         char_format = QTextCharFormat()
         char_format.setFontFamily(font.defaultFamily())
-        text_width = QFontMetrics(char_format.font()).width('*') * 83
+        #text_width = QFontMetrics(char_format.font()).width('*') * 83
+        text_width = QFontMetrics(char_format.font()).horizontalAdvance('*' * 83)
         text_height = QFontMetrics(char_format.font()).height() * 40
 
         self._edit_license = QTextBrowser()

@@ -198,20 +198,20 @@ Extending Python MCU
    sequencer using the Mackie Control protocol, translating the raw
    protocol to something much easier to read and use
 
--  the generalised **MidiControllerTemplate** class and its more
+-  the generalised **_MidiControllerTemplate** class and its more
    specific relatives handle all the details of sending data to and
    receiving data from your hardware controller, again translating raw
    protocols to something easier to read and use
 
 -  finally, the **McuInterconnector** class connects the
-   **MackieHostControl** and **MidiControllerTemplate** classes (and
+   **MackieHostControl** and **_MidiControllerTemplate** classes (and
    thus your DAW and hardware controller) with each other
 
 This modular design means that the application happily works away with
 the irrelevant implementation details being effectively hidden from you.
 As long as you adhere to the internal protocol, you may easily add your
 own controller to **Python MCU** by deriving a class from
-**MidiControllerTemplate**.
+**_MidiControllerTemplate**.
 
 If all this means nothing to you, go find yourself a Python programmer
 (or learn Python yourself, it's rather easy and a lot of fun!). As long

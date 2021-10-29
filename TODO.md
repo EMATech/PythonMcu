@@ -5,12 +5,16 @@
 - [x] [rdoursenaud] standard Python repository layout
 - [ ] [rdoursenaud] write pytest unit tests only looking at the protocol docs
 - [ ] [rdoursenaud] properly handle invalid config file
-- [ ] [rdoursenaud] disallow start if MIDI ports are not set in the GUI
+- [x] [rdoursenaud] disallow start if MIDI ports are not set in the GUI
+- [x] [rdoursenaud] port to PySide6
+- [x] [rdoursenaud] Replace all "old style" string formatting (%) with "new style" (.format and f-strings)
 - [ ] [rdoursenaud] don't freeze GUI while "Waiting for MIDI input from host..."
-- [ ] [rdoursenaud] port from pygame to rtmidi
+- [x] [rdoursenaud] port from pygame to rtmidi
+- [x] [rdoursenaud] allow manually refreshing available MIDI ports
+- [ ] [rdoursenaud] if a MIDI port is removed during operation, don’t crash when trying to close it! Handle gracefully!
 - [ ] [rdoursenaud] create virtualports using rtmidi for supported platforms (And remove MIDI Yoke references)
 - [ ] [rdoursenaud] create windows virtualports using pytemidi (Requires Loop Midi to be installed)
-- [ ] [rdoursenaud] explore if using mido could be beneficial
+- [ ] [rdoursenaud] add option to autostart on launch
 - [ ] [rdoursenaud] add a nice icon
 - [ ] [rdoursenaud] reduce and restore from systray using QSystemTrayIcon or pystray
 - [ ] [rdoursenaud] add setup.py
@@ -18,3 +22,5 @@
 - [x] [rdoursenaud] update documentation
 - [ ] [rdoursenaud] publish documentation to readthedocs.org
 - [ ] [rdoursenaud] release version 2.0
+- [ ] [rdoursenaud] announce on LAD, libreav and other relevant outlets
+- [ ] [rdoursenaud] HUI mode?

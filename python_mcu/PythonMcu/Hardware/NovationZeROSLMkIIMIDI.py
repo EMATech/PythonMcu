@@ -24,14 +24,8 @@ Thank you for using free software!
 
 """
 
-import sys
-
-if __name__ == "__main__":
-    # allow "PythonMcu" package imports when executing this module
-    sys.path.append('../../../')
-
-from PythonMcu.Hardware.NovationZeROSLMkII import NovationZeROSLMkII
-from PythonMcu.Midi.MidiConnection import MidiConnection
+from ..Hardware.NovationZeROSLMkII import NovationZeROSLMkII
+from ..Midi.MidiPorts import MidiPorts
 
 
 class NovationZeROSLMkIIMIDI(NovationZeROSLMkII):
@@ -40,7 +34,7 @@ class NovationZeROSLMkIIMIDI(NovationZeROSLMkII):
 
     @staticmethod
     def get_usage_hint():
-        return 'Connect the controller\'s "MIDI Port 1" to your computer, ' + \
+        return 'Connect the controller\'s "MIDI Port 1" to your MIDI interface, ' + \
                'switch to preset #32 (Ableton Live Automap) ' + \
                'and change the following settings:\n\n' + \
                '* Global --> Routing --> MIDI To:\n  remove port "M1"\n' + \
@@ -50,8 +44,8 @@ class NovationZeROSLMkIIMIDI(NovationZeROSLMkII):
     # --- MIDI processing ---
     @staticmethod
     def get_preferred_midi_input():
-        return MidiConnection.get_default_midi_input().decode('utf-8')
+        return MidiPorts.get_default_midi_input()
 
     @staticmethod
     def get_preferred_midi_output():
-        return MidiConnection.get_default_midi_output().decode('utf-8')
+        return MidiPorts.get_default_midi_output()
